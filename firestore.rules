@@ -18,13 +18,14 @@ service cloud.firestore {
       // Allow read if:
       // - From server (API routes - no auth)
       // - Admin users (full access)
-      // - User is the influencer
+      // - User is checking their own document (by document ID match) - works even if doc doesn't exist
+      // - User is reading a document where they are the owner (userId field matches)
       // - Influencer is active (for public referral links)
       allow read: if request.auth == null || // Server-side reads (queries)
                      isAdmin() || // Admin can read everything
-                     (isAuthenticated() && 
-                      (resource.data.userId == request.auth.uid || 
-                       resource.data.isActive == true));
+                     (isAuthenticated() && influencerId == request.auth.uid) || // Allow reading by document ID (their own)
+                     (isAuthenticated() && resource != null && resource.data.userId == request.auth.uid) || // Allow reading existing docs where user is owner
+                     (isAuthenticated() && resource != null && resource.data.isActive == true); // Allow reading active influencers
       
       // Allow create if user is creating their own record OR from server (no auth)
       allow create: if (isAuthenticated() && 

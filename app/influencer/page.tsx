@@ -67,7 +67,8 @@ const activeRequirements = [
   "Profile photo uploaded",
   "Bio completed",
   "At least 1 story posted",
-  "Community post",
+  "At least 1 community post",
+  "Account active for 48-72 hours",
 ]
 
 export default function InfluencerPage() {
@@ -457,10 +458,15 @@ export default function InfluencerPage() {
                   Invite. Build. Earn.
                 </span>
               </h1>
-              <p className="text-xl text-white/70 leading-relaxed mb-8">
+              <p className="text-xl text-white/70 leading-relaxed mb-4">
                 Join the Nomli Mingle Influencer Program and earn rewards for bringing real, active users into a
                 growing social platform.
               </p>
+              <div className="mb-8 p-4 rounded-xl bg-primary/10 border border-primary/20">
+                <p className="text-sm text-primary/90">
+                  <strong>Invite-Only Program:</strong> This is an exclusive program with limited spots. Referral rewards may pause at any time.
+                </p>
+              </div>
               <motion.a
                 href="#apply"
                 className="inline-block"
@@ -659,14 +665,19 @@ export default function InfluencerPage() {
             ))}
           </div>
 
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center text-white/50 text-sm"
+            className="text-center space-y-3"
           >
-            Only fully active users are counted.
-          </motion.p>
+            <p className="text-white/60 text-sm">
+              *Only fully active users are counted. Spam or inactive accounts are excluded.
+            </p>
+            <p className="text-yellow-400/80 text-sm">
+              <strong>Note:</strong> Referral rewards are currently limited and may pause at any time. Payouts require manual verification.
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -681,7 +692,10 @@ export default function InfluencerPage() {
           >
             <div className="p-8 lg:p-12 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
               <h2 className="text-3xl font-bold text-white mb-6">What Counts as "Active"?</h2>
-              <div className="space-y-4">
+              <p className="text-white/60 mb-6">
+                To count toward your milestones, referred users must complete <strong>all</strong> of the following:
+              </p>
+              <div className="space-y-4 mb-6">
                 {activeRequirements.map((requirement, index) => (
                   <motion.div
                     key={requirement}
@@ -697,6 +711,11 @@ export default function InfluencerPage() {
                     <span className="text-white/80">{requirement}</span>
                   </motion.div>
                 ))}
+              </div>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-sm text-white/60">
+                  <strong className="text-white">Why these requirements?</strong> We want to reward you for bringing real, engaged users to Nomli Mingle—not spam accounts or inactive profiles.
+                </p>
               </div>
             </div>
           </motion.div>

@@ -396,6 +396,7 @@ export async function getInfluencerDashboard(influencerId: string) {
         : undefined,
       progress: influencer.activeUsers,
       color: milestone.threshold === 5 ? "#8b5cf6" : milestone.threshold === 10 ? "#06b6d4" : "#10b981",
+      paymentStatus: payment?.paymentStatus || (influencer.activeUsers >= milestone.threshold ? "pending" : undefined),
     }
   })
 

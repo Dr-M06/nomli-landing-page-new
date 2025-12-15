@@ -5,9 +5,9 @@ import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { onAuthStateChanged } from "firebase/auth"
+import { onAuthStateChanged, signOut } from "firebase/auth"
 import { getAuthInstance } from "@/lib/firebase/config"
-import { ArrowLeft, CheckCircle2, Users, Gift, Link2, Copy, TrendingUp, Clock, Award, BarChart3, Loader2, Sparkles } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Users, Gift, Link2, Copy, TrendingUp, Clock, Award, BarChart3, Loader2, Sparkles, Info, X, LogOut } from "lucide-react"
 
 // Mock data - Fallback if API fails
 const mockStats = {
@@ -65,6 +65,20 @@ export default function InfluencerDashboard() {
   const [copied, setCopied] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [showActiveModal, setShowActiveModal] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  const handleLogout = async () => {
+    try {
+      const auth = getAuthInstance()
+      if (auth) {
+        await signOut(auth)
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
+  }
 
   // Get authenticated user ID
   useEffect(() => {
@@ -77,6 +91,7 @@ export default function InfluencerDashboard() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserId(user.uid)
+        setUser(user)
       } else {
         router.push("/influencer/auth")
       }
@@ -150,13 +165,13 @@ export default function InfluencerDashboard() {
           </div>
           <h1 className="text-3xl font-bold mb-4">Error Loading Dashboard</h1>
           <p className="text-white/60 mb-8">{error}</p>
-          <Link href="/influencer">
+          <Link href="/">
             <motion.button
               className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
             >
-              Back to Program
+              Back to Home
             </motion.button>
           </Link>
         </div>
@@ -183,20 +198,39 @@ export default function InfluencerDashboard() {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0a0a0f]/80 border-b border-white/5">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/influencer">
+            <Link href="/">
               <motion.div
                 className="flex items-center gap-3 text-white/70 hover:text-white transition-colors"
                 whileHover={{ x: -4 }}
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span className="font-medium">Back to Program</span>
+                <span className="font-medium">Back to Home</span>
               </motion.div>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="relative w-8 h-8">
-                <Image src="/icon.png" alt="Nomli Mingle" fill className="object-contain" />
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs text-white/50">Signed in as</p>
+                    <p className="text-sm text-white font-medium truncate max-w-[150px]">{user.email}</p>
+                  </div>
+                  <motion.button
+                    onClick={handleLogout}
+                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-colors flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sign Out</span>
+                  </motion.button>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8">
+                  <Image src="/icon.png" alt="Nomli Mingle" fill className="object-contain" />
+                </div>
+                <span className="text-sm text-white/50 font-medium hidden sm:inline">Nomli Mingle</span>
               </div>
-              <span className="text-sm text-white/50 font-medium">Nomli Mingle</span>
             </div>
           </div>
         </div>
@@ -278,93 +312,93 @@ export default function InfluencerDashboard() {
         </div>
       </section>
 
-      {/* Referral Code Section - Prominently Displayed */}
-      <section className="relative py-12">
+      {/* Referral Code Section - Compact Display */}
+      <section className="relative py-8">
         <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="p-8 lg:p-12 rounded-3xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 border-2 border-primary/30 backdrop-blur-sm"
+              className="p-6 rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 border border-primary/30 backdrop-blur-sm"
             >
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", delay: 0.2 }}
-                  className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4"
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-3"
                 >
-                  <Link2 className="w-10 h-10 text-white" />
+                  <Link2 className="w-6 h-6 text-white" />
                 </motion.div>
-                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-2">Your Referral Code</h2>
-                <p className="text-white/60 text-lg">Share this code to start earning rewards</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Your Referral Code</h2>
+                <p className="text-white/60 text-sm">Share this code to start earning rewards</p>
               </div>
 
               {/* Referral Code Display */}
-              <div className="mb-8">
-                <div className="bg-white/5 border-2 border-white/20 rounded-2xl p-6 mb-4">
-                  <p className="text-sm text-white/50 mb-2 text-center uppercase tracking-wider">Your Unique Code</p>
-                  <div className="flex items-center justify-center gap-4 flex-wrap">
-                    <code className="text-4xl lg:text-5xl font-bold text-white font-mono tracking-wider">
+              <div className="mb-4">
+                <div className="bg-white/5 border border-white/20 rounded-xl p-4 mb-3">
+                  <p className="text-xs text-white/50 mb-2 text-center uppercase tracking-wider">Your Unique Code</p>
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    <code className="text-2xl lg:text-3xl font-bold text-white font-mono tracking-wider">
                       {stats.referralCode}
                     </code>
                     <motion.button
                       onClick={copyCodeToClipboard}
-                      className="px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors flex items-center gap-2 font-semibold"
+                      className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors flex items-center gap-2 text-sm font-medium"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Copy className="w-5 h-5" />
+                      <Copy className="w-4 h-4" />
                       {codeCopied ? "Copied!" : "Copy Code"}
                     </motion.button>
                   </div>
                 </div>
 
                 {/* Referral Link */}
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <p className="text-sm text-white/50 mb-2">Your Referral Link</p>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <code className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm flex-1 min-w-[200px] break-all font-mono">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                  <p className="text-xs text-white/50 mb-2">Your Referral Link</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <code className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 text-xs flex-1 min-w-[150px] break-all font-mono">
                       {stats.referralLink?.trim() || "Loading..."}
                     </code>
                     <motion.button
                       onClick={copyToClipboard}
-                      className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-2 whitespace-nowrap"
+                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs whitespace-nowrap"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Copy className="w-4 h-4" />
-                      {copied ? "Copied!" : "Copy Link"}
+                      <Copy className="w-3 h-3" />
+                      {copied ? "Copied!" : "Copy"}
                     </motion.button>
                   </div>
                 </div>
               </div>
 
-              {/* Info Box */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-5 h-5 text-primary" />
+              {/* Info Box - Compact */}
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">How to Use Your Code</h3>
-                    <ul className="space-y-2 text-white/70 text-sm">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white mb-2">How to Use Your Code</h3>
+                    <ul className="space-y-1.5 text-white/70 text-xs">
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
+                        <span className="text-primary mt-0.5">•</span>
                         <span>Share your referral link or code with your audience</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>When users sign up using your code, they'll be tracked automatically</span>
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>Users sign up using your code and are tracked automatically</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>Earn rewards when they become active users (upload photo, add bio, post story, etc.)</span>
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>Earn rewards when they become active users</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>Track your progress and earnings in real-time on this dashboard</span>
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>Track progress and earnings in real-time on this dashboard</span>
                       </li>
                     </ul>
                   </div>
@@ -389,60 +423,68 @@ export default function InfluencerDashboard() {
               <p className="text-white/60">Track your progress toward earning rewards</p>
             </motion.div>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {stats.milestones.map((milestone, index) => (
                 <motion.div
                   key={milestone.users}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm"
+                  className="p-4 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-sm"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
-                          milestone.achieved ? "from-primary to-accent" : "from-white/5 to-white/5"
-                        } flex items-center justify-center`}
-                        style={
-                          milestone.achieved
-                            ? {}
-                            : {
-                                border: `2px solid ${milestone.color}40`,
-                              }
-                        }
-                      >
-                        {milestone.achieved ? (
-                          <CheckCircle2 className="w-6 h-6 text-white" />
-                        ) : (
-                          <Award className="w-6 h-6" style={{ color: milestone.color }} />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          {milestone.users} Active Users
-                        </h3>
-                        <p className="text-white/60 text-sm">
-                          {milestone.achieved
-                            ? `Achieved on ${new Date(milestone.achievedDate).toLocaleDateString()}`
-                            : `${milestone.progress || 0}/${milestone.users} users`}
-                        </p>
+                  <div className="mb-3">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg bg-gradient-to-br ${
+                            milestone.achieved ? "from-primary to-accent" : "from-white/5 to-white/5"
+                          } flex items-center justify-center flex-shrink-0`}
+                          style={
+                            milestone.achieved
+                              ? {}
+                              : {
+                                  border: `2px solid ${milestone.color}40`,
+                                }
+                          }
+                        >
+                          {milestone.achieved ? (
+                            <CheckCircle2 className="w-5 h-5 text-white" />
+                          ) : (
+                            <Award className="w-5 h-5" style={{ color: milestone.color }} />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-white">
+                            {milestone.users} Active Users
+                          </h3>
+                          <p className="text-white/60 text-xs">
+                            {milestone.achieved && milestone.achievedDate
+                              ? `Achieved ${new Date(milestone.achievedDate).toLocaleDateString()}`
+                              : `${milestone.progress || 0}/${milestone.users} users`}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                         {milestone.reward}
                       </p>
                       {milestone.achieved && (
-                        <p className="text-xs text-green-400 mt-1">✓ Paid</p>
+                        <div>
+                          {(milestone as any).paymentStatus === "paid" ? (
+                            <p className="text-xs text-green-400">✓ Paid</p>
+                          ) : (
+                            <p className="text-xs text-yellow-400">⏳ Pending</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {!milestone.achieved && milestone.progress !== undefined && (
-                    <div className="mt-4">
-                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div className="mt-3">
+                      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                         <motion.div
                           className="h-full rounded-full"
                           style={{
@@ -455,17 +497,97 @@ export default function InfluencerDashboard() {
                           transition={{ duration: 1, delay: index * 0.1 }}
                         />
                       </div>
-                      <p className="text-xs text-white/50 mt-2">
-                        {milestone.users - milestone.progress} more users needed
+                      <p className="text-xs text-white/50 mt-1.5">
+                        {milestone.users - milestone.progress} more needed
                       </p>
                     </div>
                   )}
                 </motion.div>
               ))}
             </div>
+
+            {/* Disclaimer and Active User Info */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-8 p-6 rounded-2xl bg-white/[0.02] border border-white/5"
+            >
+              <p className="text-sm text-white/60 mb-4 text-center">
+                *Only fully active users are counted. Spam or inactive accounts are excluded.
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setShowActiveModal(true)}
+                  className="text-sm text-primary hover:text-accent transition-colors flex items-center gap-1 underline"
+                >
+                  <Info className="w-4 h-4" />
+                  What qualifies as an active user?
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Program Limits Notice */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20"
+            >
+              <p className="text-sm text-yellow-400 text-center">
+                <strong>Note:</strong> Referral rewards are currently limited and may pause at any time. This is an invite-only program.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
+
+      {/* Active User Requirements Modal */}
+      {showActiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative max-w-md w-full p-6 rounded-2xl bg-[#0a0a0f] border border-white/10"
+          >
+            <button
+              onClick={() => setShowActiveModal(false)}
+              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-4">What Qualifies as an Active User?</h3>
+            <p className="text-white/70 mb-6">
+              To count toward your milestones, referred users must complete all of the following:
+            </p>
+            <ul className="space-y-3">
+              {[
+                "Profile photo uploaded",
+                "Bio completed",
+                "At least 1 story posted",
+                "At least 1 community post",
+                "Account active for 48-72 hours",
+              ].map((requirement, index) => (
+                <li key={index} className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-white/80">{requirement}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-sm text-white/60">
+                <strong className="text-white">Why these requirements?</strong> We want to reward you for bringing real, engaged users to Nomli Mingle—not spam accounts or inactive profiles.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowActiveModal(false)}
+              className="mt-6 w-full px-6 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold"
+            >
+              Got it
+            </button>
+          </motion.div>
+        </div>
+      )}
 
       {/* Recent Activity */}
       <section className="relative py-12">
