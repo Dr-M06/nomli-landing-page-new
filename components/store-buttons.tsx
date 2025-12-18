@@ -14,6 +14,7 @@ interface StoreButtonsProps {
 export function StoreButtons({ className = "", size = "default" }: StoreButtonsProps) {
   const [showComingSoon, setShowComingSoon] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isRedirectingIOS, setIsRedirectingIOS] = useState(false)
 
   const isLarge = size === "large"
 
@@ -33,6 +34,25 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
       }
       
       setIsRedirecting(false)
+    }, 1500)
+  }
+
+  const handleAppStoreClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsRedirectingIOS(true)
+
+    const appStoreUrl = "https://apps.apple.com/us/app/nomli-mingle/id6754324967"
+
+    // Show loading for 1.5s then redirect
+    setTimeout(() => {
+      const newWindow = window.open(appStoreUrl, "_blank", "noopener,noreferrer")
+      
+      // If popup was blocked, fallback to direct navigation
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
+        window.location.href = appStoreUrl
+      }
+      
+      setIsRedirectingIOS(false)
     }, 1500)
   }
 
@@ -105,12 +125,13 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
 
         {/* App Store Button */}
         <motion.button
-          onClick={() => setShowComingSoon(true)}
-          className={`inline-flex items-center gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all ${
+          onClick={handleAppStoreClick}
+          disabled={isRedirectingIOS}
+          className={`inline-flex items-center gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all disabled:opacity-80 ${
             isLarge ? "px-6 py-4" : "px-5 py-3"
           }`}
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: isRedirectingIOS ? 1 : 1.02, y: isRedirectingIOS ? 0 : -2 }}
+          whileTap={{ scale: isRedirectingIOS ? 1 : 0.98 }}
         >
           {/* Apple Icon */}
           <svg viewBox="0 0 24 24" className={isLarge ? "w-8 h-8" : "w-7 h-7"} fill="currentColor">
@@ -118,7 +139,7 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
           </svg>
           <div className="text-left">
             <span className={`block uppercase tracking-wider text-white/70 ${isLarge ? "text-xs" : "text-[10px]"}`}>
-              Coming soon on
+              GET IT ON
             </span>
             <span className={`font-semibold ${isLarge ? "text-xl" : "text-lg"}`}>App Store</span>
           </div>
@@ -127,7 +148,7 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
 
       {/* Loading Animation Overlay */}
       <AnimatePresence>
-        {isRedirecting && (
+        {(isRedirecting || isRedirectingIOS) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -163,7 +184,7 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
               >
-                Opening Play Store
+                {isRedirectingIOS ? "Opening App Store" : "Opening Play Store"}
               </motion.p>
               <p className="text-white/50 text-sm">Get ready to mingle...</p>
 
