@@ -67,18 +67,20 @@ export function Header() {
         <div className="container mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <motion.a
-            href="#"
+            href="/"
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="relative w-10 h-10">
+            <div className="relative w-10 h-10 flex-shrink-0">
               <Image
                 src="/icon.png"
                 alt="Nomli Mingle Logo"
                 fill
                 className="object-contain"
                 priority
+                sizes="40px"
+                unoptimized
               />
             </div>
             <span className="text-xl font-bold text-foreground">Nomli Mingle</span>
