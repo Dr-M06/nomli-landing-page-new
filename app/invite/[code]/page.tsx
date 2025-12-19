@@ -211,6 +211,18 @@ export default function InvitePage() {
               Download for Android
               <ArrowRight className="w-5 h-5" />
             </motion.a>
+            <motion.a
+              href="https://apps.apple.com/us/app/nomli-mingle/id6754324967"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-lg shadow-lg shadow-primary/30"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Download className="w-5 h-5" />
+              Download for iOS
+              <ArrowRight className="w-5 h-5" />
+            </motion.a>
             <Link href="/">
               <motion.button
                 className="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
