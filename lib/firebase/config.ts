@@ -55,9 +55,14 @@ if (getApps().length === 0) {
     // Only initialize if we have at least the project ID
     if (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
       app = initializeApp(firebaseConfig)
-      console.log("✅ Firebase initialized successfully")
+      // Only log in development to avoid exposing info in production
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ Firebase initialized successfully")
+      }
     } else {
-      console.warn("⚠️ Firebase not initialized - missing environment variables")
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️ Firebase not initialized - missing environment variables")
+      }
     }
   } catch (error: any) {
     console.error("❌ Firebase initialization error:", error.message)
@@ -94,7 +99,7 @@ export const getAuthInstance = () => {
 export const db = app ? getDb() : null as any
 export const auth = typeof window !== "undefined" && app ? getAuthInstance() : null as any
 
-if (!app && typeof window === "undefined") {
+if (!app && typeof window === "undefined" && process.env.NODE_ENV === "development") {
   console.warn("⚠️ Firestore not available - Firebase not initialized")
 }
 
