@@ -19,9 +19,6 @@ export function LivestreamSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              SECTION 4 — LIVESTREAM SPOTLIGHT
-            </span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1a1a1a] mb-6">
               Go Live.
               <br />

@@ -27,9 +27,6 @@ export function SafetySection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-6">
-            SECTION 5 — ENHANCED SAFETY
-          </span>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1a1a1a] mb-6">Your safety matters.</h2>
           <p className="text-xl text-[#666] max-w-2xl mx-auto">
             Built with privacy and security at its core. Your data, your control.

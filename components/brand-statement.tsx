@@ -33,9 +33,6 @@ export function BrandStatement() {
           transition={{ duration: 1 }}
           className="text-center"
         >
-          <span className="inline-block px-4 py-2 rounded-full glass text-muted-foreground text-sm font-medium mb-8">
-            SECTION 7 — BRAND STATEMENT
-          </span>
 
           <h2 className="text-5xl sm:text-6xl lg:text-8xl font-bold mb-8">
             <span className="gradient-text">Beyond Borders.</span>

@@ -18,9 +18,6 @@ export function WalletSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-block px-4 py-2 rounded-full bg-violet-100 text-violet-600 text-sm font-medium mb-6">
-              SECTION 6 — NOMLI WALLET
-            </span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1a1a1a] mb-6">
               Wallet & Naira Payments
               <br />
