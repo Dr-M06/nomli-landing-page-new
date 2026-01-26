@@ -11,6 +11,7 @@ const navLinks = [
   { name: "Features", href: "#features" },
   { name: "App", href: "#app-preview" },
   { name: "Safety", href: "#safety" },
+  { name: "Challenge", href: "#challenge" },
   { name: "Download", href: "#download" },
 ]
 
