@@ -12,6 +12,7 @@ const navLinks = [
   { name: "App", href: "#app-preview" },
   { name: "Safety", href: "#safety" },
   { name: "Challenge", href: "#challenge" },
+  { name: "FAQ", href: "#faq" },
   { name: "Download", href: "#download" },
 ]
 
