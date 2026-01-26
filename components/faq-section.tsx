@@ -439,12 +439,12 @@ export function FaqSection() {
     <section
       id="faq"
       ref={ref}
-      className="relative py-32 bg-gradient-to-b from-background to-[#fafafa] overflow-hidden"
+      className="relative py-32 bg-gradient-to-b from-white via-[#fafafa] to-white overflow-hidden"
     >
       {/* Background Effects */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[180px]" />
-        <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
+        <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[180px]" />
+        <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-accent/3 rounded-full blur-[150px]" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -482,17 +482,17 @@ export function FaqSection() {
               className="mb-12"
             >
               <h3 className="text-2xl font-bold text-[#1a1a1a] mb-6">{category.title}</h3>
-              <Accordion type="single" collapsible className="w-full space-y-2">
+              <Accordion type="single" collapsible className="w-full space-y-3">
                 {category.items.map((item, itemIndex) => (
                   <AccordionItem
                     key={item.question}
                     value={`${categoryIndex}-${itemIndex}`}
-                    className="bg-white rounded-xl border border-gray-200 px-6 shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white rounded-xl border border-gray-100 px-6 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all"
                   >
-                    <AccordionTrigger className="text-left font-semibold text-[#1a1a1a] hover:no-underline py-6">
+                    <AccordionTrigger className="text-left font-semibold text-[#1a1a1a] hover:no-underline py-6 hover:text-primary transition-colors">
                       {item.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-[#666] leading-relaxed pb-6">
+                    <AccordionContent className="text-[#555] leading-relaxed pb-6">
                       {item.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -509,7 +509,7 @@ export function FaqSection() {
           transition={{ delay: 1, duration: 0.6 }}
           className="text-center mt-16"
         >
-          <div className="inline-block p-8 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
+          <div className="inline-block p-8 rounded-2xl bg-white border border-gray-200 shadow-lg">
             <h3 className="text-2xl font-bold text-[#1a1a1a] mb-3">Still Have Questions?</h3>
             <p className="text-[#666] mb-4">
               If you can't find the answer you're looking for, contact our support team:
