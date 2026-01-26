@@ -290,16 +290,18 @@ const faqCategories = [
       {
         question: "How do I report inappropriate content or users?",
         answer: (
-          <ol className="list-decimal list-inside space-y-1 ml-4">
-            <li>Tap the three dots (⋯) on any post, message, or profile</li>
-            <li>Select "Report"</li>
-            <li>Choose the reason for reporting</li>
-            <li>Add any additional details</li>
-            <li>Submit your report</li>
-          </ol>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Our moderation team reviews all reports and takes appropriate action. You can also block users directly from their profile.
-          </p>
+          <div>
+            <ol className="list-decimal list-inside space-y-1 ml-4">
+              <li>Tap the three dots (⋯) on any post, message, or profile</li>
+              <li>Select "Report"</li>
+              <li>Choose the reason for reporting</li>
+              <li>Add any additional details</li>
+              <li>Submit your report</li>
+            </ol>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Our moderation team reviews all reports and takes appropriate action. You can also block users directly from their profile.
+            </p>
+          </div>
         ),
       },
     ],
