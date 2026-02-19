@@ -37,9 +37,6 @@ const faqCategories = [
         question: "How do I withdraw my earnings?",
         answer: (
           <div className="space-y-3">
-            <p className="font-semibold text-primary">
-              Important: Token purchases and withdrawals are temporarily unavailable. We're working to restore these features soon.
-            </p>
             <p>When withdrawals are available, you'll be able to:</p>
             <ol className="list-decimal list-inside space-y-2 ml-4">
               <li>
@@ -50,7 +47,7 @@ const faqCategories = [
               </li>
             </ol>
             <p className="text-sm text-muted-foreground">
-              Note: You can continue earning tokens through the Daily Contributor Program by liking and commenting on posts. Check the Daily Scoreboard to claim your rewards!
+              You can buy tokens in-app on iOS and Android, and earn more through the Daily Contributor Program by liking and commenting on posts. Check the Daily Scoreboard to claim your rewards!
             </p>
           </div>
         ),
@@ -60,9 +57,10 @@ const faqCategories = [
         answer: (
           <div className="space-y-3">
             <p className="font-semibold text-primary">
-              Token purchases are temporarily unavailable. We're working to restore this feature soon.
+              Yes! You can buy tokens in-app on both Apple (iOS) and Android.
             </p>
-            <p>For now, you can earn tokens by:</p>
+            <p>Open the Nomli Mingle app, go to the Wallet section, and follow the in-app purchase flow for your device.</p>
+            <p>You can also earn tokens by:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Participating in the Daily Contributor Program (like and comment on posts)</li>
               <li>Receiving gifts during livestreams (if you're a streamer)</li>
@@ -280,10 +278,8 @@ const faqCategories = [
         question: "How do I verify my bank account for withdrawals?",
         answer: (
           <div className="space-y-3">
-            <p className="font-semibold text-primary">
-              Note: Token purchases and withdrawals are temporarily unavailable. When these features are restored, you'll be able to verify your bank account through your Profile settings.
-            </p>
-            <p>For now, you can continue earning tokens through the Daily Contributor Program by engaging with community posts!</p>
+            <p>When withdrawals are available, you can verify your bank account through Profile → Settings in the app.</p>
+            <p>You can buy tokens in-app on iOS and Android anytime, and earn more through the Daily Contributor Program by engaging with community posts.</p>
           </div>
         ),
       },

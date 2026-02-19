@@ -2,26 +2,42 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Loader2 } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-const navLinks = [
-  { name: "Features", href: "#features" },
-  { name: "App", href: "#app-preview" },
-  { name: "Safety", href: "#safety" },
-  { name: "Challenge", href: "#challenge" },
-  { name: "FAQ", href: "#faq" },
-  { name: "Download", href: "#download" },
+// Dropdown groups (Wallet and Download stay as single links)
+const navDropdowns = [
+  {
+    label: "Explore",
+    links: [
+      { name: "Features", href: "#features" },
+      { name: "App", href: "#app-preview" },
+      { name: "Safety", href: "#safety" },
+    ],
+  },
+  {
+    label: "Community",
+    links: [
+      { name: "FAQ", href: "#faq" },
+    ],
+  },
 ]
 
-const FACEBOOK_LINK = "https://www.facebook.com/people/Nomli-Mingle/61578108320450/"
+const navSingleLinks = [
+  { name: "Wallet", href: "https://wallet.nomlimingle.com", external: true },
+]
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,23 +55,6 @@ export function Header() {
     setIsMobileMenuOpen(false)
   }
 
-  const openCommunity = () => {
-    setIsRedirecting(true)
-    setIsMobileMenuOpen(false)
-
-    // Show loading for 1.5s then redirect
-    setTimeout(() => {
-      const newWindow = window.open(FACEBOOK_LINK, "_blank", "noopener,noreferrer")
-      
-      // If popup was blocked, fallback to direct navigation
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
-        window.location.href = FACEBOOK_LINK
-      }
-      
-      setIsRedirecting(false)
-    }, 1500)
-  }
-
   return (
     <>
       <motion.header
@@ -66,74 +65,95 @@ export function Header() {
           isScrolled ? "glass py-3" : "bg-transparent py-5"
         }`}
       >
-        <div className="container mx-auto px-6 flex items-center justify-between">
+        <div className="container mx-auto px-6 lg:px-10 flex items-center justify-between gap-8">
           {/* Logo */}
           <motion.a
             href="/"
-            className="flex items-center gap-3"
+            className="flex items-center gap-2 flex-shrink-0"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="relative w-10 h-10 flex-shrink-0">
+            <div className="relative w-8 h-8 flex-shrink-0">
               <Image
                 src="/icon.png"
                 alt="Nomli Mingle Logo"
                 fill
                 className="object-contain"
                 priority
-                sizes="40px"
+                sizes="32px"
                 unoptimized
               />
             </div>
-            <span className="text-xl font-bold text-foreground">Nomli Mingle</span>
+            <span className="text-base font-bold text-foreground">Nomli Mingle</span>
           </motion.a>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link, index) => (
-              <motion.a
-                key={link.name}
-                href={link.href}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.4 }}
-                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
-                whileHover={{ y: -2 }}
-              >
-                {link.name}
-              </motion.a>
-            ))}
-          </nav>
+          {/* Desktop: Nav + CTAs grouped so no big gap in middle */}
+          <div className="hidden md:flex items-center gap-8 flex-shrink-0">
+            {/* Navigation - dropdowns + Wallet & Download */}
+            <nav className="flex items-center gap-6">
+              {navDropdowns.map((dropdown) => (
+                <DropdownMenu key={dropdown.label}>
+                  <DropdownMenuTrigger asChild>
+                    <motion.button
+                      className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium whitespace-nowrap py-2 px-3 rounded-lg hover:bg-white/5 flex items-center gap-1 outline-none"
+                      whileHover={{ y: -2 }}
+                    >
+                      {dropdown.label}
+                      <ChevronDown className="w-4 h-4 opacity-70" />
+                    </motion.button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="min-w-[10rem] !bg-white dark:!bg-gray-900 !text-[#1a1a1a] dark:!text-gray-100 border border-gray-200 dark:border-gray-700 shadow-xl"
+                  >
+                    {dropdown.links.map((link) => (
+                      <DropdownMenuItem key={link.name} asChild>
+                        <a
+                          href={link.href}
+                          className="cursor-pointer !text-[#1a1a1a] dark:!text-gray-100 focus:!bg-gray-100 dark:focus:!bg-gray-800 focus:!text-[#1a1a1a] dark:focus:!text-gray-100"
+                        >
+                          {link.name}
+                        </a>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ))}
+              {navSingleLinks.map((link) => (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium whitespace-nowrap py-2 px-3 rounded-lg hover:bg-white/5"
+                  whileHover={{ y: -2 }}
+                >
+                  {link.name}
+                </motion.a>
+              ))}
+            </nav>
 
-          {/* CTA Buttons - CHANGE: Added onClick handlers */}
-          <div className="hidden md:flex items-center gap-3">
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-3 border-l border-white/15 pl-6">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
               <Button 
                 variant="ghost" 
-                className="text-muted-foreground hover:text-foreground" 
+                size="sm"
+                className="text-muted-foreground hover:text-foreground text-sm" 
                 asChild
               >
                 <Link href="/influencer/auth">Become an Influencer</Link>
               </Button>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-              <Button 
-                variant="ghost" 
-                className="text-muted-foreground hover:text-foreground" 
-                onClick={openCommunity}
-                disabled={isRedirecting}
-              >
-                Join Community
-              </Button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
               <Button
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground rounded-full px-6"
+                size="sm"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground rounded-full px-4 text-sm h-8"
                 onClick={scrollToDownload}
               >
                 Download App
               </Button>
             </motion.div>
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -157,10 +177,30 @@ export function Header() {
             className="fixed inset-0 z-40 glass pt-24 px-6 md:hidden"
           >
             <nav className="flex flex-col gap-6">
-              {navLinks.map((link, index) => (
+              {navDropdowns.map((dropdown) => (
+                <div key={dropdown.label}>
+                  <p className="text-sm font-medium text-muted-foreground mb-2 px-1">{dropdown.label}</p>
+                  <div className="flex flex-col gap-2 pl-2">
+                    {dropdown.links.map((link) => (
+                      <motion.a
+                        key={link.name}
+                        href={link.href}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-xl font-semibold text-foreground py-1"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {link.name}
+                      </motion.a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {navSingleLinks.map((link, index) => (
                 <motion.a
                   key={link.name}
                   href={link.href}
+                  {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -178,84 +218,11 @@ export function Header() {
                 >
                   <Link href="/influencer/auth" onClick={() => setIsMobileMenuOpen(false)}>Become an Influencer</Link>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-transparent" 
-                  onClick={openCommunity}
-                  disabled={isRedirecting}
-                >
-                  Join Community
-                </Button>
                 <Button className="w-full bg-gradient-to-r from-primary to-primary/80" onClick={scrollToDownload}>
                   Download App
                 </Button>
               </div>
             </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading Animation Overlay */}
-      <AnimatePresence>
-        {isRedirecting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="relative flex flex-col items-center"
-            >
-              {/* Animated rings */}
-              <div className="relative w-24 h-24 mb-6">
-                <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-primary/30"
-                  animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
-                />
-                <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-accent/30"
-                  animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, delay: 0.3 }}
-                />
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-white animate-spin" />
-                </div>
-              </div>
-
-              {/* Text */}
-              <motion.p
-                className="text-white text-lg font-medium mb-2"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-              >
-                Opening Facebook
-              </motion.p>
-              <p className="text-white/50 text-sm">Join our community...</p>
-
-              {/* Progress dots */}
-              <div className="flex gap-2 mt-4">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-primary"
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.3, 1, 0.3],
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      repeat: Number.POSITIVE_INFINITY,
-                      delay: i * 0.2,
-                    }}
-                  />
-                ))}
-              </div>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -38,9 +38,8 @@ const features = [
   {
     icon: Wallet,
     title: "Wallet & Payments",
-    description: "Buy tokens, receive gifts, and withdraw in Naira. Coming soon!",
+    description: "Buy tokens in-app on iOS and Android. Send and receive gifts, and manage your wallet.",
     gradient: "from-violet-500 to-purple-400",
-    comingSoon: true,
   },
 ]
 

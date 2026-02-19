@@ -6,7 +6,6 @@ import { LivestreamSection } from "@/components/livestream-section"
 import { SafetySection } from "@/components/safety-section"
 import { WalletSection } from "@/components/wallet-section"
 import { BrandStatement } from "@/components/brand-statement"
-import { ChallengeSection } from "@/components/challenge-section"
 import { FaqSection } from "@/components/faq-section"
 import { DownloadCta } from "@/components/download-cta"
 import { Footer } from "@/components/footer"
@@ -24,7 +23,6 @@ export default function Home() {
       <SafetySection />
       <WalletSection />
       <BrandStatement />
-      <ChallengeSection />
       <FaqSection />
       <DownloadCta />
       <Footer />
