@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Don't ship source maps in production — makes inspected code harder to follow
+  productionBrowserSourceMaps: false,
 }
 
 export default nextConfig

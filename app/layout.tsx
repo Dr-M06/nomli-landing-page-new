@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s | Nomli Mingle",
   },
   description:
-    "Join Nomli Mingle - A next-generation social networking app. Livestream, chat, make video calls, discover events, and build real communities. Connect with people who share your interests. Available on Android.",
+    "Nomli Mingle — dating, livestreaming, chat, and communities in one app. Connect with people who share your interests. Available on Android and iOS.",
   keywords: [
     "social app",
     "livestream app",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     url: "https://nomlimingle.com",
     title: "Nomli Mingle - Beyond Borders. Beyond Limits.",
     description:
-      "Join Nomli Mingle - Livestream, chat, make video calls, discover events, and build real communities. Connect with people who share your interests.",
+      "Nomli Mingle — dating, livestreaming, chat, and communities. Connect with people who share your interests.",
     siteName: "Nomli Mingle",
     images: [
       {
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     creator: "@nomlimingle",
     title: "Nomli Mingle - Beyond Borders. Beyond Limits.",
     description:
-      "Join Nomli Mingle - Livestream, chat, make video calls, discover events, and build real communities. Connect with people who share your interests.",
+      "Nomli Mingle — dating, livestreaming, chat, and communities. Connect with people who share your interests.",
     images: {
       url: "https://nomlimingle.com/twitter-image.png",
       alt: "Nomli Mingle - Social networking app for livestreaming, video calls, and community building",

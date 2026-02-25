@@ -1,11 +1,6 @@
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { FeaturesSection } from "@/components/features-section"
-import { AppPreviewSection } from "@/components/app-preview-section"
-import { LivestreamSection } from "@/components/livestream-section"
-import { SafetySection } from "@/components/safety-section"
-import { WalletSection } from "@/components/wallet-section"
-import { BrandStatement } from "@/components/brand-statement"
 import { FaqSection } from "@/components/faq-section"
 import { DownloadCta } from "@/components/download-cta"
 import { Footer } from "@/components/footer"
@@ -18,11 +13,6 @@ export default function Home() {
       <Header />
       <HeroSection />
       <FeaturesSection />
-      <AppPreviewSection />
-      <LivestreamSection />
-      <SafetySection />
-      <WalletSection />
-      <BrandStatement />
       <FaqSection />
       <DownloadCta />
       <Footer />

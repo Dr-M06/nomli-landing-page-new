@@ -9,9 +9,9 @@ import { Instagram, Twitter, Loader2, X as XIcon, Sparkles } from "lucide-react"
 const footerLinks = [
   { name: "About", href: "/about" },
   { name: "Support", href: "mailto:hello@nomli.cc" },
+  { name: "Wallet", href: "https://wallet.nomlimingle.com", external: true },
   { name: "Privacy", href: "/privacy" },
   { name: "Terms", href: "/terms" },
-  { name: "Contact", href: "mailto:hello@nomli.cc" },
 ]
 
 const TIKTOK_LINK = "https://www.tiktok.com/@nomli_mingle?lang=en"
@@ -38,91 +38,77 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-white border-t border-gray-100 py-16">
+    <footer className="bg-white border-t border-gray-100 py-12">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-          {/* Logo & Tagline */}
-          <div className="text-center lg:text-left">
-            <Link href="/">
-              <motion.div
-                className="flex items-center gap-3 justify-center lg:justify-start mb-2"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="relative w-10 h-10 flex-shrink-0">
-                  <Image
-                    src="/icon.png"
-                    alt="Nomli Mingle Logo"
-                    fill
-                    className="object-contain"
-                    sizes="40px"
-                    unoptimized
-                  />
-                </div>
-                <span className="text-xl font-bold text-[#1a1a1a]">Nomli Mingle</span>
-              </motion.div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="text-center sm:text-left">
+            <Link href="/" className="flex items-center gap-2 justify-center sm:justify-start mb-1">
+              <div className="relative w-8 h-8 flex-shrink-0">
+                <Image
+                  src="/icon.png"
+                  alt="Nomli Mingle"
+                  fill
+                  className="object-contain"
+                  sizes="32px"
+                  unoptimized
+                />
+              </div>
+              <span className="font-bold text-[#1a1a1a]">Nomli Mingle</span>
             </Link>
-            <p className="text-[#666]">Beyond Borders. Beyond Limits.</p>
-            <a href="mailto:hello@nomli.cc" className="text-sm text-primary hover:underline mt-1 inline-block">
-              hello@nomli.cc
-            </a>
+            <p className="text-sm text-[#666]">Beyond Borders. Beyond Limits.</p>
           </div>
 
-          {/* Links */}
           <nav className="flex flex-wrap items-center justify-center gap-6">
             {footerLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-[#666] hover:text-[#1a1a1a] transition-colors text-sm font-medium"
+                {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
+                className="text-sm text-[#666] hover:text-[#1a1a1a] transition-colors"
               >
                 {link.name}
               </Link>
             ))}
             <Link
               href="/influencer/auth"
-              className="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold text-sm hover:shadow-lg hover:shadow-primary/30 transition-all"
+              className="text-sm text-primary font-medium hover:underline"
             >
-              Become an Influencer
+              Influencer
             </Link>
           </nav>
 
-          {/* Social Links */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <motion.a
               href="https://www.instagram.com/nomli_minglehq/?hl=en"
               target="_blank"
               rel="noopener noreferrer"
-              whileHover={{ scale: 1.1, y: -2 }}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-primary hover:text-white transition-colors"
-              aria-label="Follow us on Instagram"
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+              aria-label="Instagram"
             >
-              <Instagram className="w-5 h-5" />
+              <Instagram className="w-4 h-4" />
             </motion.a>
             <motion.button
               onClick={handleTikTokClick}
               disabled={isRedirecting}
-              whileHover={{ scale: isRedirecting ? 1 : 1.1, y: isRedirecting ? 0 : -2 }}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
-              aria-label="Follow us on TikTok"
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50"
+              aria-label="TikTok"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
               </svg>
             </motion.button>
             <motion.button
               onClick={() => setShowXComingSoon(true)}
-              whileHover={{ scale: 1.1, y: -2 }}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-primary hover:text-white transition-colors"
-              aria-label="Follow us on X (Coming Soon)"
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#666] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+              aria-label="X (Coming Soon)"
             >
-              <Twitter className="w-5 h-5" />
+              <Twitter className="w-4 h-4" />
             </motion.button>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-gray-100 text-center">
-          <p className="text-sm text-[#999]">© {new Date().getFullYear()} Nomli Mingle. All rights reserved.</p>
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-xs text-[#999]">© {new Date().getFullYear()} Nomli Mingle.</p>
         </div>
       </div>
 

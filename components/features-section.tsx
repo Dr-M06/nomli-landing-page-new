@@ -2,106 +2,71 @@
 
 import { motion, useInView } from "framer-motion"
 import { useRef } from "react"
-import { MessageSquare, Video, Mic, Users, Shield, Wallet } from "lucide-react"
+import { Video, MessageSquare, Users, Heart, Shield } from "lucide-react"
 
 const features = [
   {
-    icon: MessageSquare,
-    title: "Media Chat",
-    description: "Send photos, videos, and voice notes with 24-hour auto-delete for your privacy.",
-    gradient: "from-blue-500 to-cyan-400",
+    icon: Heart,
+    title: "Dating",
+    description: "Match and meet people who share your interests. Nearby or worldwide.",
   },
   {
     icon: Video,
-    title: "Multi-Guest Livestream",
-    description: "Go live and add up to 3 guests — flip cameras, send join requests, and interact instantly.",
-    gradient: "from-primary to-purple-400",
+    title: "Livestream",
+    description: "Go live with up to 3 guests. Real-time reactions, low latency.",
   },
   {
-    icon: Mic,
-    title: "Voice & Video Calls",
-    description: "Crystal-clear calls with low latency, connecting you anywhere in the world.",
-    gradient: "from-pink-500 to-rose-400",
+    icon: MessageSquare,
+    title: "Chat & calls",
+    description: "Rich messaging, voice and video calls. Media that auto-expires.",
   },
   {
     icon: Users,
-    title: "Communities & Events",
-    description: "Create events, discover interests, and meet people naturally in themed communities.",
-    gradient: "from-orange-500 to-amber-400",
+    title: "Communities",
+    description: "Events, interests, and meetups. Find your people.",
   },
   {
     icon: Shield,
-    title: "Privacy First",
-    description: "Location toggle, blocking, reporting, safe content features, and +18 streamer badge.",
-    gradient: "from-accent to-teal-400",
-  },
-  {
-    icon: Wallet,
-    title: "Wallet & Payments",
-    description: "Buy tokens in-app on iOS and Android. Send and receive gifts, and manage your wallet.",
-    gradient: "from-violet-500 to-purple-400",
+    title: "Privacy first",
+    description: "Your data, your control. Block, report, stay safe.",
   },
 ]
 
 export function FeaturesSection() {
   const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const isInView = useInView(ref, { once: true, margin: "-80px" })
 
   return (
-    <section id="features" ref={ref} className="relative py-32 bg-[#fafafa] overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50" />
-
+    <section id="features" ref={ref} className="relative py-24 sm:py-32 bg-[#fafafa] overflow-hidden">
       <div className="container mx-auto px-6 relative z-10">
-        {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-20"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1a1a1a] mb-6 text-balance">
-            Everything you need to connect.
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-3">
+            Everything you need.
           </h2>
-          <p className="text-xl text-[#666] max-w-2xl mx-auto">
-            Powerful features designed to bring people together, foster communities, and create meaningful connections.
+          <p className="text-lg text-[#666] max-w-md mx-auto">
+            Connect, create, and build communities.
           </p>
         </motion.div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-6xl mx-auto">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-              className="group relative"
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+              className="bg-white rounded-2xl p-6 border border-gray-100"
             >
-              <div className="relative bg-white rounded-3xl p-8 h-full border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500">
-                {feature.comingSoon && (
-                  <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                    Coming Soon
-                  </span>
-                )}
-
-                {/* Icon */}
-                <div
-                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} p-4 mb-6 group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <feature.icon className="w-full h-full text-white" />
-                </div>
-
-                {/* Content */}
-                <h3 className="text-xl font-bold text-[#1a1a1a] mb-3">{feature.title}</h3>
-                <p className="text-[#666] leading-relaxed">{feature.description}</p>
-
-                {/* Hover Gradient Line */}
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${feature.gradient} rounded-b-3xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
-                />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <feature.icon className="w-6 h-6 text-primary" />
               </div>
+              <h3 className="font-semibold text-[#1a1a1a] mb-1">{feature.title}</h3>
+              <p className="text-sm text-[#666] leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>
