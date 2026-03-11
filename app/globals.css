@@ -218,6 +218,35 @@ html {
   }
 }
 
+/* Web wallet popup */
+@keyframes web-wallet-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes web-wallet-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.web-wallet-overlay {
+  animation: web-wallet-fade-in 0.25s ease-out;
+}
+
+.web-wallet-card {
+  animation: web-wallet-scale-in 0.3s ease-out;
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }

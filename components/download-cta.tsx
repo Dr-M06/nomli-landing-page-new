@@ -28,6 +28,17 @@ export function DownloadCta() {
             Download free on the App Store and Google Play.
           </p>
           <StoreButtons size="large" className="justify-center" />
+          <p className="text-sm text-[#888] mt-6">
+            In-app purchases not available in your region?{" "}
+            <a
+              href="https://wallet.nomlimingle.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Use our Web Wallet
+            </a>
+          </p>
         </motion.div>
       </div>
     </section>

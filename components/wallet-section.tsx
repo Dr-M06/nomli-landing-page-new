@@ -22,7 +22,16 @@ export function WalletSection() {
               Wallet & Tokens
             </h2>
             <p className="text-xl text-[#666] mb-8 leading-relaxed">
-              Buy tokens in-app on Apple and Android. Send gifts, receive gifts, and manage your wallet — seamlessly integrated into your Nomli experience.
+              Buy tokens in-app on Apple and Android. Send gifts, receive gifts, and manage your wallet — seamlessly integrated into your Nomli experience. In regions where in-app purchase isn&apos;t available, you can use our{" "}
+              <a
+                href="https://wallet.nomlimingle.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline font-medium"
+              >
+                Web Wallet
+              </a>
+              .
             </p>
 
             {/* Wallet Features */}

@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
-const faqItems = [
+const faqItems: { question: string; answer: React.ReactNode }[] = [
   {
     question: "What is Nomli Mingle?",
     answer: "One app for dating, livestreaming, chat, and communities. Connect with people nearby or worldwide.",
@@ -25,6 +25,18 @@ const faqItems = [
   {
     question: "How do I earn or use tokens?",
     answer: "Buy tokens in-app (iOS and Android). Earn by receiving livestream gifts or through the Daily Contributor Program. Use them for gifts and in-app features.",
+  },
+  {
+    question: "Can't buy tokens in my region?",
+    answer: (
+      <>
+        Some regions don&apos;t support in-app purchases on the App Store or Google Play. You can still buy Mingle tokens securely from our{" "}
+        <a href="https://wallet.nomlimingle.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+          Web Wallet
+        </a>
+        .
+      </>
+    ),
   },
   {
     question: "How do I sign up or reset my password?",
