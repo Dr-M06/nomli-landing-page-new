@@ -84,7 +84,7 @@ async function getGoogleAccessToken(serviceAccount: GoogleServiceAccount): Promi
   return tokenData.access_token;
 }
 
-/** Verify purchase with Google Play Developer API (purchases.products.get). */
+/** One-time product (consumable tokens). */
 async function verifyGooglePurchase(
   accessToken: string,
   packageName: string,
@@ -112,6 +112,31 @@ async function verifyGooglePurchase(
   return {
     purchaseState: data.purchaseState ?? 0,
     acknowledgementState: data.acknowledgementState ?? 0,
+  };
+}
+
+/** Auto-renewing subscription (Creator Pro). */
+async function verifyGoogleSubscription(
+  accessToken: string,
+  packageName: string,
+  subscriptionId: string,
+  purchaseToken: string
+): Promise<{ expiryTimeMillis: string; paymentState: number }> {
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/subscriptions/${encodeURIComponent(subscriptionId)}/tokens/${encodeURIComponent(purchaseToken)}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Google Play Subscriptions API error:', res.status, errText);
+    throw new Error(`Google subscription verify failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return {
+    expiryTimeMillis: String(data.expiryTimeMillis ?? ''),
+    paymentState: data.paymentState ?? 0,
   };
 }
 
@@ -162,9 +187,98 @@ serve(async (req) => {
     }
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
+
+    const { data: creatorPlan } = await supabaseClient
+      .from('payment_plans')
+      .select('id, name, token_amount, bonus_tokens')
+      .eq('iap_product_id_google', productId)
+      .eq('plan_category', 'creator')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (creatorPlan) {
+      const sub = await verifyGoogleSubscription(accessToken, PACKAGE_NAME, productId, purchaseToken);
+      // paymentState: 0=pending, 1=received, 2=free trial, 3=pending deferred
+      if (sub.paymentState !== 1 && sub.paymentState !== 2) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Subscription payment state: ${sub.paymentState}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const expMs = parseInt(sub.expiryTimeMillis, 10);
+      if (Number.isNaN(expMs) || expMs <= 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid subscription expiry from Google' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const expiresIso = new Date(expMs).toISOString();
+
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('creator_pro_until')
+        .eq('id', userId)
+        .single();
+
+      const prev = profile?.creator_pro_until ? new Date(profile.creator_pro_until as string).getTime() : 0;
+      const nextUntil = Math.max(prev, expMs);
+
+      const { error: profErr } = await supabaseClient
+        .from('profiles')
+        .update({ creator_pro_until: new Date(nextUntil).toISOString() })
+        .eq('id', userId);
+
+      if (profErr) {
+        console.error('❌ [verify-google-receipt] Creator Pro profile update:', profErr);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to activate Creator Pro' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: existingAudit } = await supabaseClient
+        .from('wallet_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('reference_id', purchaseToken)
+        .eq('transaction_type', 'creator_pro_google')
+        .maybeSingle();
+
+      if (!existingAudit) {
+        await supabaseClient.from('wallet_transactions').insert({
+          user_id: userId,
+          amount: 0,
+          transaction_type: 'creator_pro_google',
+          reference_id: purchaseToken,
+          description: `Creator Pro (Google): ${creatorPlan.name || productId} until ${expiresIso}`,
+          balance_after: 0,
+        });
+
+        const totalTokens =
+          (creatorPlan.token_amount || 0) + (creatorPlan.bonus_tokens || 0);
+        if (totalTokens > 0) {
+          const { error: wErr } = await supabaseClient.rpc('update_wallet_balance', {
+            p_user_id: userId,
+            p_amount: totalTokens,
+            p_transaction_type: 'bonus',
+            p_reference_id: `creator_pro_google:${purchaseToken}`,
+            p_description: `Creator Pro monthly tokens (${creatorPlan.name || productId})`,
+          });
+          if (wErr) {
+            console.warn('⚠️ [verify-google-receipt] Creator Pro token credit failed:', wErr);
+          }
+        }
+      }
+
+      console.log('✅ [verify-google-receipt] Creator Pro (Google) until', expiresIso);
+      return new Response(
+        JSON.stringify({ success: true, kind: 'creator_pro', message: 'Creator Pro active', expiresAt: expiresIso }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const purchase = await verifyGooglePurchase(accessToken, PACKAGE_NAME, productId, purchaseToken);
 
-    // purchaseState: 0 = Purchased, 1 = Canceled, 2 = Pending
     if (purchase.purchaseState !== 0) {
       return new Response(
         JSON.stringify({ success: false, error: `Purchase not in completed state: ${purchase.purchaseState}` }),
@@ -172,16 +286,16 @@ serve(async (req) => {
       );
     }
 
-    // Idempotency: already processed?
-    const { data: existingTransaction } = await supabaseClient
+    const { data: existingTokenPurchase } = await supabaseClient
       .from('wallet_transactions')
       .select('id')
+      .eq('user_id', userId)
       .eq('reference_id', purchaseToken)
       .eq('transaction_type', 'purchase')
-      .single();
+      .maybeSingle();
 
-    if (existingTransaction) {
-      console.log('✅ [verify-google-receipt] Transaction already processed');
+    if (existingTokenPurchase) {
+      console.log('✅ [verify-google-receipt] Token purchase already processed');
       return new Response(
         JSON.stringify({ success: true, message: 'Transaction already processed' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -196,7 +310,7 @@ serve(async (req) => {
     if (packageError || !packageData?.length) {
       console.error('Token package not found:', packageError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Token package not found' }),
+        JSON.stringify({ success: false, error: 'Unknown product (not a token pack or Creator Pro plan)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -272,7 +386,12 @@ serve(async (req) => {
     console.log('✅ [verify-google-receipt] Purchase processed:', { userId, totalTokens, newBalance });
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Purchase processed successfully', tokens: totalTokens }),
+      JSON.stringify({
+        success: true,
+        message: 'Purchase processed successfully',
+        tokens: totalTokens,
+        kind: 'tokens',
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {

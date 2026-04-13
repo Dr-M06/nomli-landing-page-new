@@ -41,7 +41,13 @@ import Toast from 'react-native-toast-message';
 import { supabase } from '../../utils/supabase';
 import { validatePostContent } from '../../utils/contentFilter';
 import { log, warn, error } from '../../utils/productionLogger';
+import { uploadVideoToMux } from '../../utils/muxConfig';
+import { decodeShareMediaPayload, expandShareMediaPayload } from '../../utils/shareImportPayload';
 
+function paramOne(v: string | string[] | undefined): string | undefined {
+  if (v == null) return undefined;
+  return Array.isArray(v) ? v[0] : v;
+}
 
 // Geoapify API key is now stored securely in Edge Function secrets
 // No need to access it client-side
@@ -168,6 +174,9 @@ export default function CreatePostScreen() {
   
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const [pendingSharedVideoUri, setPendingSharedVideoUri] = useState<string | null>(null);
+  const appliedShareMediaKey = useRef<string | null>(null);
+  const sharedVideoUploadStarted = useRef(false);
 
   // Upload progress animation
   const uploadProgressAnim = useSharedValue(0);
@@ -221,6 +230,92 @@ export default function CreatePostScreen() {
       log('[CreatePost] No video data in params - using VideoPicker component');
     }
   }, [params.uploadedVideoData]);
+
+  // iOS Share Extension / deep link: prefill when opening (tabs)/create?sharedText=…&sharedUrl=…
+  useEffect(() => {
+    const st = (paramOne(params.sharedText) ?? '').trim();
+    const su = (paramOne(params.sharedUrl) ?? '').trim();
+    if (!st && !su) return;
+    const combined = st && su ? `${st}\n\n${su}` : st || su;
+    setContent((prev) => (prev.trim() ? prev : combined));
+  }, [params.sharedText, params.sharedUrl]);
+
+  // Share extension: images / files → mediaFiles; first video → Mux upload
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sm = paramOne(params.shareMedia);
+    if (!sm) return;
+    if (appliedShareMediaKey.current === sm) return;
+    const decoded = decodeShareMediaPayload(sm);
+    if (!decoded) {
+      warn('[CreatePost] Invalid or undecodable shareMedia payload');
+      return;
+    }
+    appliedShareMediaKey.current = sm;
+    const { images, videos } = expandShareMediaPayload(decoded);
+    if (videos.length > 0) {
+      sharedVideoUploadStarted.current = false;
+      setMediaFiles([]);
+      setUploadedVideo(null);
+      setPendingSharedVideoUri(videos[0]);
+    } else {
+      setPendingSharedVideoUri(null);
+      if (images.length > 0) {
+        setUploadedVideo(null);
+        setMediaFiles(images.slice(0, 4));
+        Toast.show({
+          type: 'success',
+          text1: images.length === 1 ? '1 photo added from share' : `${Math.min(images.length, 4)} photos added from share`,
+        });
+      }
+    }
+  }, [params.shareMedia]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (!pendingSharedVideoUri || !user?.id) return;
+    if (sharedVideoUploadStarted.current) return;
+    sharedVideoUploadStarted.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        setUploadingMedia(true);
+        setUploadMessage('Uploading shared video…');
+        setUploadProgress(8);
+        const result = await uploadVideoToMux(pendingSharedVideoUri, {
+          title: 'Shared video',
+          onProgress: (p) => {
+            if (!cancelled) setUploadProgress(Math.max(8, Math.min(92, p)));
+          },
+        });
+        if (cancelled) return;
+        setUploadedVideo(result);
+        setPendingSharedVideoUri(null);
+        setUploadProgress(100);
+        setUploadMessage('');
+        Toast.show({
+          type: 'success',
+          text1: 'Video ready',
+          text2: 'Add a caption and post.',
+        });
+      } catch (e: any) {
+        if (!cancelled) {
+          sharedVideoUploadStarted.current = false;
+          setPendingSharedVideoUri(null);
+          Toast.show({
+            type: 'error',
+            text1: 'Could not upload shared video',
+            text2: e?.message || 'Try again or pick the video inside Nomli.',
+          });
+        }
+      } finally {
+        if (!cancelled) setUploadingMedia(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingSharedVideoUri, user?.id]);
 
   // Debug: Log when uploadedVideo state changes
   useEffect(() => {

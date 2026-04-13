@@ -29,7 +29,7 @@ import CategoryPicker from '../../components/CategoryPicker';
 import EventImagePicker from '../../components/EventImagePicker';
 import { setupEventCategories, EVENT_IMAGES, getImagesByCategory, EVENT_CATEGORIES } from '../../utils/eventCategories';
 import LocationSuggestionInput from '../../components/LocationSuggestionInput';
-import * as Location from 'expo-location';
+import * as Location from '../../utils/expoLocationStub';
 import { uploadPostImage } from '../../utils/communityUtils';
 import { OFFICIAL_ACCOUNT_ID } from '../../constants/ContactEmails';
 import { log, warn, error } from '../../utils/productionLogger';

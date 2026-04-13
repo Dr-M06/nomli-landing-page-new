@@ -11,6 +11,7 @@ import {
   getNotificationPreferences,
   updatePushNotificationsPreference,
   updateMessageNotificationsPreference,
+  updateLivestreamNotificationsPreference,
 } from '../../utils/notificationPreferences';
 import useAuth from '../../hooks/useAuth';
 import { log, warn, error } from '../../utils/productionLogger';
@@ -25,6 +26,7 @@ export default function NotificationsSettings() {
   
   const [pushNotifications, setPushNotifications] = React.useState(true);
   const [messageNotifications, setMessageNotifications] = React.useState(true);
+  const [livestreamNotifications, setLivestreamNotifications] = React.useState(true);
   const [notificationSoundEnabled, setNotificationSoundEnabled] = React.useState(true);
   const [loadingSound, setLoadingSound] = React.useState(false);
 
@@ -51,6 +53,7 @@ export default function NotificationsSettings() {
       if (preferences) {
         setPushNotifications(preferences.push_notifications_enabled);
         setMessageNotifications(preferences.message_notifications_enabled);
+        setLivestreamNotifications(preferences.livestream_notifications_enabled);
       }
     } catch (error) {
       error('[NotificationsSettings] Error loading notification preferences:', error);
@@ -181,6 +184,30 @@ export default function NotificationsSettings() {
                   }}
                   trackColor={{ false: themeColors.neutral.border, true: themeColors.primary.light }}
                   thumbColor={messageNotifications ? themeColors.primary.main : themeColors.neutral.surface}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modernSettingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.modernSettingLabel, { color: themeColors.neutral.text }]}>
+                  Livestream Notifications
+                </Text>
+                <Text style={[styles.settingDescription, { color: themeColors.neutral.subtext }]}>
+                  Get notified when someone you follow goes live
+                </Text>
+              </View>
+              <View style={styles.switchWrapper}>
+                <Switch
+                  value={livestreamNotifications}
+                  onValueChange={async (value) => {
+                    setLivestreamNotifications(value);
+                    if (user?.id) {
+                      await updateLivestreamNotificationsPreference(user.id, value);
+                    }
+                  }}
+                  trackColor={{ false: themeColors.neutral.border, true: themeColors.primary.light }}
+                  thumbColor={livestreamNotifications ? themeColors.primary.main : themeColors.neutral.surface}
                 />
               </View>
             </View>

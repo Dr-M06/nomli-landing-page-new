@@ -100,6 +100,20 @@ const IAP_PRODUCT_IDS = [
   'com.nomli.mingle.coins.mega',     // $49.99 - 4166 tokens
 ];
 
+/** Merged into StoreKit product queries (e.g. Nomli Creator Pro subscription SKU from payment_plans). */
+let extraIapProductIds: string[] = [];
+
+export function addIapProductIdsForFetching(productIds: string[]) {
+  for (const id of productIds) {
+    if (!id || IAP_PRODUCT_IDS.includes(id) || extraIapProductIds.includes(id)) continue;
+    extraIapProductIds.push(id);
+  }
+  fetchProductsPromise = null;
+}
+
+let creatorProPurchaseResolve: ((r: { ok: boolean; error?: string }) => void) | null = null;
+let creatorProPendingProductId: string | null = null;
+
 let isInitialized = false;
 let availableProducts: IAPProduct[] = [];
 let purchaseListener: ((transactionId: string, productId: string) => void) | null = null;
@@ -174,7 +188,8 @@ export const fetchProducts = async (): Promise<IAPProduct[]> => {
         return [];
       }
       
-    const { results } = await InAppPurchases.getProductsAsync(IAP_PRODUCT_IDS);
+    const allIds = [...new Set([...IAP_PRODUCT_IDS, ...extraIapProductIds])];
+    const { results } = await InAppPurchases.getProductsAsync(allIds);
     
     iapLog('[StoreKit] 📦 Requested product IDs:', IAP_PRODUCT_IDS);
     iapLog('[StoreKit] 📦 Products returned from App Store:', results.length);
@@ -476,24 +491,24 @@ export const initIAPAtAppRoot = () => {
               lastChars: transactionReceipt.substring(transactionReceipt.length - 50),
             });
             // Verify receipt with backend (with timeout handling)
-            const success = await verifyReceiptAndCreditTokens(
+            const verifyResult = await verifyReceiptAndCreditTokens(
               transactionReceipt,
               productId,
               transactionId
             );
 
-            iapLog('[StoreKit] ✅ Receipt verification result:', success);
+            iapLog('[StoreKit] ✅ Receipt verification result:', verifyResult);
 
-            if (success) {
-              iapLog('[StoreKit] ✅ Backend verification successful - tokens credited');
+            if (verifyResult.success) {
+              const isCreatorPro = verifyResult.kind === 'creator_pro';
+              const consume = !isCreatorPro;
+              iapLog('[StoreKit] ✅ Backend verification successful', { isCreatorPro, consume });
               
-              // CRITICAL: Finish transaction so Apple removes it from queue - allows repurchasing same consumable
-              // Only finish transaction AFTER successful backend verification
               try {
                 if (typeof InAppPurchases.finishTransactionAsync === 'function') {
                   iapLog('[StoreKit] 🔄 Finishing transaction (backend verified)...');
-                  await InAppPurchases.finishTransactionAsync(purchase, true);
-                  iapLog('[StoreKit] ✅ Transaction finished (consumable)');
+                  await InAppPurchases.finishTransactionAsync(purchase, consume);
+                  iapLog('[StoreKit] ✅ Transaction finished', { consume });
                 } else {
                   iapWarn('[StoreKit] finishTransactionAsync not available');
                 }
@@ -501,12 +516,19 @@ export const initIAPAtAppRoot = () => {
                 iapError('[StoreKit] finishTransactionAsync error:', finishErr);
                 iapWarn('[StoreKit] finishTransactionAsync error (non-fatal):', finishErr?.message);
               }
-              
-              // Only call purchase listener AFTER successful backend verification
-              iapLog('[StoreKit] 🔔 Calling purchase listener callback (backend verified)...');
-              if (purchaseListener) {
+
+              const pendingCreator =
+                creatorProPendingProductId && productId === creatorProPendingProductId;
+              if (pendingCreator && creatorProPurchaseResolve) {
+                if (creatorProPurchaseTimeout) clearTimeout(creatorProPurchaseTimeout);
+                creatorProPurchaseTimeout = null;
+                creatorProPurchaseResolve({ ok: true });
+                creatorProPurchaseResolve = null;
+                creatorProPendingProductId = null;
+              } else if (purchaseListener && !isCreatorPro) {
+                iapLog('[StoreKit] 🔔 Calling purchase listener callback (backend verified)...');
                 purchaseListener(transactionId, productId);
-              } else {
+              } else if (!isCreatorPro) {
                 Alert.alert('Success', 'Tokens have been added to your wallet! Open your wallet to see your balance.');
               }
             } else {
@@ -606,14 +628,16 @@ export const setupPurchaseListener = (
   };
 };
 
+type VerifyReceiptResult = { success: boolean; kind?: 'creator_pro' | 'tokens' };
+
 /**
- * Verify receipt with backend and credit tokens
+ * Verify receipt with backend (token packs or Nomli Creator Pro subscription).
  */
 const verifyReceiptAndCreditTokens = async (
   receipt: string,
   productId: string,
   transactionId: string
-): Promise<boolean> => {
+): Promise<VerifyReceiptResult> => {
   try {
     iapLog('[StoreKit] 🔄 verifyReceiptAndCreditTokens called:', {
       productId,
@@ -630,29 +654,31 @@ const verifyReceiptAndCreditTokens = async (
 
     iapLog('[StoreKit] ✅ User authenticated:', user.id);
 
-    // Get package ID from product ID (needed for Edge Function)
-    iapLog('[StoreKit] 🔍 Looking up package for product ID:', productId);
-    const { data: packageData, error: packageError } = await supabase
+    iapLog('[StoreKit] 🔍 Resolving product:', productId);
+    const { data: packageRow } = await supabase
       .from('token_packages')
       .select('id')
       .eq('iap_product_id', productId)
-      .single();
-    
-    if (packageError) {
-      iapError('[StoreKit] ❌ Package lookup error:', packageError);
-      return false;
+      .maybeSingle();
+
+    const { data: creatorPlanRow } = await supabase
+      .from('payment_plans')
+      .select('id')
+      .eq('iap_product_id_apple', productId)
+      .eq('plan_category', 'creator')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const packageId = packageRow?.id;
+    const creatorPlanId = creatorPlanRow?.id;
+
+    if (!packageId && !creatorPlanId) {
+      iapError('[StoreKit] ❌ Not a token package or Creator Pro IAP product:', productId);
+      return { success: false };
     }
 
-    const packageId = packageData?.id;
-    
-    if (!packageId) {
-      iapError('[StoreKit] ❌ Package not found for product ID:', productId);
-      return false;
-    }
+    iapLog('[StoreKit] ✅ Resolved:', { packageId, creatorPlanId });
 
-    iapLog('[StoreKit] ✅ Package found:', packageId);
-
-    // Call backend Edge Function to verify receipt
     const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/verify-apple-receipt`;
     const edgeHost = SUPABASE_URL ? new URL(SUPABASE_URL).host : 'unknown';
     iapLog('[StoreKit] 📞 Edge Function URL (verify project matches dashboard):', edgeFunctionUrl);
@@ -663,22 +689,23 @@ const verifyReceiptAndCreditTokens = async (
       transactionId,
       userId: user.id,
       packageId,
+      creatorPlanId,
       receiptLength: receipt?.length || 0,
       hasReceipt: !!receipt,
     });
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       iapError('[StoreKit] ❌ SUPABASE_URL or SUPABASE_ANON_KEY missing - check .env / app config');
-      return false;
+      return { success: false };
     }
 
-    const body = {
+    const body: Record<string, unknown> = {
       receipt,
       productId,
       transactionId,
       userId: user.id,
-      packageId,
     };
+    if (packageId) body.packageId = packageId;
 
     const timeoutMs = 30000;
     const controller = new AbortController();
@@ -729,7 +756,7 @@ const verifyReceiptAndCreditTokens = async (
     if (error) {
       iapError('[StoreKit] ❌ Edge Function error:', error?.message, 'status:', error?.status);
       iapError('[StoreKit] ❌ FULL ERROR:', JSON.stringify(error, null, 2));
-      return false;
+      return { success: false };
     }
 
     // Log full response data (visible on device)
@@ -746,13 +773,14 @@ const verifyReceiptAndCreditTokens = async (
     iapLog('[StoreKit] 📥 FULL RESPONSE DATA:', JSON.stringify(data, null, 2));
 
     if (data?.success) {
-      // Check if transaction was already processed (still counts as success)
       if (data.message === 'Transaction already processed') {
         iapLog('[StoreKit] ✅ Transaction already processed (duplicate purchase)');
-        return true; // Return true so purchase listener fires and clears spinner
+        const kind = data.kind === 'creator_pro' ? 'creator_pro' : 'tokens';
+        return { success: true, kind };
       }
-      iapLog('[StoreKit] ✅ Tokens credited successfully');
-      return true;
+      const kind = data.kind === 'creator_pro' ? 'creator_pro' : 'tokens';
+      iapLog('[StoreKit] ✅ IAP verified:', kind);
+      return { success: true, kind };
     }
 
     if (data?.error) {
@@ -782,8 +810,7 @@ const verifyReceiptAndCreditTokens = async (
         });
       }
       
-      // Return false - errorListener will be called by purchase listener
-      return false;
+      return { success: false };
     }
 
     iapError('[StoreKit] ❌ Unexpected response format:', {
@@ -793,7 +820,7 @@ const verifyReceiptAndCreditTokens = async (
       isUndefined: data === undefined,
     });
     iapError('[StoreKit] ❌ UNEXPECTED RESPONSE:', JSON.stringify(data, null, 2));
-    return false;
+    return { success: false };
   } catch (err: any) {
     iapError('[StoreKit] ❌ Receipt verification exception:', err);
     iapError('[StoreKit] Exception details:', {
@@ -801,9 +828,42 @@ const verifyReceiptAndCreditTokens = async (
       name: err.name,
       stack: err.stack,
     });
-    return false;
+    return { success: false };
   }
 };
+
+let creatorProPurchaseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/** Subscribe to Nomli Creator Pro via App Store (auto-renewable). Resolves when receipt is verified. */
+export function purchaseCreatorProWithStoreKit(iapProductId: string): Promise<{ ok: boolean; error?: string }> {
+  if (Platform.OS !== 'ios') {
+    return Promise.resolve({ ok: false, error: 'Apple IAP is only available on iOS' });
+  }
+  addIapProductIdsForFetching([iapProductId]);
+  return new Promise((resolve) => {
+    if (creatorProPurchaseTimeout) clearTimeout(creatorProPurchaseTimeout);
+    creatorProPurchaseResolve = resolve;
+    creatorProPendingProductId = iapProductId;
+    creatorProPurchaseTimeout = setTimeout(() => {
+      if (creatorProPurchaseResolve) {
+        creatorProPurchaseResolve({ ok: false, error: 'Purchase timed out' });
+        creatorProPurchaseResolve = null;
+        creatorProPendingProductId = null;
+      }
+      creatorProPurchaseTimeout = null;
+    }, 120000);
+
+    purchaseTokensWithIAP(iapProductId).then((r) => {
+      if (!r.success) {
+        if (creatorProPurchaseTimeout) clearTimeout(creatorProPurchaseTimeout);
+        creatorProPurchaseTimeout = null;
+        creatorProPurchaseResolve = null;
+        creatorProPendingProductId = null;
+        resolve({ ok: false, error: r.error || 'Purchase failed' });
+      }
+    });
+  });
+}
 
 /**
  * Restore previous purchases
@@ -900,17 +960,17 @@ export const clearPendingPurchases = async (): Promise<{
         const transactionId = purchase.orderId || purchase.transactionId;
         const transactionReceipt = purchase.transactionReceipt;
 
-        // Always try to verify with backend when we have receipt + transactionId
-        // (Listener may never have run, so backend might not have credited yet)
+        let verifySnapshot: VerifyReceiptResult = { success: false };
+
         if (transactionReceipt && transactionId && transactionReceipt.length >= 100) {
           iapLog('[StoreKit] 🔍 Verifying pending purchase with backend...');
-          const verifiedThis = await verifyReceiptAndCreditTokens(
+          verifySnapshot = await verifyReceiptAndCreditTokens(
             transactionReceipt,
             purchase.productId,
             transactionId
           );
 
-          if (verifiedThis) {
+          if (verifySnapshot.success) {
             verified++;
             iapLog('[StoreKit] ✅ Pending purchase verified and credited');
           } else {
@@ -922,11 +982,11 @@ export const clearPendingPurchases = async (): Promise<{
           iapLog('[StoreKit] ⚠️ Purchase missing receipt or transactionId - cannot verify');
         }
 
-        // Only finish the transaction if not already acknowledged (avoid double finish)
         if (!purchase.acknowledged) {
           try {
             if (typeof InAppPurchases.finishTransactionAsync === 'function') {
-              await InAppPurchases.finishTransactionAsync(purchase, true); // true = consumable
+              const consume = verifySnapshot.success ? verifySnapshot.kind !== 'creator_pro' : true;
+              await InAppPurchases.finishTransactionAsync(purchase, consume);
               cleared++;
               iapLog('[StoreKit] ✅ Finished transaction:', purchase.productId);
             } else {

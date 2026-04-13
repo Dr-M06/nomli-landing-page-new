@@ -126,7 +126,7 @@ const getNotificationBody = (notification: QueuedNotification): string => {
     case 'message':
       return notification.message_content || 'New message received';
     case 'call':
-      return 'Tap to answer or decline';
+      return notification.message_content || 'Open the app for activity updates';
     case 'like':
       return 'Tap to view';
     case 'comment':
@@ -152,10 +152,10 @@ const getNotificationData = (notification: QueuedNotification): any => {
       };
     case 'call':
       return {
-        type: 'call',
-        caller_id: notification.sender_id,
-        caller_name: notification.sender_name,
-        action: 'incoming_call',
+        type: 'general',
+        sender_id: notification.sender_id,
+        sender_name: notification.sender_name,
+        message_content: notification.message_content,
       };
     default:
       return {

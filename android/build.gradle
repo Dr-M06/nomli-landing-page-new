@@ -44,3 +44,22 @@ allprojects {
         }
     }
 }
+
+// Google Play Services / Ads artifacts may ship Kotlin 2.x metadata while RN 0.76 uses Kotlin 1.9.x.
+// Without this, :react-native-google-mobile-ads:compileReleaseKotlin often fails on EAS.
+subprojects { sub ->
+    sub.plugins.withId('kotlin-android') {
+        sub.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
+            task.kotlinOptions {
+                freeCompilerArgs += '-Xskip-metadata-version-check'
+            }
+        }
+    }
+    sub.plugins.withId('org.jetbrains.kotlin.android') {
+        sub.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
+            task.kotlinOptions {
+                freeCompilerArgs += '-Xskip-metadata-version-check'
+            }
+        }
+    }
+}

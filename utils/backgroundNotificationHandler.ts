@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform, AppState } from 'react-native';
 import { supabase } from './supabase';
-import { lockscreenCallService } from './lockscreenCallNotifications';
 import { log, warn, error } from './productionLogger';
 
 
@@ -29,10 +28,6 @@ class BackgroundNotificationHandler {
     if (this.isInitialized) return;
 
     try {
-      // Don't initialize lockscreen call service here - it conflicts with ExpoNotificationManager
-      // Let ExpoNotificationManager handle permissions and token generation
-      // await lockscreenCallService.initialize();
-
       // Set up background notification handlers (without requesting permissions)
       this.setupBackgroundHandlers();
 
@@ -134,34 +129,62 @@ class BackgroundNotificationHandler {
   /**
    * Handle call notification
    */
-  private async handleCallNotification(data: BackgroundNotificationData): Promise<void> {
-    // Support multiple data field names
-    const callId = data.callId || data.id;
-    const callerName = data.senderName || data.callerName || data.caller_name;
-    const callerId = data.senderId || data.callerId || data.caller_id || callId;
-    const callType = data.callType || data.call_type || 'audio';
-    const channelId = data.channelId || data.channel_id || callId;
-    
-    if (callId && callerName) {
-      log('[BackgroundNotification] Handling call notification');
-      log('[BackgroundNotification] Call data:', { callId, callerName, callerId, callType, channelId });
-      
-      // Send lockscreen call notification
-      try {
-        await lockscreenCallService.sendLockscreenCallNotification({
-          callId: callId,
-          callerId: callerId,
-          callerName: callerName,
-          callerAvatar: data.senderAvatar || data.callerAvatar || data.caller_avatar,
-          callType: callType as 'audio' | 'video',
-          isIncoming: true,
-        });
-        log('[BackgroundNotification] ✅ Lockscreen call notification sent successfully for call:', callId);
-      } catch (lockscreenError) {
-        error('[BackgroundNotification] ❌ Failed to send lockscreen notification:', lockscreenError);
+  private async handleCallNotification(_data: BackgroundNotificationData): Promise<void> {
+    log('[BackgroundNotification] Ignoring call payload (voice/video calls removed from app)');
+  }
+
+  /**
+   * Show a local notification (used when re-broadcasting message/event payloads in background).
+   */
+  private async scheduleLocalNotification(
+    title: string,
+    body: string,
+    data: Record<string, unknown>,
+    channelId: string = 'background_sync'
+  ): Promise<void> {
+    try {
+      const notificationContent: Record<string, unknown> = {
+        title,
+        body,
+        data,
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+        vibrate: [0, 250, 250, 250],
+        categoryIdentifier: 'background_notification',
+      };
+
+      if (Platform.OS === 'android') {
+        notificationContent.android = {
+          channelId,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          visibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          lights: {
+            color: '#19444d',
+            onMs: 500,
+            offMs: 500,
+          },
+        };
+      } else if (Platform.OS === 'ios') {
+        notificationContent.ios = {
+          sound: 'default',
+          critical: false,
+          interruptionLevel: 'active',
+          relevanceScore: 0.5,
+          targetContentIdentifier: (data.id as string) || 'background_notification',
+          threadIdentifier: (data.type as string) || 'general',
+          summaryArgument: (data.senderName as string) || 'Notification',
+          summaryArgumentCount: 1,
+          categoryIdentifier: 'background_notification',
+          badge: 1,
+        };
       }
-    } else {
-      warn('[BackgroundNotification] Missing required call data:', { callId, callerName, callType });
+
+      await Notifications.scheduleNotificationAsync({
+        content: notificationContent as Notifications.NotificationContentInput,
+        trigger: null,
+      });
+    } catch (e) {
+      error('[BackgroundNotification] scheduleLocalNotification failed:', e);
     }
   }
 
@@ -172,7 +195,7 @@ class BackgroundNotificationHandler {
     if (data.senderName && data.message) {
       // Mark as internal so we don't re-process it and cause an infinite loop
       const dataWithFlag = { ...data, _internalLocal: true };
-      await lockscreenCallService.sendBackgroundNotification(
+      await this.scheduleLocalNotification(
         `New message from ${data.senderName}`,
         data.message,
         dataWithFlag,
@@ -187,7 +210,7 @@ class BackgroundNotificationHandler {
   private async handleEventNotification(data: BackgroundNotificationData): Promise<void> {
     if (data.eventName) {
       const dataWithFlag = { ...data, _internalLocal: true };
-      await lockscreenCallService.sendBackgroundNotification(
+      await this.scheduleLocalNotification(
         `Event Update: ${data.eventName}`,
         data.message || 'You have an event update',
         dataWithFlag,
@@ -201,7 +224,7 @@ class BackgroundNotificationHandler {
    */
   private async handleGeneralNotification(data: BackgroundNotificationData): Promise<void> {
     const dataWithFlag = { ...data, _internalLocal: true };
-    await lockscreenCallService.sendBackgroundNotification(
+    await this.scheduleLocalNotification(
       data.title || 'Notification',
       data.message || 'You have a new notification',
       dataWithFlag,
@@ -221,6 +244,7 @@ class BackgroundNotificationHandler {
     // Handle different notification types
     switch (data.type) {
       case 'call':
+      case 'incoming_call':
         await this.handleCallResponse(actionIdentifier, data);
         break;
       case 'message':
@@ -238,20 +262,7 @@ class BackgroundNotificationHandler {
    * Handle call notification response
    */
   private async handleCallResponse(actionIdentifier: string, data: BackgroundNotificationData): Promise<void> {
-    switch (actionIdentifier) {
-      case 'answer_call':
-        // Navigate to call screen
-        log('[BackgroundNotification] Answering call:', data.callId);
-        // You would navigate to your call screen here
-        break;
-      case 'decline_call':
-        // Mark call as declined
-        log('[BackgroundNotification] Declining call:', data.callId);
-        // You would update call status here
-        break;
-      default:
-        log('[BackgroundNotification] Unknown call action:', actionIdentifier);
-    }
+    log('[BackgroundNotification] Call notification action ignored (calls removed):', actionIdentifier, data?.callId);
   }
 
   /**
@@ -363,7 +374,8 @@ class BackgroundNotificationHandler {
   private getChannelIdForType(type: string): string {
     switch (type) {
       case 'call':
-        return 'critical_calls';
+      case 'incoming_call':
+        return 'default';
       case 'message':
         return 'chat_messages';
       case 'event':

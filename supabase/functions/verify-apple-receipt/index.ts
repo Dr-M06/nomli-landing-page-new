@@ -214,17 +214,16 @@ serve(async (req) => {
       );
     }
 
-    // Check if transaction was already processed
-    // Check wallet_transactions first (most reliable)
-    const { data: existingTransaction } = await supabaseClient
+    // Idempotency: any prior row for this Apple transaction (tokens or Creator Pro)
+    const { data: existingTx } = await supabaseClient
       .from('wallet_transactions')
       .select('id')
-      .eq('reference_id', transactionId)
-      .eq('transaction_type', 'purchase')
-      .single();
+      .eq('user_id', userId)
+      .eq('reference_id', String(transactionId))
+      .maybeSingle();
 
-    if (existingTransaction) {
-      console.log('✅ [verify-apple-receipt] Transaction already processed (found in wallet_transactions)');
+    if (existingTx) {
+      console.log('✅ [verify-apple-receipt] Transaction already processed');
       return new Response(
         JSON.stringify({ success: true, message: 'Transaction already processed' }),
         {
@@ -234,16 +233,97 @@ serve(async (req) => {
       );
     }
 
-    // Get token package by IAP product ID
+    // --- Nomli Creator Pro (auto-renewable): payment_plans.plan_category = creator + iap_product_id_apple
+    const { data: creatorPlan } = await supabaseClient
+      .from('payment_plans')
+      .select('id, name, token_amount, bonus_tokens')
+      .eq('iap_product_id_apple', productId)
+      .eq('plan_category', 'creator')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (creatorPlan) {
+      const expiresMsRaw = (transaction as any).expires_date_ms;
+      let expiresMs = expiresMsRaw != null ? parseInt(String(expiresMsRaw), 10) : NaN;
+      if (Number.isNaN(expiresMs)) {
+        const latest = verificationResult.latest_receipt_info as any[] | undefined;
+        const sub = latest?.find((x: any) => x.product_id === productId);
+        if (sub?.expires_date_ms != null) {
+          expiresMs = parseInt(String(sub.expires_date_ms), 10);
+        }
+      }
+      if (Number.isNaN(expiresMs) || expiresMs <= 0) {
+        console.error('❌ [verify-apple-receipt] Creator Pro: missing expires_date_ms in receipt');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Subscription expiry not found in receipt' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const expiresIso = new Date(expiresMs).toISOString();
+
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('creator_pro_until')
+        .eq('id', userId)
+        .single();
+
+      const prev = profile?.creator_pro_until ? new Date(profile.creator_pro_until as string).getTime() : 0;
+      const nextUntil = Math.max(prev, expiresMs);
+
+      const { error: profErr } = await supabaseClient
+        .from('profiles')
+        .update({ creator_pro_until: new Date(nextUntil).toISOString() })
+        .eq('id', userId);
+
+      if (profErr) {
+        console.error('❌ [verify-apple-receipt] Creator Pro profile update:', profErr);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to activate Creator Pro' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      await supabaseClient.from('wallet_transactions').insert({
+        user_id: userId,
+        amount: 0,
+        transaction_type: 'creator_pro_apple',
+        reference_id: String(transactionId),
+        description: `Creator Pro (Apple): ${creatorPlan.name || productId} until ${expiresIso}`,
+        balance_after: 0,
+      });
+
+      const totalTokens =
+        (creatorPlan.token_amount || 0) + (creatorPlan.bonus_tokens || 0);
+      if (totalTokens > 0) {
+        const { error: wErr } = await supabaseClient.rpc('update_wallet_balance', {
+          p_user_id: userId,
+          p_amount: totalTokens,
+          p_transaction_type: 'bonus',
+          p_reference_id: `creator_pro_apple:${transactionId}`,
+          p_description: `Creator Pro monthly tokens (${creatorPlan.name || productId})`,
+        });
+        if (wErr) {
+          console.warn('⚠️ [verify-apple-receipt] Creator Pro token credit failed:', wErr);
+        }
+      }
+
+      console.log('✅ [verify-apple-receipt] Creator Pro activated until', expiresIso);
+      return new Response(
+        JSON.stringify({ success: true, kind: 'creator_pro', message: 'Creator Pro active', expiresAt: expiresIso }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Token consumables (existing path)
     const { data: packageData, error: packageError } = await supabaseClient.rpc(
       'get_token_package_by_iap_product_id',
       { p_iap_product_id: productId }
     );
 
     if (packageError || !packageData || packageData.length === 0) {
-      console.error('Token package not found:', packageError);
+      console.error('Token package / Creator plan not found:', packageError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Token package not found' }),
+        JSON.stringify({ success: false, error: 'Unknown product (not a token pack or Creator Pro plan)' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -362,6 +442,7 @@ serve(async (req) => {
       success: true,
       message: 'Purchase processed successfully',
       tokens: totalTokens,
+      kind: 'tokens',
     };
 
     console.log('📤 [verify-apple-receipt] Sending success response:', successResponse);

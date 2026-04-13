@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { usePathname, useRouter } from 'expo-router';
-import { CircleUserRound, Compass, Menu, Plus, Settings } from 'lucide-react-native';
+import { CircleDollarSign, CircleUserRound, Compass, Menu, Plus, Settings } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getThemeColors } from '../constants/Colors';
 import { BorderRadius, FontSizes } from '../constants/Theme';
@@ -27,11 +27,13 @@ type MoreMenuIcon = typeof Compass;
 
 type MoreMenuItem =
   | { kind: 'tab'; name: 'videos' | 'profile'; title: string; Icon: MoreMenuIcon }
-  | { kind: 'route'; path: '/settings'; title: string; Icon: typeof Settings };
+  | { kind: 'route'; path: '/settings'; title: string; Icon: typeof Settings }
+  | { kind: 'route'; path: '/creator'; title: string; Icon: typeof CircleDollarSign };
 
 const MORE_MENU_ITEMS: MoreMenuItem[] = [
   { kind: 'tab', name: 'videos', title: 'Discovery', Icon: Compass },
   { kind: 'tab', name: 'profile', title: 'Profile', Icon: CircleUserRound },
+  { kind: 'route', path: '/creator', title: 'Creator', Icon: CircleDollarSign },
   { kind: 'route', path: '/settings', title: 'Settings', Icon: Settings },
 ];
 
@@ -47,10 +49,12 @@ const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navi
     .filter((r): r is (typeof state.routes)[number] => r != null);
   const currentRouteName = state.routes[state.index]?.name;
   const isSettingsActive = typeof pathname === 'string' && pathname.startsWith('/settings');
+  const isCreatorRouteActive = typeof pathname === 'string' && pathname.startsWith('/creator');
   const isMoreMenuRouteActive =
     currentRouteName === 'videos' ||
     currentRouteName === 'profile' ||
-    isSettingsActive;
+    isSettingsActive ||
+    isCreatorRouteActive;
 
   const insets = useSafeAreaInsets();
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -373,17 +377,14 @@ const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navi
                   : typeof pathname === 'string' && pathname.startsWith(item.path);
               const key = item.kind === 'tab' ? item.name : item.path;
               const { title, Icon } = item;
+              const rowBorder = isDarkMode
+                ? 'rgba(148, 163, 184, 0.12)'
+                : themeColors.neutral.borderLight;
+
               return (
                 <TouchableOpacity
                   key={key}
-                  style={[
-                    styles.sheetRow,
-                    {
-                      borderBottomColor: isDarkMode
-                        ? 'rgba(148, 163, 184, 0.12)'
-                        : themeColors.neutral.borderLight,
-                    },
-                  ]}
+                  style={[styles.sheetRow, { borderBottomColor: rowBorder }]}
                   onPress={() => onMoreItemPress(item)}
                   activeOpacity={0.7}
                 >

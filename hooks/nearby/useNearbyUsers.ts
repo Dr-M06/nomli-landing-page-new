@@ -1,11 +1,7 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../utils/expoLocationStub';
 import { supabase } from '../../utils/supabase';
-import { 
-  getDistanceInKm,
-  getStoredUserLocation,
-  getCurrentLocation,
-} from '../../utils/locationUtils';
+import { getDistanceInKm } from '../../utils/locationUtils';
 import { getSafeAvatarUrl } from '../../utils/safeAvatarUrl';
 import { NearbyProfile, FilterType } from '../../components/nearby/types';
 

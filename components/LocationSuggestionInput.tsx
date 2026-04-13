@@ -8,7 +8,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { MapPin, Navigation } from 'lucide-react-native';
-import * as Location from 'expo-location';
+import * as Location from '../utils/expoLocationStub';
 import useLocation from '../hooks/useLocation';
 import { getThemeColors } from '../constants/Colors';
 import { BorderRadius, FontFamily, FontSizes, Spacing, Shadow } from '../constants/Theme';

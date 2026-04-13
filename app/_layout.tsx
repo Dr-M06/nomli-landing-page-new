@@ -31,7 +31,6 @@ import { initializeOnlineStatusManager, cleanupOnlineStatusManager } from '../ut
 import { backgroundNotificationHandler } from '../utils/backgroundNotificationHandler';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-// Call/lockscreen services removed
 import { AudioProvider } from '../contexts/AudioContext';
 import { LiveStreamProvider } from '../components/LiveStreamProvider';
 import { 
@@ -43,6 +42,7 @@ import { appStateTracker } from '../utils/appStateTracker';
 import { loadShielding, LoadPriority, deferUntilAfterCritical, deferLowPriority } from '../utils/loadShielding';
 import { setupNotificationReplyHandler, setupIOSNotificationCategories } from '../utils/notificationReplyService';
 import { log, warn, error } from '../utils/productionLogger';
+import AndroidShareIntentBridge from '../components/AndroidShareIntentBridge';
 
 
 // Optional services - imported statically to avoid Metro bundler issues
@@ -327,6 +327,7 @@ function AppLayoutWithTheme() {
         />
 
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="creator" options={{ headerShown: false }} />
         <Stack.Screen name="businesses" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
       </Stack>
@@ -449,12 +450,6 @@ export default function RootLayout() {
           // Initialize background notification handler (non-blocking - run in background)
           // NOTE: Permissions are handled by ExpoNotificationManager to avoid conflicts
           backgroundNotificationHandler.initialize().catch(() => {});
-
-          // Skip lockscreen call service initialization - it conflicts with ExpoNotificationManager
-          // ExpoNotificationManager handles all notification permissions and token generation
-          // lockscreenCallService.initialize().catch((lockscreenError) => {
-          //   error('Lockscreen call service initialization error:', lockscreenError);
-          // });
 
           // 🛡️ LOAD SHIELDING: Commented out to reduce app weight on start (world chat not active yet)
           // loadShielding.start();
@@ -592,6 +587,7 @@ export default function RootLayout() {
                           <WatermarkProvider>
                             <ErrorBoundary fallback={<ShimmerLoader fullScreen={true} />}>
                               <VideoUploadProvider>
+                                <AndroidShareIntentBridge />
                                 <AppLayoutWithTheme />
                               </VideoUploadProvider>
                             </ErrorBoundary>

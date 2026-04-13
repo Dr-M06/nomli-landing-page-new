@@ -33,9 +33,6 @@
         "distribution": "internal",
         "buildConfiguration": "Release",
         "credentialsSource": "local"
-      },
-      "env": {
-        "NODE_ENV": "production"
       }
     },
     "production": {
@@ -52,12 +49,10 @@
       "ios": {
         "distribution": "store",
         "buildConfiguration": "Release",
-        "simulator": false
+        "simulator": false,
+        "image": "macos-sequoia-15.6-xcode-16.4"
       },
-      "env": {
-        "NODE_ENV": "production"
-      },
-      "autoIncrement": false
+      "autoIncrement": true
     },
     "standalone": {
       "distribution": "internal",
@@ -79,7 +74,6 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "NODE_ENV": "production",
         "EXPO_NO_DOTENV": "1"
       }
     }

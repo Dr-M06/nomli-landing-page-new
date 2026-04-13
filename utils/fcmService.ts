@@ -359,8 +359,8 @@ class FCMService {
 
   /**
    * Handle foreground messages
-   * NOTE: When app is in foreground, we DON'T show system notifications
-   * Instead, we let the app's UI components handle it (e.g., GlobalCallManager for calls)
+   * NOTE: When app is in foreground, we DON'T show system notifications;
+   * in-app UI (e.g. chat) handles relevant types.
    */
   private handleForegroundMessage(remoteMessage: any): void {
     try {
@@ -372,14 +372,8 @@ class FCMService {
         hasData: !!data
       });
 
-      // For call notifications, GlobalCallManager will show the in-app overlay
-      // For other notifications, the app's UI will handle them
-      // We do NOT show system notifications or alerts when app is in foreground
-      
-      if (data?.type === 'incoming_call') {
-        log('[FCMService] Call notification - GlobalCallManager will handle');
-        // GlobalCallManager listens to call_notifications table changes
-        // and will show the in-app call overlay
+      if (data?.type === 'incoming_call' || data?.type === 'call') {
+        log('[FCMService] Call-type push ignored (calls removed from app)');
       } else if (data?.type === 'message') {
         log('[FCMService] Message notification - chat UI will handle');
         // Chat UI will update automatically via Supabase realtime
@@ -415,8 +409,8 @@ class FCMService {
         // Navigate based on notification data
         switch (data.type) {
           case 'call':
-            // Navigate to call screen
-            log('[FCMService] Navigating to call screen');
+          case 'incoming_call':
+            log('[FCMService] Call notification open ignored (calls removed)');
             break;
           case 'message':
             // Navigate to chat screen

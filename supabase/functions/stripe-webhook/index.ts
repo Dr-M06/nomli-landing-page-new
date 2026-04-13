@@ -14,6 +14,45 @@ interface StripeEvent {
   };
 }
 
+async function fetchPlanCategory(supabase: any, planId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('payment_plans')
+    .select('plan_category')
+    .eq('id', planId)
+    .single();
+  if (error) {
+    console.warn('⚠️ [STRIPE] Could not load plan_category for plan', planId, error.message);
+  }
+  return data?.plan_category || 'discover';
+}
+
+/** Dating uses discover_premium_until; Creator Pro uses creator_pro_until — never mix. */
+async function applyProfilePremiumForPlan(
+  supabase: any,
+  userId: string,
+  planId: string,
+  active: boolean,
+  periodEndIso: string | null
+) {
+  const cat = await fetchPlanCategory(supabase, planId);
+  const patch: Record<string, unknown> = {};
+  if (cat === 'discover') {
+    patch.discover_premium_until = active && periodEndIso ? periodEndIso : null;
+  } else if (cat === 'creator') {
+    patch.creator_pro_until = active && periodEndIso ? periodEndIso : null;
+  }
+  if (Object.keys(patch).length === 0) {
+    console.log('ℹ️ [STRIPE] plan_category', cat, '— no profile premium flags to set');
+    return;
+  }
+  const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+  if (error) {
+    console.error('❌ [STRIPE] Error updating profiles premium flags:', error);
+  } else if (active && periodEndIso) {
+    console.log('✅ [STRIPE] Premium flag set for', cat, 'until:', periodEndIso);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -211,22 +250,12 @@ async function handleSubscriptionUpdated(event: StripeEvent, supabase: any) {
     return;
   }
 
-  // Grant discover unlimited likes until period end (profiles.discover_premium_until)
   const periodEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end * 1000).toISOString()
     : null;
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({
-      discover_premium_until: subscription.status === 'active' ? periodEnd : null,
-    })
-    .eq('id', userId);
-
-  if (profileError) {
-    console.error('❌ [STRIPE] Error updating profiles.discover_premium_until:', profileError);
-  } else if (subscription.status === 'active') {
-    console.log('✅ [STRIPE] discover_premium_until set until:', periodEnd);
-  }
+  const subscriptionActive =
+    subscription.status === 'active' || subscription.status === 'trialing';
+  await applyProfilePremiumForPlan(supabase, userId, planId, subscriptionActive, periodEnd);
 
   // If subscription is active and just created, credit tokens
   if (subscription.status === 'active' && event.type === 'customer.subscription.created') {
@@ -255,20 +284,32 @@ async function handleSubscriptionDeleted(event: StripeEvent, supabase: any) {
 
   const { data: subRow } = await supabase
     .from('user_subscriptions')
-    .select('user_id')
+    .select('user_id, plan_id')
     .eq('stripe_subscription_id', subscription.id)
     .single();
 
   const uid = userId || subRow?.user_id;
-  if (uid) {
+  const pid = subscription.metadata?.plan_id || subRow?.plan_id;
+  if (uid && pid) {
+    const cat = await fetchPlanCategory(supabase, pid);
+    const patch: Record<string, unknown> = {};
+    if (cat === 'discover') patch.discover_premium_until = null;
+    if (cat === 'creator') patch.creator_pro_until = null;
+    if (Object.keys(patch).length > 0) {
+      const { error: profileError } = await supabase.from('profiles').update(patch).eq('id', uid);
+      if (profileError) {
+        console.error('❌ [STRIPE] Error clearing profile premium flags:', profileError);
+      } else {
+        console.log('✅ [STRIPE] Cleared premium flags for', cat, 'user:', uid);
+      }
+    }
+  } else if (uid) {
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ discover_premium_until: null })
       .eq('id', uid);
     if (profileError) {
-      console.error('❌ [STRIPE] Error clearing discover_premium_until:', profileError);
-    } else {
-      console.log('✅ [STRIPE] discover_premium_until cleared for user:', uid);
+      console.error('❌ [STRIPE] Error clearing discover_premium_until (legacy):', profileError);
     }
   }
 

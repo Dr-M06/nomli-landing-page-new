@@ -231,6 +231,10 @@ export interface Profile {
   business_hours?: string; // optional e.g. "Mon–Fri 9am–5pm"
   business_photo_urls?: string[]; // optional, max 5 (business profile only, lite)
   last_seen?: string | null; // presence: updated when in chat/call/stream; 90s threshold for "online"
+  /** Dating Discover unlimited likes / premium (separate from Creator Pro). */
+  discover_premium_until?: string | null;
+  /** Nomli Creator Pro subscription end (independent of discover_premium_until). */
+  creator_pro_until?: string | null;
 }
 
 // Chat message type

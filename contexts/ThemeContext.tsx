@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -9,7 +8,7 @@ type ThemeContextType = {
 };
 
 const ThemeContext = createContext<ThemeContextType>({
-  isDarkMode: false,
+  isDarkMode: true,
   toggleTheme: () => {},
   setDarkMode: () => {},
 });
@@ -17,8 +16,7 @@ const ThemeContext = createContext<ThemeContextType>({
 const THEME_STORAGE_KEY = '@nomli_mingle/theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const deviceTheme = useColorScheme();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(deviceTheme === 'dark');
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load theme preference from AsyncStorage on mount
@@ -30,20 +28,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (storedTheme !== null) {
           setIsDarkMode(storedTheme === 'dark');
         } else {
-          // If no stored preference, use device default
-          setIsDarkMode(deviceTheme === 'dark');
+          setIsDarkMode(true);
         }
       } catch (error) {
         console.error('Failed to load theme preference:', error);
-        // Fallback to device theme
-        setIsDarkMode(deviceTheme === 'dark');
+        setIsDarkMode(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadThemePreference();
-  }, [deviceTheme]);
+  }, []);
 
   // Save theme preference to AsyncStorage whenever it changes
   useEffect(() => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Coins, Gift, Award, ArrowUpRight, History, ChevronDown, ChevronUp, Heart } from 'lucide-react-native';
+import { WALLET_LEMON, WALLET_MINT, WALLET_MINT_BRIGHT } from '../../constants/walletAccent';
 import { formatTimeAgo } from '../../utils/formatters';
 import { WalletTransaction } from '../../utils/walletService';
 import { DailyTokenClaim } from '../../utils/dailyTokenRewards';
@@ -33,20 +34,20 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, c
   const getTransactionIcon = () => {
     switch (transaction.transaction_type) {
       case 'purchase':
-        return <Coins size={16} color={isPositive ? '#00D4AA' : colors.textSecondary} />;
+        return <Coins size={16} color={isPositive ? WALLET_MINT : colors.textSecondary} />;
       case 'discover_reveal':
         return <Heart size={16} color="#FF6B9D" fill="#FF6B9D" />;
       case 'discover_boost':
         return <ArrowUpRight size={16} color="#FF006E" />;
       case 'gift_sent':
       case 'gift_received':
-        return <Gift size={16} color={isPositive ? '#FF6B9D' : colors.textSecondary} />;
+        return <Gift size={16} color={isPositive ? WALLET_MINT_BRIGHT : colors.textSecondary} />;
       case 'user_credit':
       case 'user_credit_sent':
-        return <Gift size={16} color={isPositive ? '#00D4AA' : colors.textSecondary} />;
+        return <Gift size={16} color={isPositive ? WALLET_MINT : colors.textSecondary} />;
       case 'bonus':
       case 'contributor_reward':
-        return <Award size={16} color={isPositive ? '#FFD700' : colors.textSecondary} />;
+        return <Award size={16} color={isPositive ? WALLET_LEMON : colors.textSecondary} />;
       case 'redemption':
       case 'refund':
         return <ArrowUpRight size={16} color={colors.textSecondary} />;
@@ -120,7 +121,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, c
       <View style={styles.transactionRight}>
         <View style={styles.transactionAmount}>
           <Text style={[styles.transactionAmountText, {
-            color: isPositive ? '#00D4AA' : colors.text,
+            color: isPositive ? WALLET_MINT : colors.text,
           }]}>
             {isPositive ? '+' : ''}{transaction.amount.toLocaleString()}
           </Text>
@@ -160,7 +161,7 @@ export const CreditTransactionItem: React.FC<CreditTransactionItemProps> = ({ tr
       accessibilityHint="Double tap to expand or collapse details"
     >
       <View style={styles.transactionIcon}>
-        <Gift size={16} color={isReceived ? '#00D4AA' : colors.textSecondary} />
+        <Gift size={16} color={isReceived ? WALLET_MINT : colors.textSecondary} />
       </View>
       <View style={styles.transactionContent}>
         <Text style={[styles.transactionType, { color: colors.text }]}>
@@ -186,7 +187,7 @@ export const CreditTransactionItem: React.FC<CreditTransactionItemProps> = ({ tr
       <View style={styles.transactionRight}>
         <View style={styles.transactionAmount}>
           <Text style={[styles.transactionAmountText, {
-            color: isReceived ? '#00D4AA' : colors.text,
+            color: isReceived ? WALLET_MINT : colors.text,
           }]}>
             {isReceived ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()}
           </Text>
@@ -234,7 +235,7 @@ export const TokensEarnItem: React.FC<TokensEarnItemProps> = ({ claim, colors, i
       accessibilityHint="Double tap to expand or collapse details"
     >
       <View style={styles.transactionIcon}>
-        <Award size={16} color="#FFD700" />
+        <Award size={16} color={WALLET_MINT_BRIGHT} />
       </View>
       <View style={styles.transactionContent}>
         <Text style={[styles.transactionType, { color: colors.text }]}>
@@ -249,7 +250,7 @@ export const TokensEarnItem: React.FC<TokensEarnItemProps> = ({ claim, colors, i
       </View>
       <View style={styles.transactionRight}>
         <View style={styles.transactionAmount}>
-          <Text style={[styles.transactionAmountText, { color: '#FFD700' }]}>
+          <Text style={[styles.transactionAmountText, { color: WALLET_LEMON }]}>
             +{claim.total_tokens.toLocaleString()}
           </Text>
           <Text style={[styles.transactionBalance, { color: colors.textTertiary }]}>

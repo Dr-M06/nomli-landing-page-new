@@ -217,36 +217,6 @@ async function preloadProfileScreen(userId: string): Promise<void> {
 }
 
 // ============================================
-// AGORA PRE-CONNECTION
-// ============================================
-
-/**
- * Pre-initialize Agora engine in background for instant calls
- */
-let agoraPreInitialized = false;
-
-export async function preInitializeAgora(): Promise<void> {
-  if (agoraPreInitialized) return;
-
-  try {
-    // OPTIMIZED: Lazy import with delay to reduce initial bundle size
-    // The AgoraContext will handle actual initialization when needed
-    // We just ensure the module is available, but don't block startup
-    setTimeout(async () => {
-      try {
-        await import('../contexts/AgoraContext');
-        agoraPreInitialized = true;
-        log('[SpotlessOptimizer] ✅ Agora pre-initialized (lazy)');
-      } catch (error) {
-        warn('[SpotlessOptimizer] Agora pre-initialization failed:', error);
-      }
-    }, 2000); // Delay 2 seconds to not block app startup
-  } catch (error) {
-    warn('[SpotlessOptimizer] Agora pre-initialization setup failed:', error);
-  }
-}
-
-// ============================================
 // SMART CACHE WARMING
 // ============================================
 
@@ -440,10 +410,7 @@ export async function initializeSpotlessOptimizer(userId?: string): Promise<void
     setTimeout(() => {
       // Warm up all caches (deferred)
       warmupAllCaches(userId).catch(() => {});
-      
-      // Pre-initialize Agora for instant calls (deferred)
-      preInitializeAgora().catch(() => {});
-      
+
       // Optimize memory (deferred)
       optimizeMemory().catch(() => {});
       

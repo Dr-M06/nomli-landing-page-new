@@ -1,5 +1,5 @@
-import * as Location from 'expo-location';
 import { supabase } from './supabase';
+import { geoapifyReverseGeocode } from './geoapifyGeocode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -36,39 +36,14 @@ export interface StoredLocationData {
   timestamp: string;
 }
 
-// Request location permissions
+// Device GPS is not used; keep API for callers that check errors.
 export const requestLocationPermission = async (): Promise<boolean> => {
-  try {
-    // Request foreground location permission
-    const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-    
-    if (foregroundStatus !== 'granted') {
-      log('[LocationUtils] Foreground location permission denied');
-      return false;
-    }
-    
-    log('[LocationUtils] Location permission granted');
-    return true;
-  } catch (error) {
-    error('[LocationUtils] Error requesting location permission:', error);
-    return false;
-  }
+  log('[LocationUtils] Location permission not available (GPS disabled)');
+  return false;
 };
 
-// Get current location with timeout and error handling
-export const getCurrentLocation = async (): Promise<Location.LocationObject> => {
-  try {
-    // Get current location with high accuracy
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced
-    });
-    
-    log(`[LocationUtils] Got current location: ${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`);
-    return location;
-  } catch (error) {
-    error('[LocationUtils] Error getting current location:', error);
-    throw error;
-  }
+export const getCurrentLocation = async (): Promise<never> => {
+  throw new Error('Device location is not used in this app.');
 };
 
 // Get country from coordinates
@@ -77,21 +52,15 @@ export const getCountryFromCoordinates = async (
   longitude: number
 ): Promise<string | null> => {
   try {
-    // Reverse geocode to get address information
-    const geocodeResult = await Location.reverseGeocodeAsync({
-      latitude,
-      longitude
-    });
-    
-    if (geocodeResult && (geocodeResult?.length || 0) > 0) {
+    const geocodeResult = await geoapifyReverseGeocode(latitude, longitude);
+    if (geocodeResult.length > 0) {
       const country = geocodeResult[0].country;
       log(`[LocationUtils] Determined country: ${country || 'Unknown'}`);
       return country || null;
     }
-    
     return null;
-  } catch (error) {
-    error('[LocationUtils] Error getting country from coordinates:', error);
+  } catch (err) {
+    error('[LocationUtils] Error getting country from coordinates:', err);
     return null;
   }
 };

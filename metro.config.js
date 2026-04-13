@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('@expo/metro-config');
+const { withShareExtension } = require('expo-share-extension/metro');
 const path = require('path');
 const os = require('os');
 
@@ -118,6 +119,8 @@ config.resolver = {
   unstable_enablePackageExports: false,
   alias: {
     '@': path.resolve(__dirname, '.'),
+    // Package removed from node_modules; stub avoids GPS/native module.
+    'expo-location': path.resolve(__dirname, 'utils/expoLocationStub.ts'),
   },
   resolverMainFields: ['react-native', 'browser', 'main'],
   platforms: ['ios', 'android', 'web', 'native'],
@@ -153,4 +156,4 @@ config.resolver.blockList = [
 
 config.projectRoot = path.resolve(__dirname);
 
-module.exports = config;
+module.exports = withShareExtension(config);

@@ -11,6 +11,7 @@ import { Wallet } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../constants/Colors';
+import { WALLET_LEMON, WALLET_MINT, WALLET_MINT_BRIGHT } from '../constants/walletAccent';
 import { getUserWallet, subscribeWalletChanges } from '../utils/walletService';
 import { log, warn, error } from '../utils/productionLogger';
 
@@ -90,7 +91,7 @@ const WalletButton: React.FC<WalletButtonProps> = ({
     return (
       <View style={[styles.container, style]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#FFD700" />
+          <ActivityIndicator size="small" color={WALLET_MINT} />
         </View>
       </View>
     );
@@ -105,16 +106,17 @@ const WalletButton: React.FC<WalletButtonProps> = ({
           style={style}
         >
           <LinearGradient
-            colors={isDarkMode 
-              ? ['rgba(255, 215, 0, 0.15)', 'rgba(255, 215, 0, 0.08)']
-              : ['rgba(255, 215, 0, 0.12)', 'rgba(255, 215, 0, 0.05)']
+            colors={
+              isDarkMode
+                ? ['rgba(159, 232, 212, 0.14)', 'rgba(107, 201, 176, 0.08)']
+                : ['rgba(228, 235, 138, 0.16)', 'rgba(107, 201, 176, 0.1)']
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.premiumContainer}
           >
             <View style={styles.iconContainer}>
-              <Wallet size={16} color="#FFD700" strokeWidth={2.5} />
+              <Wallet size={16} color={WALLET_MINT_BRIGHT} strokeWidth={2.5} />
             </View>
             {showBalance && (
               <View style={styles.balanceContainer}>
@@ -136,7 +138,7 @@ const WalletButton: React.FC<WalletButtonProps> = ({
         onPress={handlePress}
         activeOpacity={0.85}
       >
-        <Wallet size={16} color="#FFD700" strokeWidth={2.5} />
+        <Wallet size={16} color={WALLET_MINT_BRIGHT} strokeWidth={2.5} />
         {showBalance && (
           <Text style={styles.minimalText}>
             {formatTokens(wallet?.token_balance || 0)}
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+    backgroundColor: 'rgba(107, 201, 176, 0.1)',
   },
   premiumContainer: {
     flexDirection: 'row',
@@ -164,14 +166,14 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.25)',
+    borderColor: 'rgba(107, 201, 176, 0.35)',
     gap: 6,
   },
   iconContainer: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    backgroundColor: 'rgba(107, 201, 176, 0.18)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -182,7 +184,7 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFD700',
+    color: WALLET_LEMON,
     letterSpacing: -0.3,
   },
   minimalContainer: {
@@ -191,13 +193,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+    backgroundColor: 'rgba(107, 201, 176, 0.1)',
     gap: 5,
   },
   minimalText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFD700',
+    color: WALLET_LEMON,
     letterSpacing: -0.2,
   },
 });

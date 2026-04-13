@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Platform, Alert, Linking } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from '../../utils/expoLocationStub';
 import { 
   getCurrentLocation,
   getStoredUserLocation,

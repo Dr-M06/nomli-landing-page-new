@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,12 @@ import { BlurView } from 'expo-blur';
 import * as WebBrowser from 'expo-web-browser';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../constants/Colors';
+import {
+  WALLET_LEMON,
+  WALLET_MINT,
+  WALLET_MINT_BRIGHT,
+  WALLET_ON_LEMON,
+} from '../constants/walletAccent';
 import { getUserWallet, getTokenPackages, purchaseTokens, getCachedWallet, getCachedPackages, clearWalletCache, getWalletTransactions, WalletTransaction } from '../utils/walletService';
 import { UserWallet, TokenPackage } from '../utils/walletService';
 import { getClaimHistory, DailyTokenClaim, syncEarnedTokensBalance } from '../utils/dailyTokenRewards';
@@ -45,6 +51,13 @@ interface WalletScreenProps {
 const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const historyTabActiveStyle = useMemo(
+    () => ({
+      backgroundColor: isDarkMode ? 'rgba(159, 232, 212, 0.12)' : 'rgba(107, 201, 176, 0.12)',
+      borderColor: isDarkMode ? 'rgba(107, 201, 176, 0.42)' : 'rgba(61, 147, 122, 0.32)',
+    }),
+    [isDarkMode]
+  );
   const { user } = useAuth();
   const [wallet, setWallet] = useState<UserWallet | null>(null);
   const [packages, setPackages] = useState<TokenPackage[]>([]);
@@ -907,7 +920,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFD700" />
+          <ActivityIndicator size="large" color={WALLET_MINT} />
           <Text style={[styles.loadingText, { color: colors.text }]}>loading...</Text>
         </View>
       </SafeAreaView>
@@ -929,7 +942,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#FFD700" />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={WALLET_MINT} />
           }
           showsVerticalScrollIndicator={false}
         >
@@ -977,10 +990,10 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
               disabled={isLoadingProducts}
             >
               {isLoadingProducts ? (
-                <ActivityIndicator size="small" color="#FFD700" />
+                <ActivityIndicator size="small" color={WALLET_MINT} />
               ) : (
                 <>
-                  <Coins size={16} color="#FFD700" strokeWidth={2.5} />
+                  <Coins size={16} color={WALLET_MINT_BRIGHT} strokeWidth={2.5} />
                   <Text style={styles.getTokensButtonText}>Get Tokens</Text>
                 </>
               )}
@@ -1018,7 +1031,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
             {/* Tabs */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+                style={[styles.tab, activeTab === 'all' && historyTabActiveStyle]}
                 onPress={() => setActiveTab('all')}
                 activeOpacity={0.7}
               >
@@ -1029,7 +1042,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'credits' && styles.activeTab]}
+                style={[styles.tab, activeTab === 'credits' && historyTabActiveStyle]}
                 onPress={() => setActiveTab('credits')}
                 activeOpacity={0.7}
               >
@@ -1040,7 +1053,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'tokensEarn' && styles.activeTab]}
+                style={[styles.tab, activeTab === 'tokensEarn' && historyTabActiveStyle]}
                 onPress={() => setActiveTab('tokensEarn')}
                 activeOpacity={0.7}
               >
@@ -1110,12 +1123,12 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                               borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                             }]}>
                               <View style={styles.earnedTokensInfo}>
-                                <Award size={18} color="#FFD700" />
+                                <Award size={18} color={WALLET_MINT_BRIGHT} />
                                 <View style={styles.earnedTokensTextContainer}>
                                   <Text style={[styles.earnedTokensLabel, { color: colors.textSecondary }]}>
                                     Available Earned Tokens
                                   </Text>
-                                  <Text style={[styles.earnedTokensAmount, { color: '#FFD700' }]}>
+                                  <Text style={[styles.earnedTokensAmount, { color: WALLET_LEMON }]}>
                                     {earnedTokensBalance.toLocaleString()} tokens
                                   </Text>
                                   {totalEarnedAllTime > earnedTokensBalance && (
@@ -1134,7 +1147,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                                   }]}>
                                     <View style={[styles.progressFill, {
                                       width: `${progressTo500}%`,
-                                      backgroundColor: '#FFD700',
+                                      backgroundColor: WALLET_MINT,
                                     }]} />
                                   </View>
                                   <Text style={[styles.progressText, { color: colors.textSecondary }]}>
@@ -1147,10 +1160,10 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                                 style={[
                                   styles.redeemButton,
                                   {
-                                    backgroundColor: canRedeem 
-                                      ? colors.primary.main 
-                                      : isDarkMode 
-                                        ? 'rgba(255, 255, 255, 0.1)' 
+                                    backgroundColor: canRedeem
+                                      ? WALLET_LEMON
+                                      : isDarkMode
+                                        ? 'rgba(255, 255, 255, 0.1)'
                                         : 'rgba(0, 0, 0, 0.1)',
                                     opacity: canRedeem ? 1 : 0.5,
                                   }
@@ -1161,8 +1174,8 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                               >
                                 <Text style={[
                                   styles.redeemButtonText,
-                                  { 
-                                    color: canRedeem ? '#FFFFFF' : colors.textSecondary 
+                                  {
+                                    color: canRedeem ? WALLET_ON_LEMON : colors.textSecondary,
                                   }
                                 ]}>
                                   {canRedeem ? 'Redeem as Airtime/Data' : `Need ${tokensNeeded} more`}
@@ -1234,7 +1247,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                   { transform: [{ scale: comingSoonPulseAnim }] }
                 ]}
               >
-                <Sparkles size={20} color="#00D9FF" />
+                <Sparkles size={20} color={WALLET_MINT_BRIGHT} />
               </Animated.View>
               <Animated.View
                 style={[
@@ -1243,7 +1256,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                   { transform: [{ scale: comingSoonPulseAnim }] }
                 ]}
               >
-                <Sparkles size={24} color="#A78BFA" />
+                <Sparkles size={24} color={WALLET_LEMON} />
               </Animated.View>
               <Animated.View
                 style={[
@@ -1252,13 +1265,13 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                   { transform: [{ scale: comingSoonPulseAnim }] }
                 ]}
               >
-                <Star size={18} color="#00FF88" fill="#00FF88" />
+                <Star size={18} color={WALLET_MINT} fill={WALLET_MINT} />
               </Animated.View>
 
               {/* Main content */}
               <View style={styles.rocketContainer}>
                 <LinearGradient
-                  colors={['#00D9FF', '#A78BFA']}
+                  colors={[WALLET_MINT_BRIGHT, WALLET_MINT]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.rocketGradient}
@@ -1284,13 +1297,13 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#00D9FF', '#A78BFA']}
+                  colors={[WALLET_LEMON, WALLET_MINT]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.comingSoonButtonGradient}
                 >
                   <Text style={styles.comingSoonButtonText}>Got it!</Text>
-                  <Sparkles size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  <Sparkles size={16} color={WALLET_ON_LEMON} strokeWidth={2.5} />
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -1321,7 +1334,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
             ]}
           >
             <LinearGradient
-              colors={['#FF0050', '#FF6B9D']}
+              colors={['#8ED4C4', '#3D8B72']}
               style={styles.successGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -1336,9 +1349,9 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
               >
                 <CheckCircle2 size={64} color="#FFFFFF" strokeWidth={2.5} />
                 <View style={styles.sparklesContainer}>
-                  <Sparkles size={24} color="#FFD700" style={styles.sparkle1} />
-                  <Sparkles size={20} color="#FFD700" style={styles.sparkle2} />
-                  <Sparkles size={18} color="#FFD700" style={styles.sparkle3} />
+                  <Sparkles size={24} color={WALLET_LEMON} style={styles.sparkle1} />
+                  <Sparkles size={20} color={WALLET_LEMON} style={styles.sparkle2} />
+                  <Sparkles size={18} color={WALLET_LEMON} style={styles.sparkle3} />
                 </View>
               </Animated.View>
               
@@ -1459,7 +1472,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                         {
                           backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
                           borderColor: isBestValue
-                            ? (isDarkMode ? 'rgba(0, 212, 170, 0.45)' : 'rgba(0, 212, 170, 0.5)')
+                            ? (isDarkMode ? 'rgba(107, 201, 176, 0.5)' : 'rgba(61, 147, 122, 0.45)')
                             : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
                           borderWidth: isBestValue ? 1.5 : 1,
                         },
@@ -1472,7 +1485,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                       activeOpacity={0.7}
                     >
                       {purchasing === pkg.id ? (
-                        <ActivityIndicator size="small" color="#FFD700" style={{ marginVertical: 8 }} />
+                        <ActivityIndicator size="small" color={WALLET_MINT} style={{ marginVertical: 8 }} />
                       ) : (
                         <>
                           {isBestValue && (
@@ -1485,7 +1498,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                           </Text>
                           <Text style={[styles.getTokensGridLabel, { color: colors.textSecondary }]}>tokens</Text>
                           <View style={[styles.getTokensGridPriceWrap, {
-                            backgroundColor: isDarkMode ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 215, 0, 0.12)',
+                            backgroundColor: isDarkMode ? 'rgba(107, 201, 176, 0.14)' : 'rgba(228, 235, 138, 0.2)',
                           }]}>
                             <Text style={styles.getTokensGridPrice}>${pkg.price_usd.toFixed(2)}</Text>
                           </View>
@@ -1718,7 +1731,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(107, 201, 176, 0.14)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1841,7 +1854,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFD700',
+    color: WALLET_MINT_BRIGHT,
     letterSpacing: -0.2,
   },
 
@@ -1927,14 +1940,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(107, 201, 176, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: 'rgba(107, 201, 176, 0.28)',
   },
   getTokensButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFD700',
+    color: WALLET_LEMON,
     letterSpacing: -0.2,
   },
 
@@ -2029,7 +2042,7 @@ const styles = StyleSheet.create({
   getTokensGridPrice: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFD700',
+    color: WALLET_ON_LEMON,
     letterSpacing: -0.2,
   },
   getTokensGridBestPill: {
@@ -2037,13 +2050,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(0, 212, 170, 0.25)',
+    backgroundColor: 'rgba(107, 201, 176, 0.22)',
     alignSelf: 'center',
   },
   getTokensGridBestPillText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#00D4AA',
+    color: WALLET_MINT,
     letterSpacing: 0.2,
   },
   getTokensSecureRow: {
@@ -2204,7 +2217,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     width: Math.min(screenWidth - 48, 340),
-    shadowColor: '#00D9FF',
+    shadowColor: WALLET_MINT,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,
     shadowRadius: 24,
@@ -2277,7 +2290,7 @@ const styles = StyleSheet.create({
   comingSoonButton: {
     borderRadius: 24,
     marginTop: 28,
-    shadowColor: '#00D9FF',
+    shadowColor: WALLET_MINT,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -2294,7 +2307,7 @@ const styles = StyleSheet.create({
   comingSoonButtonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: WALLET_ON_LEMON,
     letterSpacing: -0.3,
   },
   comingSoonFooter: {
@@ -2348,10 +2361,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  activeTab: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderColor: 'rgba(255, 215, 0, 0.3)',
   },
   tabText: {
     fontSize: 12,

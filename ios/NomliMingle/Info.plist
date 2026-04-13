@@ -46,7 +46,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>106</string>
+    <string>138</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 	<key>GADApplicationIdentifier</key>
@@ -63,13 +63,11 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Nomli Mingle uses your camera to take and upload profile photos, share video moments with friends, and participate in video calls.</string>
+    <string>Nomli Mingle uses your camera to take and upload profile photos, share video moments with friends, and for live streaming.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to use Face ID</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Nomli Mingle uses your microphone for recording audio in voice messages, video calls, and live streaming.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Nomli Mingle uses your approximate location to help you discover nearby users and local events. Your exact location is not shared publicly.</string>
+    <string>Nomli Mingle uses your microphone for voice messages and live streaming.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Nomli Mingle needs to save photos and videos to your device when you choose to download them. Media in chat auto-deletes after 24 hours for privacy, but you can save important photos permanently to your device.</string>
     <key>NSPhotoLibraryUsageDescription</key>

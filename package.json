@@ -7,7 +7,13 @@
     "autolinking": {
       "android": {
         "exclude": [
-          "expo-in-app-purchases"
+          "expo-in-app-purchases",
+          "expo-location"
+        ]
+      },
+      "ios": {
+        "exclude": [
+          "expo-location"
         ]
       }
     }
@@ -80,7 +86,6 @@
     "expo-linear-gradient": "~14.0.2",
     "expo-linking": "~7.0.5",
     "expo-local-authentication": "~15.0.2",
-    "expo-location": "~18.0.10",
     "expo-media-library": "~17.0.6",
     "expo-modules-autolinking": "~2.0.0",
     "expo-navigation-bar": "~4.0.9",
@@ -89,6 +94,7 @@
     "expo-router": "~4.0.21",
     "expo-screen-orientation": "~8.0.4",
     "expo-secure-store": "~14.0.1",
+    "expo-share-extension": "^3.0.0",
     "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.1",
     "expo-symbols": "~0.2.2",
@@ -102,6 +108,7 @@
     "lucide-react-native": "^0.475.0",
     "moti": "^0.30.0",
     "nanoid": "^5.1.6",
+    "patch-package": "^8.0.1",
     "pretty-format": "^30.0.5",
     "process": "^0.11.10",
     "react": "18.3.1",
@@ -146,7 +153,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-native": "^4.1.0",
-    "patch-package": "^8.0.1",
     "react-native-svg-transformer": "^1.5.1",
     "sharp": "^0.34.1",
     "typescript": "~5.8.3"

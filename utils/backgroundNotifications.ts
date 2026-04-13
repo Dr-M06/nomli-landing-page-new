@@ -29,8 +29,6 @@ export const handleNotificationReceived = async (notification: Notifications.Not
     error('[BackgroundNotifications] Error updating badge count:', error);
   }
   
-  // Call notifications are handled by the notification system itself
-  // No special handling needed here - the system notification will display
 };
 
 // Handle notification response (when user taps notification)
@@ -53,9 +51,6 @@ export const handleNotificationResponseReceived = async (response: Notifications
     // Store the navigation intent for when app opens
     // This will be handled by the app when it becomes active
     await storeNavigationIntent(data);
-  } else if (data?.type === 'call' && data?.caller_id) {
-    // Handle call notification response
-    await storeCallIntent(data);
   } else if (data?.type === 'like' || data?.type === 'comment' || data?.type === 'new_post') {
     // Store navigation intent for post - will be handled when app opens
     const postId = data?.post_id;
@@ -95,16 +90,6 @@ const storeNavigationIntent = async (data: any) => {
   }
 };
 
-// Store call intent for when app becomes active
-const storeCallIntent = async (data: any) => {
-  try {
-    // Store call intent for when app opens
-    log('Storing call intent:', data);
-  } catch (error) {
-    log('Error storing call intent:', error);
-  }
-};
-
 // Configure notification channels for Android
 export const configureNotificationChannels = async () => {
   if (Platform.OS === 'android') {
@@ -115,17 +100,6 @@ export const configureNotificationChannels = async () => {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#19444d',
       sound: 'default',
-      enableVibrate: true,
-      showBadge: true,
-    });
-
-    await Notifications.setNotificationChannelAsync('calls', {
-      name: 'Calls',
-      description: 'Incoming call notifications',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 500, 200, 500, 200, 500], // Ring pattern
-      lightColor: '#FF4444', // Red for calls
-      sound: 'ringtone', // Use device ringtone for calls
       enableVibrate: true,
       showBadge: true,
     });

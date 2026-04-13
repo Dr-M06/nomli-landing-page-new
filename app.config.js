@@ -29,7 +29,7 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "nomlimingle",
-    userInterfaceStyle: "automatic",
+    userInterfaceStyle: "dark",
     newArchEnabled: false,
     splash: {
       image: "./assets/images/icon.png",
@@ -46,7 +46,7 @@ module.exports = {
     },
     android: {
       package: "com.nomli.mingle2",
-      versionCode: 115,
+      versionCode: 117,
       googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
@@ -92,13 +92,36 @@ module.exports = {
           category: ["DEFAULT"],
           data: { mimeType: "image/*" },
         },
+        {
+          action: "SEND_MULTIPLE",
+          category: ["DEFAULT"],
+          data: { mimeType: "video/*" },
+        },
+        {
+          action: "SEND",
+          category: ["DEFAULT"],
+          data: { mimeType: "*/*" },
+        },
+        {
+          action: "SEND_MULTIPLE",
+          category: ["DEFAULT"],
+          data: { mimeType: "*/*" },
+        },
       ],
     },
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.nomli.mingle2",
-      buildNumber: "106",
+      buildNumber: "138",
       deploymentTarget: "16.0",
+      privacyManifests: {
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp",
+            NSPrivacyAccessedAPITypeReasons: ["C617.1"],
+          },
+        ],
+      },
       entitlements: {
         "aps-environment": "production"
       },
@@ -115,11 +138,10 @@ module.exports = {
           "com.nomli.mingle2.refresh",
           "com.nomli.mingle2.processing"
         ],
-        NSCameraUsageDescription: "Nomli Mingle uses your camera to take and upload profile photos and share video moments.",
-        NSMicrophoneUsageDescription: "Nomli Mingle uses your microphone for recording audio in voice messages.",
+        NSCameraUsageDescription: "Nomli Mingle uses your camera to take and upload profile photos, share video moments with friends, and for live streaming.",
+        NSMicrophoneUsageDescription: "Nomli Mingle uses your microphone for voice messages and live streaming.",
         NSPhotoLibraryUsageDescription: "Nomli Mingle lets you upload and share photos from your library to connect with other users and enhance your profile.",
         NSPhotoLibraryAddUsageDescription: "Nomli Mingle needs to save photos and videos to your device when you choose to download them. Media in chat auto-deletes after 24 hours for privacy, but you can save important photos permanently to your device.",
-        NSLocationWhenInUseUsageDescription: "Nomli Mingle uses your approximate location to help you discover nearby users and local events. Your exact location is not shared publicly.",
         NSUserNotificationsUsageDescription: "This app needs notification access to show messages and important updates.",
         NSProvisionalNotificationUsageDescription: "This app can send you notifications about messages and important updates.",
         UIViewControllerBasedStatusBarAppearance: false,
@@ -158,13 +180,26 @@ module.exports = {
         }
       ],
       "expo-dev-client",
-      "expo-apple-authentication",
       [
-        "expo-location",
+        "expo-share-extension",
         {
-          locationWhenInUsePermission: "Nomli Mingle uses your approximate location to help you discover nearby users and local events."
-        }
+          height: 380,
+          activationRules: [
+            { type: "text" },
+            { type: "url", max: 1 },
+            { type: "image", max: 5 },
+            { type: "video", max: 2 },
+            { type: "file", max: 5 },
+          ],
+          excludedPackages: [
+            "expo-dev-client",
+            "expo-splash-screen",
+            "expo-updates",
+            "expo-font",
+          ],
+        },
       ],
+      "expo-apple-authentication",
     ],
     experiments: {
       typedRoutes: true

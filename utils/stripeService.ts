@@ -21,6 +21,12 @@ export interface PaymentPlan {
   stripe_product_id?: string | null;
   is_active: boolean;
   display_order: number;
+  /** discover = dating premium; creator = Nomli Creator Pro; tokens = wallet allowance only */
+  plan_category?: 'discover' | 'creator' | 'tokens' | string;
+  /** App Store subscription product id when selling Creator Pro via Apple IAP */
+  iap_product_id_apple?: string | null;
+  /** Google Play subscription SKU for Creator Pro */
+  iap_product_id_google?: string | null;
 }
 
 export interface CheckoutResponse {

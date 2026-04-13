@@ -14,8 +14,6 @@ import { requestThrottler } from '../utils/requestThrottler';
 import { initializeLivestreamEngine, getLivestreamEngine } from '../utils/agoraLivestreamEngine';
 import { log, warn, error } from '../utils/productionLogger';
 
-// import { useAgoraContext } from '../contexts/AgoraContext'; // Not needed for now
-
 /**
  * Polyfill for AbortSignal.timeout() which is not available in React Native
  * Creates an AbortSignal that automatically aborts after the specified timeout
@@ -37,7 +35,7 @@ const createTimeoutSignal = (timeoutMs: number): AbortSignal => {
   return controller.signal;
 };
 
-// Get Agora module dynamically (same pattern as AgoraContext)
+// Get Agora module dynamically for live streaming
 let AgoraModule: any = null;
 const getAgoraModule = async () => {
   if (!AgoraModule) {
@@ -54,7 +52,7 @@ const getAgoraModule = async () => {
 
 /**
  * Agora v4 expects ChannelMediaOptions on joinChannel. Empty `{}` can yield ERR_JOIN_CHANNEL_REJECTED (-17)
- * on live broadcasting. Mirrors the working pattern in AgoraContext (publish + profile flags).
+ * on live broadcasting (publish + profile flags).
  */
 const buildLiveBroadcastJoinOptions = async (
   role: 'broadcaster' | 'audience',

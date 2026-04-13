@@ -136,6 +136,7 @@ serve(async (req) => {
       'metadata[plan_name]': plan.name,
       'metadata[token_amount]': plan.total_tokens.toString(),
       'metadata[currency]': currency,
+      'metadata[plan_category]': plan.plan_category || 'discover',
     });
 
     // For subscriptions, add subscription_data
@@ -143,6 +144,7 @@ serve(async (req) => {
       checkoutParams.append('subscription_data[metadata][user_id]', user.id);
       checkoutParams.append('subscription_data[metadata][plan_id]', planId);
       checkoutParams.append('subscription_data[metadata][token_amount]', plan.total_tokens.toString());
+      checkoutParams.append('subscription_data[metadata][plan_category]', plan.plan_category || 'discover');
     }
 
     const stripeResponse = await fetch(stripeCheckoutUrl, {

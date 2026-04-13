@@ -120,54 +120,6 @@ export const sendMessageNotification = async (
   return await sendPushNotification(recipientId, notification);
 };
 
-// Send incoming call notification
-export const sendCallNotification = async (
-  recipientId: string,
-  callerName: string,
-  callerId: string,
-  callType: 'audio' | 'video' = 'audio'
-): Promise<boolean> => {
-  const notification: PushNotificationData = {
-    title: `Incoming ${callType} call from ${callerName}`,
-    body: `Tap to answer or decline`,
-    data: {
-      type: 'call',
-      caller_id: callerId,
-      caller_name: callerName,
-      call_type: callType,
-      action: 'incoming_call',
-    },
-    sound: 'default',
-    badge: 1,
-  };
-
-  return await sendPushNotification(recipientId, notification);
-};
-
-// Send missed call notification
-export const sendMissedCallNotification = async (
-  recipientId: string,
-  callerName: string,
-  callerId: string,
-  callType: 'audio' | 'video' = 'audio'
-): Promise<boolean> => {
-  const notification: PushNotificationData = {
-    title: `Missed ${callType} call from ${callerName}`,
-    body: `Tap to call back`,
-    data: {
-      type: 'call',
-      caller_id: callerId,
-      caller_name: callerName,
-      call_type: callType,
-      action: 'missed_call',
-    },
-    sound: 'default',
-    badge: 1,
-  };
-
-  return await sendPushNotification(recipientId, notification);
-};
-
 // Send notification to multiple users (PARALLEL for speed)
 export const sendPushNotificationToUsers = async (
   userIds: string[],

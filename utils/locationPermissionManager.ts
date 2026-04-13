@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import * as Location from './expoLocationStub';
 import { Platform, Alert, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { log, warn, error } from './productionLogger';

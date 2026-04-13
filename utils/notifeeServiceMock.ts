@@ -23,9 +23,8 @@ export const EventType = {
 
 // Mock notifee service
 export const notifeeService = {
-  async displayCallNotification(options: any) {
-    log('[Notifee Mock] Call notification requested:', options.title);
-    // Firebase will handle the notification display
+  async cancelAllNotifications() {
+    log('[Notifee Mock] Cancel all notifications');
     return Promise.resolve();
   },
 
