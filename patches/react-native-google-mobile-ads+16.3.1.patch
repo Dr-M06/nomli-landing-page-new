@@ -1,0 +1,68 @@
+diff --git a/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt b/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
+index 6e70fdd..d36e641 100644
+--- a/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
++++ b/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
+@@ -31,7 +31,7 @@ import com.google.android.gms.ads.VideoOptions
+ import com.google.android.gms.ads.nativead.NativeAd
+ import com.google.android.gms.ads.nativead.NativeAdOptions
+ 
+-@ReactModule(ReactNativeGoogleMobileAdsNativeModule.NAME)
++@ReactModule(name = ReactNativeGoogleMobileAdsNativeModule.NAME)
+ class ReactNativeGoogleMobileAdsNativeModule(
+   reactContext: ReactApplicationContext
+ ) : NativeGoogleMobileAdsNativeModuleSpec(reactContext) {
+diff --git a/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts b/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts
+index f315f05..98c2756 100644
+--- a/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts
++++ b/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts
+@@ -16,24 +16,24 @@
+ 
+ import type { TurboModule } from 'react-native';
+ import { TurboModuleRegistry } from 'react-native';
+-import type { CodegenTypes } from 'react-native';
++import type { UnsafeObject } from 'react-native/Libraries/Types/CodegenTypes';
+ 
+ export interface Spec extends TurboModule {
+   // App initialization
+   initializeApp(
+-    options: CodegenTypes.UnsafeObject,
+-    appConfig: CodegenTypes.UnsafeObject,
+-  ): Promise<CodegenTypes.UnsafeObject>;
++    options: UnsafeObject,
++    appConfig: UnsafeObject,
++  ): Promise<UnsafeObject>;
+   setAutomaticDataCollectionEnabled(appName: string, enabled: boolean): void;
+   deleteApp(appName: string): Promise<void>;
+ 
+   // Events
+   eventsNotifyReady(ready: boolean): void;
+-  eventsGetListeners(): Promise<CodegenTypes.UnsafeObject>;
++  eventsGetListeners(): Promise<UnsafeObject>;
+   eventsPing(
+     eventName: string,
+-    eventBody: CodegenTypes.UnsafeObject,
+-  ): Promise<CodegenTypes.UnsafeObject>;
++    eventBody: UnsafeObject,
++  ): Promise<UnsafeObject>;
+   eventsAddListener(eventName: string): void;
+   eventsRemoveListener(eventName: string, all: boolean): void;
+ 
+@@ -42,15 +42,15 @@ export interface Spec extends TurboModule {
+   removeListeners(count: number): void;
+ 
+   // Meta
+-  metaGetAll(): Promise<CodegenTypes.UnsafeObject>;
++  metaGetAll(): Promise<UnsafeObject>;
+ 
+   // JSON
+-  jsonGetAll(): Promise<CodegenTypes.UnsafeObject>;
++  jsonGetAll(): Promise<UnsafeObject>;
+ 
+   // Preferences
+   preferencesSetBool(key: string, value: boolean): Promise<void>;
+   preferencesSetString(key: string, value: string): Promise<void>;
+-  preferencesGetAll(): Promise<CodegenTypes.UnsafeObject>;
++  preferencesGetAll(): Promise<UnsafeObject>;
+   preferencesClearAll(): Promise<void>;
+ }
+ 

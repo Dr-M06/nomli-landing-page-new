@@ -1,0 +1,452 @@
+diff --git a/node_modules/react-native/Libraries/Network/RCTNetworking.web.js b/node_modules/react-native/Libraries/Network/RCTNetworking.web.js
+new file mode 100644
+index 0000000..0142ca7
+--- /dev/null
++++ b/node_modules/react-native/Libraries/Network/RCTNetworking.web.js
+@@ -0,0 +1,112 @@
++/**
++ * Web implementation — RN only ships RCTNetworking.{ios,android}.js
++ */
++'use strict';
++
++const RCTDeviceEventEmitter = require('../EventEmitter/RCTDeviceEventEmitter').default;
++
++let nextId = 1;
++
++function bodyForFetch(data) {
++  if (data == null || data === '') return undefined;
++  if (typeof data === 'string') return data;
++  if (typeof data === 'object' && data.string != null) return data.string;
++  return undefined;
++}
++
++const RCTNetworking = {
++  addListener(eventType, listener, context) {
++    return RCTDeviceEventEmitter.addListener(eventType, listener, context);
++  },
++
++  sendRequest(
++    method,
++    _trackingName,
++    url,
++    headers,
++    data,
++    responseType,
++    _incrementalUpdates,
++    timeout,
++    callback,
++    withCredentials,
++  ) {
++    const requestId = nextId++;
++    callback(requestId);
++
++    const init = {
++      method,
++      headers: headers && typeof headers === 'object' ? { ...headers } : {},
++      credentials: withCredentials ? 'include' : 'same-origin',
++    };
++    const b = bodyForFetch(data);
++    if (b !== undefined && method !== 'GET' && method !== 'HEAD') {
++      init.body = b;
++    }
++
++    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
++    const t =
++      ac && typeof timeout === 'number' && timeout > 0
++        ? setTimeout(() => ac.abort(), timeout)
++        : null;
++
++    const done = (err, status, headerObj, urlOut, bodyStr) => {
++      if (t) clearTimeout(t);
++      if (err) {
++        RCTDeviceEventEmitter.emit('didCompleteNetworkResponse', [requestId, String(err), false]);
++        return;
++      }
++      RCTDeviceEventEmitter.emit('didReceiveNetworkResponse', [
++        requestId,
++        status,
++        headerObj || {},
++        urlOut || url,
++      ]);
++      RCTDeviceEventEmitter.emit('didReceiveNetworkData', [requestId, bodyStr || '']);
++      RCTDeviceEventEmitter.emit('didCompleteNetworkResponse', [requestId, null, false]);
++    };
++
++    if (typeof fetch !== 'function') {
++      done(new Error('fetch is not available'));
++      return;
++    }
++
++    fetch(url, ac ? { ...init, signal: ac.signal } : init)
++      .then(async (res) => {
++        const headerObj = {};
++        res.headers.forEach((v, k) => {
++          headerObj[k] = v;
++        });
++        try {
++          let text;
++          if (responseType === 'base64' || responseType === 'blob') {
++            const buf = await res.arrayBuffer();
++            const bytes = new Uint8Array(buf);
++            let binary = '';
++            for (let i = 0; i < bytes.length; i++) {
++              binary += String.fromCharCode(bytes[i]);
++            }
++            text = typeof globalThis.btoa === 'function' ? globalThis.btoa(binary) : '';
++          } else {
++            text = await res.text();
++          }
++          done(null, res.status, headerObj, res.url, text);
++        } catch (e) {
++          done(e);
++        }
++      })
++      .catch((err) => {
++        const msg = err && err.name === 'AbortError' ? 'timeout' : String(err && err.message ? err.message : err);
++        if (t) clearTimeout(t);
++        RCTDeviceEventEmitter.emit('didCompleteNetworkResponse', [requestId, msg, err && err.name === 'AbortError']);
++      });
++  },
++
++  abortRequest(_requestId) {},
++
++  clearCookies(cb) {
++    if (cb) cb(true);
++  },
++};
++
++module.exports = { default: RCTNetworking };
+diff --git a/node_modules/react-native/Libraries/Utilities/BackHandler.web.js b/node_modules/react-native/Libraries/Utilities/BackHandler.web.js
+new file mode 100644
+index 0000000..cac4430
+--- /dev/null
++++ b/node_modules/react-native/Libraries/Utilities/BackHandler.web.js
+@@ -0,0 +1,25 @@
++/**
++ * Web stub — RN ships BackHandler.{ios,android}.js only (no hardware back).
++ */
++'use strict';
++
++const _subs = [];
++
++const BackHandler = {
++  exitApp() {},
++  addEventListener(_eventName, handler) {
++    _subs.push(handler);
++    return {
++      remove: () => {
++        const i = _subs.indexOf(handler);
++        if (i >= 0) _subs.splice(i, 1);
++      },
++    };
++  },
++  removeEventListener(_eventName, handler) {
++    const i = _subs.indexOf(handler);
++    if (i >= 0) _subs.splice(i, 1);
++  },
++};
++
++module.exports = BackHandler;
+diff --git a/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.h b/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.h
+new file mode 100644
+index 0000000..d757580
+--- /dev/null
++++ b/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.h
+@@ -0,0 +1,119 @@
++
++/*
++ * This code was generated by [react-native-codegen](https://www.npmjs.com/package/react-native-codegen).
++ *
++ * Do not edit this file as changes may cause incorrect behavior and will be lost
++ * once the code is regenerated.
++ *
++ * @generated by GenerateRCTThirdPartyFabricComponentsProviderH
++ */
++
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
++
++#import <React/RCTComponentViewProtocol.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++Class<RCTComponentViewProtocol> RCTThirdPartyFabricComponentsProvider(const char *name);
++#if RCT_NEW_ARCH_ENABLED
++#ifndef RCT_DYNAMIC_FRAMEWORKS
++
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV
++Class<RCTComponentViewProtocol> RNDateTimePickerCls(void) __attribute__((used)); // 1
++#endif
++
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV
++Class<RCTComponentViewProtocol> RNCSliderCls(void) __attribute__((used)); // 3
++#endif
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++Class<RCTComponentViewProtocol> RNGoogleSigninButtonCls(void) __attribute__((used)); // 4
++#endif
++
++
++Class<RCTComponentViewProtocol> LottieAnimationViewCls(void) __attribute__((used)); // 6
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++Class<RCTComponentViewProtocol> AgoraRtcSurfaceViewCls(void) __attribute__((used)); // 7
++Class<RCTComponentViewProtocol> AgoraRtcTextureViewCls(void) __attribute__((used)); // 7
++#endif
++
++Class<RCTComponentViewProtocol> RNGestureHandlerButtonCls(void) __attribute__((used)); // 8
++Class<RCTComponentViewProtocol> RNGestureHandlerRootViewCls(void) __attribute__((used)); // 8
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++Class<RCTComponentViewProtocol> RNGoogleMobileAdsBannerViewCls(void) __attribute__((used)); // 9
++Class<RCTComponentViewProtocol> RNGoogleMobileAdsMediaViewCls(void) __attribute__((used)); // 9
++Class<RCTComponentViewProtocol> RNGoogleMobileAdsNativeViewCls(void) __attribute__((used)); // 9
++#endif
++
++
++#if !TARGET_OS_OSX
++Class<RCTComponentViewProtocol> RNCSafeAreaProviderCls(void) __attribute__((used)); // 11
++Class<RCTComponentViewProtocol> RNCSafeAreaViewCls(void) __attribute__((used)); // 11
++#endif
++
++#if !TARGET_OS_OSX
++Class<RCTComponentViewProtocol> RNSFullWindowOverlayCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSModalScreenCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenContainerCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenContentWrapperCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenFooterCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenNavigationContainerCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenStackHeaderConfigCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenStackHeaderSubviewCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSScreenStackCls(void) __attribute__((used)); // 12
++Class<RCTComponentViewProtocol> RNSSearchBarCls(void) __attribute__((used)); // 12
++#endif
++
++Class<RCTComponentViewProtocol> RNSVGCircleCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGClipPathCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGDefsCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGEllipseCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeBlendCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeColorMatrixCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeCompositeCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeFloodCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeGaussianBlurCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeMergeCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFeOffsetCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGFilterCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGForeignObjectCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGGroupCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGImageCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGSvgViewCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGLinearGradientCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGLineCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGMarkerCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGMaskCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGPathCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGPatternCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGRadialGradientCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGRectCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGSymbolCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGTextCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGTextPathCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGTSpanCls(void) __attribute__((used)); // 13
++Class<RCTComponentViewProtocol> RNSVGUseCls(void) __attribute__((used)); // 13
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++
++#endif
++
++#if !TARGET_OS_TV
++Class<RCTComponentViewProtocol> RNCWebViewCls(void) __attribute__((used)); // 15
++#endif
++
++
++#endif
++#endif
++
++#ifdef __cplusplus
++}
++#endif
++
++#pragma GCC diagnostic pop
++
+diff --git a/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.mm b/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.mm
+new file mode 100644
+index 0000000..da379f1
+--- /dev/null
++++ b/node_modules/react-native/React/Fabric/RCTThirdPartyFabricComponentsProvider.mm
+@@ -0,0 +1,172 @@
++
++/**
++ * This code was generated by [react-native-codegen](https://www.npmjs.com/package/react-native-codegen).
++ *
++ * Do not edit this file as changes may cause incorrect behavior and will be lost
++ * once the code is regenerated.
++ *
++ * @generated by GenerateRCTThirdPartyFabricComponentsProviderCpp
++ */
++
++// OSS-compatibility layer
++
++#import "RCTThirdPartyFabricComponentsProvider.h"
++
++#import <string>
++#import <unordered_map>
++
++Class<RCTComponentViewProtocol> RCTThirdPartyFabricComponentsProvider(const char *name) {
++  static std::unordered_map<std::string, Class (*)(void)> sFabricComponentsClassMap = {
++    #if RCT_NEW_ARCH_ENABLED
++    #ifndef RCT_DYNAMIC_FRAMEWORKS
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV
++
++    {"RNDateTimePicker", RNDateTimePickerCls}, // 1
++#endif
++
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV
++
++    {"RNCSlider", RNCSliderCls}, // 3
++#endif
++
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++
++    {"RNGoogleSigninButton", RNGoogleSigninButtonCls}, // 4
++#endif
++
++
++
++    {"LottieAnimationView", LottieAnimationViewCls}, // 6
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++
++    {"AgoraRtcSurfaceView", AgoraRtcSurfaceViewCls}, // 7
++
++    {"AgoraRtcTextureView", AgoraRtcTextureViewCls}, // 7
++#endif
++
++
++    {"RNGestureHandlerButton", RNGestureHandlerButtonCls}, // 8
++
++    {"RNGestureHandlerRootView", RNGestureHandlerRootViewCls}, // 8
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++
++    {"RNGoogleMobileAdsBannerView", RNGoogleMobileAdsBannerViewCls}, // 9
++
++    {"RNGoogleMobileAdsMediaView", RNGoogleMobileAdsMediaViewCls}, // 9
++
++    {"RNGoogleMobileAdsNativeView", RNGoogleMobileAdsNativeViewCls}, // 9
++#endif
++
++
++#if !TARGET_OS_OSX
++
++    {"RNCSafeAreaProvider", RNCSafeAreaProviderCls}, // 11
++
++    {"RNCSafeAreaView", RNCSafeAreaViewCls}, // 11
++#endif
++
++#if !TARGET_OS_OSX
++
++    {"RNSFullWindowOverlay", RNSFullWindowOverlayCls}, // 12
++
++    {"RNSModalScreen", RNSModalScreenCls}, // 12
++
++    {"RNSScreenContainer", RNSScreenContainerCls}, // 12
++
++    {"RNSScreenContentWrapper", RNSScreenContentWrapperCls}, // 12
++
++    {"RNSScreenFooter", RNSScreenFooterCls}, // 12
++
++    {"RNSScreen", RNSScreenCls}, // 12
++
++    {"RNSScreenNavigationContainer", RNSScreenNavigationContainerCls}, // 12
++
++    {"RNSScreenStackHeaderConfig", RNSScreenStackHeaderConfigCls}, // 12
++
++    {"RNSScreenStackHeaderSubview", RNSScreenStackHeaderSubviewCls}, // 12
++
++    {"RNSScreenStack", RNSScreenStackCls}, // 12
++
++    {"RNSSearchBar", RNSSearchBarCls}, // 12
++#endif
++
++
++    {"RNSVGCircle", RNSVGCircleCls}, // 13
++
++    {"RNSVGClipPath", RNSVGClipPathCls}, // 13
++
++    {"RNSVGDefs", RNSVGDefsCls}, // 13
++
++    {"RNSVGEllipse", RNSVGEllipseCls}, // 13
++
++    {"RNSVGFeBlend", RNSVGFeBlendCls}, // 13
++
++    {"RNSVGFeColorMatrix", RNSVGFeColorMatrixCls}, // 13
++
++    {"RNSVGFeComposite", RNSVGFeCompositeCls}, // 13
++
++    {"RNSVGFeFlood", RNSVGFeFloodCls}, // 13
++
++    {"RNSVGFeGaussianBlur", RNSVGFeGaussianBlurCls}, // 13
++
++    {"RNSVGFeMerge", RNSVGFeMergeCls}, // 13
++
++    {"RNSVGFeOffset", RNSVGFeOffsetCls}, // 13
++
++    {"RNSVGFilter", RNSVGFilterCls}, // 13
++
++    {"RNSVGForeignObject", RNSVGForeignObjectCls}, // 13
++
++    {"RNSVGGroup", RNSVGGroupCls}, // 13
++
++    {"RNSVGImage", RNSVGImageCls}, // 13
++
++    {"RNSVGSvgView", RNSVGSvgViewCls}, // 13
++
++    {"RNSVGLinearGradient", RNSVGLinearGradientCls}, // 13
++
++    {"RNSVGLine", RNSVGLineCls}, // 13
++
++    {"RNSVGMarker", RNSVGMarkerCls}, // 13
++
++    {"RNSVGMask", RNSVGMaskCls}, // 13
++
++    {"RNSVGPath", RNSVGPathCls}, // 13
++
++    {"RNSVGPattern", RNSVGPatternCls}, // 13
++
++    {"RNSVGRadialGradient", RNSVGRadialGradientCls}, // 13
++
++    {"RNSVGRect", RNSVGRectCls}, // 13
++
++    {"RNSVGSymbol", RNSVGSymbolCls}, // 13
++
++    {"RNSVGText", RNSVGTextCls}, // 13
++
++    {"RNSVGTextPath", RNSVGTextPathCls}, // 13
++
++    {"RNSVGTSpan", RNSVGTSpanCls}, // 13
++
++    {"RNSVGUse", RNSVGUseCls}, // 13
++#if !TARGET_OS_OSX && !TARGET_OS_TV && !TARGET_OS_VISION
++
++#endif
++
++#if !TARGET_OS_TV
++
++    {"RNCWebView", RNCWebViewCls}, // 15
++#endif
++
++    #endif
++    #endif
++  };
++
++  auto p = sFabricComponentsClassMap.find(name);
++  if (p != sFabricComponentsClassMap.end()) {
++    auto classFunc = p->second;
++    return classFunc();
++  }
++  return nil;
++}

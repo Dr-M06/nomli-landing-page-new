@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "624235521369",
+    "project_id": "notification-58c70",
+    "storage_bucket": "notification-58c70.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:624235521369:android:6f84a4513a1d6148125848",
+        "android_client_info": {
+          "package_name": "com.nomli.mingle2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7eod88ZUpFXNOWD_nts2VyG-_JfxQHg0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
