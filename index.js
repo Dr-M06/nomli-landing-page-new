@@ -81,8 +81,4 @@ try {
 
 // Note: Expo notification handler is configured in app/_layout.tsx
 // This prevents conflicts and ensures single source of truth
-if (Platform.OS === 'web') {
-  if (__DEV__) console.log('[index.js] ✅ Entry point loaded (web) - Firebase skipped, using Expo notifications');
-} else {
-if (__DEV__) console.log('[index.js] ✅ Entry point loaded - notification handlers configured in app/_layout.tsx'); 
-}
+if (__DEV__) console.log('[index.js] ✅ Entry point loaded - notification handlers configured in app/_layout.tsx');

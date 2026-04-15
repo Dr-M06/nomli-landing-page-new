@@ -561,14 +561,14 @@ export async function sendVoiceNote(
     }
 
     try {
-      const { requestImmediateMessagePush } = await import('./triggerProcessNotification');
-      requestImmediateMessagePush({
+      const { sendInstantPrivateMessagePush } = await import('./triggerProcessNotification');
+      await sendInstantPrivateMessagePush({
         id: data.id,
         sender_id: data.sender_id,
         recipient_id: data.recipient_id,
       });
     } catch {
-      // best-effort
+      // sendInstantPrivateMessagePush already logs; message still saved
     }
 
     await upsertDmInitiationRow(senderId, receiverId);
@@ -673,14 +673,14 @@ export async function sendMessage(
     }
 
     try {
-      const { requestImmediateMessagePush } = await import('./triggerProcessNotification');
-      requestImmediateMessagePush({
+      const { sendInstantPrivateMessagePush } = await import('./triggerProcessNotification');
+      await sendInstantPrivateMessagePush({
         id: data.id,
         sender_id: data.sender_id,
         recipient_id: data.recipient_id,
       });
     } catch {
-      // best-effort: cron still drains the queue
+      // sendInstantPrivateMessagePush already logs; message still saved
     }
 
     await upsertDmInitiationRow(senderId, receiverId);

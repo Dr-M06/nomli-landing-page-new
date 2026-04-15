@@ -139,6 +139,30 @@ index 1c9e248..0000000
 -
 -  void registerAsset(T view, String assetKey, int reactTag);
 -}
+diff --git a/node_modules/react-native-google-mobile-ads/android/src/oldarch/io/invertase/googlemobileads/NativeGoogleMobileAdsNativeModuleSpec.kt b/node_modules/react-native-google-mobile-ads/android/src/oldarch/io/invertase/googlemobileads/NativeGoogleMobileAdsNativeModuleSpec.kt
+deleted file mode 100644
+index d44c465..0000000
+--- a/node_modules/react-native-google-mobile-ads/android/src/oldarch/io/invertase/googlemobileads/NativeGoogleMobileAdsNativeModuleSpec.kt
++++ /dev/null
+@@ -1,18 +0,0 @@
+-package io.invertase.googlemobileads
+-
+-import com.facebook.react.bridge.Promise
+-import com.facebook.react.bridge.ReactApplicationContext
+-import com.facebook.react.bridge.ReactContextBaseJavaModule
+-import com.facebook.react.bridge.ReadableMap
+-import com.facebook.react.modules.core.DeviceEventManagerModule
+-
+-abstract class NativeGoogleMobileAdsNativeModuleSpec(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+-  abstract fun load(adUnitId: String, requestOptions: ReadableMap, promise: Promise)
+-  abstract fun destroy(responseId: String)
+-
+-  fun emitOnAdEvent(params: ReadableMap) {
+-    reactApplicationContext
+-      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+-      .emit("RNGMANativeAdEvent", params)
+-  }
+-}
 diff --git a/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts b/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts
 index f315f05..98c2756 100644
 --- a/node_modules/react-native-google-mobile-ads/src/specs/modules/NativeAppModule.ts

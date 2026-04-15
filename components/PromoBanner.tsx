@@ -83,7 +83,7 @@ export default function PromoBanner({
       // In fullscreen feed ads, avoid pushing EventDetail to keep return flow stable.
       onDismiss?.();
     } else {
-      router.push(`/events/${banner.id}`);
+      router.push('/(tabs)/community');
     }
   };
 

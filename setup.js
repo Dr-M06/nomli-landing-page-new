@@ -100,21 +100,14 @@ requiredDirs.forEach(dir => {
   }
 });
 
-// Install git hooks to prevent build artifacts
-console.log('\n🔧 Installing Git hooks...');
-try {
-  const { execSync } = require('child_process');
-  execSync('./install-git-hooks.sh', { stdio: 'inherit' });
-  console.log('✅ Git hooks installed');
-} catch (error) {
-  console.log('⚠️ Could not install Git hooks:', error.message);
-}
+// Git hooks ship in .husky/ (optional: npx husky if your team uses it).
+console.log('\n🔧 Git hooks: see .husky/ (pre-commit blocks committing build artifacts).');
 
 // Clean any existing build artifacts
 console.log('\n🧹 Cleaning existing build artifacts...');
 try {
   const { execSync } = require('child_process');
-  execSync('./cleanup.sh', { stdio: 'inherit' });
+  execSync('bash scripts/cleanup-artifacts.sh', { stdio: 'inherit' });
   console.log('✅ Build artifacts cleaned');
 } catch (error) {
   console.log('⚠️ Could not run cleanup script:', error.message);
@@ -124,7 +117,7 @@ console.log('\n🎯 Setup Summary:');
 console.log('1. ✅ Environment file setup');
 console.log('2. ✅ Dependencies checked');
 console.log('3. ✅ Directory structure verified');
-console.log('4. ✅ Git hooks installed (prevents build artifact commits)');
+console.log('4. ✅ Git hooks noted (.husky/)');
 console.log('5. ✅ Build artifacts cleaned');
 
 console.log('\n📋 Next Steps:');

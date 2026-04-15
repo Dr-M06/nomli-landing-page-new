@@ -6,7 +6,7 @@ const ROOT = path.resolve(__dirname, '..');
 const COMPONENTS_DIR = path.join(ROOT, 'components');
 
 const CODE_EXTS = ['.ts', '.tsx', '.js', '.jsx'];
-const IGNORE_DIRS = new Set(['node_modules', 'ios', 'android', '.expo', '.web-stubs', 'dist', 'build']);
+const IGNORE_DIRS = new Set(['node_modules', 'ios', 'android', '.expo', 'dist', 'build']);
 
 function normalizeSlashes(p) {
   return p.replace(/\\/g, '/');

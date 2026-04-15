@@ -2,7 +2,7 @@
 # Copy this to wrangler.toml and fill in your KV namespace ID
 
 name = "nomli-cache"
-main = "cloudflare-cache-worker.js"  # Use .js file for deployment
+main = "cloudflare-cache-worker.js"  # Worker source at repo root (no duplicate .ts)
 compatibility_date = "2024-01-01"
 
 # KV Namespace Binding

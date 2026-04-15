@@ -1,7 +1,7 @@
 {
   "name": "nomli-mingle",
   "main": "index.js",
-  "version": "1.0.7",
+  "version": "1.0.51",
   "private": true,
   "expo": {
     "autolinking": {
@@ -34,7 +34,8 @@
     "ios": "expo run:ios",
     "postinstall": "npx patch-package",
     "clean": "rm -rf node_modules .expo ios/build android/build && npm install",
-    "clean-artifacts": "./cleanup.sh",
+    "clean-artifacts": "bash scripts/cleanup-artifacts.sh",
+    "clean:native": "rm -rf android/app/build android/build android/.gradle ios/build ios/Pods .expo && cd ios && pod install && cd ../android && ./gradlew clean --no-daemon",
     "clean-all": "npm run clean-artifacts && npm run clean",
     "fresh-start": "npm run clean && npm run setup && npm run start",
     "prebuild": "npm run clean-artifacts",
@@ -112,7 +113,6 @@
     "pretty-format": "^30.0.5",
     "process": "^0.11.10",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-agora": "^4.6.2",
     "react-native-gesture-handler": "~2.20.2",
@@ -129,7 +129,6 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-version-check": "^3.5.0",
     "react-native-view-shot": "~4.0.3",
-    "react-native-web": "~0.19.13",
     "react-native-webview": "^13.16.0",
     "stacktrace-parser": "^0.1.11",
     "supabase": "^2.24.3",
@@ -160,7 +159,12 @@
   "overrides": {
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
-    "fast-glob": "3.3.3",
+    "ast-types": "0.16.1",
+    "commander": "11.1.0",
+    "hermes-estree": "0.25.1",
+    "hermes-parser": "0.25.1",
+    "micromatch": "4.0.8",
+    "recast": "0.23.11",
     "ts-interface-checker": "1.0.2"
   }
 }

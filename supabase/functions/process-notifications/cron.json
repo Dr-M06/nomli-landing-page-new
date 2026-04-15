@@ -1,4 +1,4 @@
 {
   "cron": "*/2 * * * *",
-  "description": "Process pending push queue every 2 minutes (app-offline / missed Realtime). Enable in Supabase Dashboard → Edge Functions → process-notifications → Cron."
+  "description": "REQUIRED for timely pushes when the sender app cannot invoke this function: process pending notification_queue every 2 minutes. Enable in Supabase Dashboard → Edge Functions → process-notifications → Schedules/Cron. Optional: Database Webhook on notification_queue INSERT → POST this function with body { \"record\": { \"id\": \"...\" } }."
 }

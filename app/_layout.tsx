@@ -276,11 +276,7 @@ const toastConfig = {
   )
 };
 
-// RN Web: flex:1 alone can collapse to 0 height if the root chain only uses % heights.
-const WEB_STACK_CONTENT_STYLE =
-  Platform.OS === 'web'
-    ? { flex: 1, minHeight: '100vh' as const, width: '100%' as const, backgroundColor: 'transparent' as const }
-    : { backgroundColor: 'transparent' as const };
+const STACK_CONTENT_STYLE = { backgroundColor: 'transparent' as const };
 
 // App layout with theme aware status bar
 function AppLayoutWithTheme() {
@@ -300,7 +296,7 @@ function AppLayoutWithTheme() {
       <Stack 
         screenOptions={{ 
           headerShown: false,
-          contentStyle: WEB_STACK_CONTENT_STYLE,
+          contentStyle: STACK_CONTENT_STYLE,
           animation: 'slide_from_right'
         }}
       >
@@ -362,9 +358,7 @@ function SafeNativeModuleProvider({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   // Background initialization (cache, DB, notifications, etc.)
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      void import('../utils/expoAvAudioMode').then((m) => m.configurePlaybackAudioMode().catch(() => {}));
-    }
+    void import('../utils/expoAvAudioMode').then((m) => m.configurePlaybackAudioMode().catch(() => {}));
     // CRITICAL: Start IAP listener immediately (don't wait for prepare race)
     if (Platform.OS === 'ios') {
       import('../utils/storeKitService').then(({ initIAPAtAppRoot }) => {
@@ -569,13 +563,7 @@ export default function RootLayout() {
       </SafeAreaProvider>
     }>
       <SafeAreaProvider>
-        <GestureHandlerRootView
-          style={
-            Platform.OS === 'web'
-              ? { flex: 1, minHeight: '100vh' as const, width: '100%' as const }
-              : { flex: 1 }
-          }
-        >
+        <GestureHandlerRootView style={{ flex: 1 }}>
           <ErrorBoundary fallback={<ShimmerLoader fullScreen={true} />}>
             <ThemeProvider>
               <ErrorBoundary fallback={<ShimmerLoader fullScreen={true} />}>

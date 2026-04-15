@@ -196,7 +196,6 @@ export function getActivityDescription(type: string, count: number): string {
     followers: count === 1 ? 'follower' : 'followers',
     gifts: count === 1 ? 'gift' : 'gifts',
     calls: count === 1 ? 'missed call' : 'missed calls',
-    events: count === 1 ? 'upcoming event' : 'upcoming events'
   };
 
   return descriptions[type] || 'activity';
@@ -226,10 +225,6 @@ export function formatNotificationSummary(activities: Record<string, number>): s
   
   if (activities.calls > 0) {
     parts.push(`${activities.calls} ${getActivityDescription('calls', activities.calls)}`);
-  }
-  
-  if (activities.events > 0) {
-    parts.push(`${activities.events} ${getActivityDescription('events', activities.events)}`);
   }
 
   if (parts.length === 0) {

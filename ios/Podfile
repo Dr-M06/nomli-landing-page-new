@@ -90,6 +90,17 @@ target 'NomliMingle' do
       end
     end
 
+    # fmt 11.x + newer Apple Clang (e.g. Xcode 16.2+): consteval format-string checks in
+    # format-inl.h fail as "not a constant expression". Compile only the fmt pod as C++17
+    # so that path is disabled; the rest of the app/Pods stay on RN's C++20.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |cfg|
+        cfg.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
+
     # Strip Finder/iCloud extended attributes — otherwise Release CodeSign can fail with
     # "resource fork, Finder information, or similar detritus not allowed" on pod frameworks.
     pods_dir = installer.sandbox.root.to_s

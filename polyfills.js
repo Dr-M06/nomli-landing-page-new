@@ -45,15 +45,9 @@ try {
     Platform = { OS: 'ios' }; // Default to iOS for safety
   }
 
-  // Only run on native platforms (web has these APIs natively)
-  if (Platform && Platform.OS === 'web') {
-    // Web platform already has these APIs
-    console.log('[polyfills] ℹ️ Web platform - polyfills not needed');
-    module.exports = {};
-  } else {
-    // Continue with polyfill setup for native platforms
+  // Polyfill setup for React Native (iOS / Android)
 
-    // Get global object (works in both Node.js and React Native)
+  // Get global object (works in both Node.js and React Native)
     const globalObj = typeof global !== 'undefined' ? global : 
                       typeof globalThis !== 'undefined' ? globalThis :
                       typeof window !== 'undefined' ? window : {};
@@ -333,9 +327,8 @@ try {
       }
     }
 
-    // Export nothing (this file is for side effects only)
-    module.exports = {};
-  } // End of else block for native platforms
+  // Export nothing (this file is for side effects only)
+  module.exports = {};
 } catch (polyfillError) {
   // If polyfills fail to load, log error but don't break the app
   console.error('[polyfills] ❌ CRITICAL: Polyfill loading failed:', polyfillError?.message);

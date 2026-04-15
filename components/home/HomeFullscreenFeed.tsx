@@ -107,25 +107,18 @@ type ActionGlassBubbleProps = {
 function ActionGlassBubble({ children, variant = 'default' }: ActionGlassBubbleProps) {
   const veil =
     variant === 'strong' ? 'rgba(6, 8, 16, 0.5)' : 'rgba(6, 8, 16, 0.38)';
-  const webBg =
-    variant === 'strong' ? 'rgba(15, 23, 42, 0.82)' : 'rgba(15, 23, 42, 0.64)';
-
   return (
     <View style={styles.actionGlassShadowWrap}>
       <View style={[styles.actionGlassInner, variant === 'strong' && styles.actionGlassInnerStrong]}>
-        {Platform.OS === 'web' ? (
-          <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: webBg }]} />
-        ) : (
-          <>
-            <BlurView
-              intensity={32}
-              tint="dark"
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: veil }]} />
-          </>
-        )}
+        <>
+          <BlurView
+            intensity={32}
+            tint="dark"
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
+          <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: veil }]} />
+        </>
         <View style={styles.actionGlassIconSlot} pointerEvents="box-none">
           {children}
         </View>

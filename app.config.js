@@ -21,11 +21,8 @@ module.exports = {
   expo: {
     name: "Nomli",
     slug: "nomli-mingle",
-    version: "1.0.50",
-    // Native-first: streaming/push/ads have limited web parity. Including `web` is required for
-    // `expo start` + browser: without it, localhost serves the native JSON manifest, not HTML.
-    // If the web bundle fails, guard native-only code with Platform.OS !== 'web' or .web.tsx files.
-    platforms: ['ios', 'android', 'web'],
+    version: "1.0.51",
+    platforms: ['ios', 'android'],
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "nomlimingle",
@@ -46,7 +43,7 @@ module.exports = {
     },
     android: {
       package: "com.nomli.mingle2",
-      versionCode: 117,
+      versionCode: 118,
       googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
@@ -112,7 +109,7 @@ module.exports = {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.nomli.mingle2",
-      buildNumber: "138",
+      buildNumber: "139",
       deploymentTarget: "16.0",
       privacyManifests: {
         NSPrivacyAccessedAPITypes: [
@@ -152,13 +149,6 @@ module.exports = {
         UISupportsDocumentBrowser: false,
         ITSAppUsesNonExemptEncryption: false
       }
-    },
-    web: {
-      bundler: "metro",
-      // `static` runs SSR (expo-router/render.js) and pulls RN internals without web shims;
-      // Native-first (Agora, etc.). SPA avoids SSR pulling RN internals without web shims.
-      output: "single",
-      favicon: "./assets/images/icon.png"
     },
     plugins: [
       [

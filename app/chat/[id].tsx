@@ -88,7 +88,7 @@ import EnhancedAvatar from '../../components/EnhancedAvatar';
 import * as FileSystem from 'expo-file-system';
 import { badgeCounter } from '../../utils/badgeCounter';
 import { log, warn, error } from '../../utils/productionLogger';
-import { triggerProcessNotification } from '../../utils/triggerProcessNotification';
+import { sendInstantReactionPush } from '../../utils/triggerProcessNotification';
 
 
 
@@ -1584,9 +1584,7 @@ export default function ChatScreen() {
       }).then(() => {}).catch(() => {});
     } catch (_) {}
 
-    // Queue + send a push notification for the reaction (so it shows even when recipient is offline).
-    // This relies on the `process-notifications` Edge Function and supports tokens fetched server-side.
-    // Only send notification when adding/switching reactions, not when removing
+    // Instant push for reaction (no notification_queue — Edge Function sends Expo directly).
     if (result.success && result.action !== 'removed') {
       try {
         const recipientId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : null;
@@ -1598,30 +1596,14 @@ export default function ChatScreen() {
           const previewSource = (message.content || '').trim();
           const preview = previewSource.length > 80 ? previewSource.slice(0, 80) + '...' : previewSource;
 
-          const { data: queued, error: queueError } = await supabase
-            .from('notification_queue')
-            .insert({
-              recipient_id: recipientId,
-              sender_id: user.id,
-              sender_name: senderName,
-              notification_type: 'message_reaction',
-              message_content: preview,
-              metadata: {
-                emoji,
-                message_id: message.id,
-                message_preview: preview,
-                chat_id: user.id,
-                sender_id: user.id,
-                sender_name: senderName,
-              },
-              status: 'pending',
-            })
-            .select('id')
-            .single();
-
-          if (!queueError && queued?.id) {
-            triggerProcessNotification(queued.id);
-          }
+          await sendInstantReactionPush({
+            sender_id: user.id,
+            recipient_id: recipientId,
+            message_id: message.id,
+            emoji,
+            sender_name: senderName,
+            message_preview: preview,
+          });
         }
       } catch (_) {
         // Best-effort only: reactions should still work even if notification fails

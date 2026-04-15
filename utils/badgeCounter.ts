@@ -7,7 +7,6 @@ import { log, warn, error } from './productionLogger';
 export interface BadgeCounts {
   total: number;
   messages: number;
-  events: number;
   community: number;
 }
 
@@ -48,11 +47,10 @@ class BadgeCounterService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        return { total: 0, messages: 0, events: 0, community: 0 };
+        return { total: 0, messages: 0, community: 0 };
       }
 
       let messageCount = 0;
-      let eventCount = 0;
       let communityCount = 0;
 
       // Try to get unread message count from private_messages
@@ -65,19 +63,6 @@ class BadgeCounterService {
         messageCount = msgCount || 0;
       } catch (error) {
         log('[BadgeCounter] Could not count private messages:', error);
-      }
-
-      // Try to get unread event notifications - use a simpler approach
-      try {
-        // Count events that might have notifications (this is a placeholder)
-        const { count: evtCount } = await supabase
-          .from('events')
-          .select('*', { count: 'exact', head: true })
-          .eq('host_id', user.id)
-          .is('deleted_at', null);
-        eventCount = evtCount || 0;
-      } catch (error) {
-        log('[BadgeCounter] Could not count events:', error);
       }
 
       // Try to get community notifications - use posts as fallback
@@ -95,16 +80,15 @@ class BadgeCounterService {
 
       const counts: BadgeCounts = {
         messages: messageCount,
-        events: eventCount,
         community: communityCount,
-        total: messageCount + eventCount + communityCount
+        total: messageCount + communityCount
       };
 
       log('[BadgeCounter] Unread counts:', counts);
       return counts;
     } catch (error) {
       error('[BadgeCounter] Error getting unread counts:', error);
-      return { total: 0, messages: 0, events: 0, community: 0 };
+      return { total: 0, messages: 0, community: 0 };
     }
   }
 
@@ -225,7 +209,7 @@ class BadgeCounterService {
   /**
    * Increment badge count for new notification
    */
-  async incrementBadgeCount(type: 'messages' | 'events' | 'community'): Promise<void> {
+  async incrementBadgeCount(type: 'messages' | 'community'): Promise<void> {
     try {
       const counts = await this.getUnreadCounts();
       counts[type]++;
@@ -243,7 +227,7 @@ class BadgeCounterService {
   /**
    * Decrement badge count when notification is read
    */
-  async decrementBadgeCount(type: 'messages' | 'events' | 'community'): Promise<void> {
+  async decrementBadgeCount(type: 'messages' | 'community'): Promise<void> {
     try {
       const counts = await this.getUnreadCounts();
       if (counts[type] > 0) {

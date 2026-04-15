@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { supabase } from '../utils/supabase';
-import FlamingoEggGiftOverlay from './FlamingoEggGiftOverlay';
-import { log, warn, error } from '../utils/productionLogger';
-
+import { error as logError } from '../utils/productionLogger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -19,20 +17,6 @@ interface Gift {
 // Flamingo Egg token reward (no random gift inside)
 const EGG_TOKENS_REWARD = 25;
 
-const RARITY_GRADIENTS = {
-  common: ['#FF69B4', '#FF1493'],
-  rare: ['#00BFFF', '#0080FF'],
-  epic: ['#9370DB', '#8A2BE2'],
-  legendary: ['#FFD700', '#FFA500'],
-};
-
-const RARITY_COLORS = {
-  common: '#FF69B4',
-  rare: '#00BFFF',
-  epic: '#9370DB',
-  legendary: '#FFD700',
-};
-
 interface FloatingGiftBoxProps {
   giftTransactionId?: string; // ID of the gift_transaction for flamingo egg
   senderId?: string; // ID of the person who sent the box
@@ -43,14 +27,23 @@ interface FloatingGiftBoxProps {
   onComplete?: () => void;
 }
 
-export default function FloatingGiftBox({ 
-  giftTransactionId, 
+const TAPS_REQUIRED = 10;
+
+function crackEmojiForTaps(tapCount: number): string {
+  if (tapCount >= 8) return '💥';
+  if (tapCount >= 5) return '💢';
+  if (tapCount >= 2) return '⚡';
+  return '';
+}
+
+export default function FloatingGiftBox({
+  giftTransactionId,
   senderId,
   senderName,
   senderAvatar,
   isReceiver = false,
-  onUnboxed, 
-  onComplete 
+  onUnboxed,
+  onComplete,
 }: FloatingGiftBoxProps) {
   const [tapCount, setTapCount] = useState(0);
   const [isUnboxed, setIsUnboxed] = useState(false);
@@ -66,14 +59,14 @@ export default function FloatingGiftBox({
 
     const fetchStoredGift = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchErr } = await supabase
           .from('gift_transactions')
           .select('*')
           .eq('id', giftTransactionId)
           .single();
 
-        if (error || !data) {
-          error('Error fetching stored gift:', error);
+        if (fetchErr || !data) {
+          logError('Error fetching stored gift:', fetchErr);
           return;
         }
 
@@ -88,8 +81,8 @@ export default function FloatingGiftBox({
             onComplete?.();
           }, 2500);
         }
-      } catch (error) {
-        error('Error in fetchStoredGift:', error);
+      } catch (e) {
+        logError('Error in fetchStoredGift:', e);
       }
     };
 
@@ -130,6 +123,42 @@ export default function FloatingGiftBox({
     outputRange: [0, -15],
   });
 
+  const handleTap = async () => {
+    const next = tapCount + 1;
+    setTapCount(next);
+
+    if (next >= TAPS_REQUIRED && isReceiver && !isUnboxed) {
+      const tokens = EGG_TOKENS_REWARD;
+
+      if (giftTransactionId) {
+        const { error: updateErr } = await supabase
+          .from('gift_transactions')
+          .update({
+            gift_id: 'flamingo_egg_tokens',
+            gift_name: 'Nomli Tokens',
+            gift_emoji: '🥚',
+            gift_rarity: 'common',
+            gift_price: tokens,
+          })
+          .eq('id', giftTransactionId);
+
+        if (updateErr) {
+          logError('Error updating gift transaction:', updateErr);
+        }
+      }
+
+      setRevealedTokens(tokens);
+      setIsUnboxed(true);
+      onUnboxed?.(
+        { id: 'tokens', name: 'Nomli Tokens', emoji: '🪙', usdPrice: tokens / 100, rarity: 'common' },
+        tokens
+      );
+      setTimeout(() => onComplete?.(), 1800);
+    }
+  };
+
+  const crackHint = crackEmojiForTaps(tapCount);
+
   return (
     <Animated.View
       style={[
@@ -141,67 +170,30 @@ export default function FloatingGiftBox({
         },
       ]}
     >
-      {/* Livestream: treat as a gift overlay (no blur/background, show sender). */}
-      <FlamingoEggGiftOverlay
-        senderName={senderName}
-        senderAvatar={senderAvatar}
-        tapCount={tapCount}
-        tapsRequired={10}
-        crackLevel={tapCount >= 8 ? 3 : tapCount >= 5 ? 2 : tapCount >= 2 ? 1 : 0}
-        isOpening={false}
-        // Sender should also be able to tap for the animation, but only receiver finalizes the DB update
-        canTap={true}
-        onTap={async () => {
-          const next = tapCount + 1;
-          setTapCount(next);
-
-          if (next >= 10 && isReceiver && !isUnboxed) {
-            const tokens = EGG_TOKENS_REWARD;
-
-            if (giftTransactionId) {
-              const { error } = await supabase
-                .from('gift_transactions')
-                .update({
-                  gift_id: 'flamingo_egg_tokens',
-                  gift_name: 'Nomli Tokens',
-                  gift_emoji: '🥚',
-                  gift_rarity: 'common',
-                  gift_price: tokens,
-                })
-                .eq('id', giftTransactionId);
-
-              if (error) {
-                error('Error updating gift transaction:', error);
-              }
-            }
-
-            setRevealedTokens(tokens);
-            setIsUnboxed(true);
-            onUnboxed?.(
-              { id: 'tokens', name: 'Nomli Tokens', emoji: '🪙', usdPrice: tokens / 100, rarity: 'common' },
-              tokens
-            );
-            setTimeout(() => onComplete?.(), 1800);
-          }
-        }}
-        // NOTE: For now, this overlay uses simple crack/particles animations from the component itself.
-        // We pass noop animated values (keeps it lightweight for livestream overlays).
-        scaleAnim={new Animated.Value(1)}
-        pulseAnim={new Animated.Value(1)}
-        rotateInterpolate={new Animated.Value(0).interpolate({ inputRange: [0, 1], outputRange: ['0deg', '0deg'] })}
-        shakeInterpolate={new Animated.Value(0).interpolate({ inputRange: [0, 1], outputRange: [0, 0] })}
-        glowInterpolate={new Animated.Value(0).interpolate({ inputRange: [0, 1], outputRange: [0, 0] })}
-        crackOpacityAnim={new Animated.Value(1)}
-        showParticles={false}
-        particleAnims={Array.from({ length: 8 }, () => ({
-          translateX: new Animated.Value(0),
-          translateY: new Animated.Value(0),
-          opacity: new Animated.Value(0),
-          scale: new Animated.Value(0),
-        }))}
-        getCrackLines={() => null}
-        getCrackEmoji={() => (tapCount >= 8 ? '💥' : tapCount >= 5 ? '💢' : tapCount >= 2 ? '⚡' : '')}
-      />
+      <Pressable
+        style={styles.card}
+        onPress={handleTap}
+        disabled={isUnboxed}
+      >
+        <View style={styles.senderRow}>
+          {senderAvatar ? (
+            <Image source={{ uri: senderAvatar }} style={styles.avatar} contentFit="cover" />
+          ) : null}
+          {senderName ? <Text style={styles.senderName} numberOfLines={1}>{senderName}</Text> : null}
+        </View>
+        <Text style={styles.egg}>🥚</Text>
+        {isUnboxed && revealedTokens != null ? (
+          <Text style={styles.tokensText}>+{revealedTokens} Nomli tokens 🪙</Text>
+        ) : (
+          <>
+            <Text style={styles.tapProgress}>
+              {tapCount}/{TAPS_REQUIRED} taps
+              {!isReceiver ? ' (viewer)' : ''}
+            </Text>
+            {crackHint ? <Text style={styles.crackHint}>{crackHint}</Text> : null}
+          </>
+        )}
+      </Pressable>
     </Animated.View>
   );
 }
@@ -210,5 +202,52 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     zIndex: 2000,
+  },
+  card: {
+    minWidth: 140,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,182,193,0.6)',
+  },
+  senderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: 160,
+    marginBottom: 6,
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  senderName: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  egg: {
+    fontSize: 44,
+    marginVertical: 4,
+  },
+  tapProgress: {
+    color: '#ffb6c1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  crackHint: {
+    fontSize: 20,
+    marginTop: 4,
+  },
+  tokensText: {
+    color: '#ffd700',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

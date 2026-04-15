@@ -24,6 +24,11 @@ interface NotificationQueueItem {
   metadata: any;
 }
 
+/** Chat + livestream should use high priority on Expo/FCM/APNs; otherwise OS may batch/delay like non-urgent alerts. */
+function isRealtimePushType(t: string | undefined | null): boolean {
+  return t === 'message' || t === 'message_reaction' || t === 'livestream'
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -497,7 +502,10 @@ serve(async (req) => {
                 body,
                 data: notificationData.data,
                 badge: 1,
-                priority: notification.notification_type === 'call' ? 'high' : 'default',
+                priority:
+                  notification.notification_type === 'call' || isRealtimePushType(notification.notification_type)
+                    ? 'high'
+                    : 'default',
                 ...(notificationData.ios ? { ios: notificationData.ios } : {}),
                 ...(notificationData.android ? { android: notificationData.android } : {}),
               }
@@ -653,7 +661,10 @@ serve(async (req) => {
                   body,
                   data: notificationData.data,
                   badge: 1,
-                  priority: notification.notification_type === 'call' ? 'high' : 'default',
+                  priority:
+                    notification.notification_type === 'call' || isRealtimePushType(notification.notification_type)
+                      ? 'high'
+                      : 'default',
                   ...(notificationData.ios ? { ios: notificationData.ios } : {}),
                   ...(notificationData.android ? { android: notificationData.android } : {}),
                 }),
@@ -696,6 +707,16 @@ serve(async (req) => {
                 if (!accessToken) {
                   throw new Error('Failed to get access token from service account')
                 }
+
+                const rt = isRealtimePushType(notification.notification_type)
+                const androidChannel =
+                  notification.notification_type === 'call'
+                    ? 'critical_calls'
+                    : rt
+                      ? notification.notification_type === 'livestream'
+                        ? 'default'
+                        : 'messages'
+                      : 'default'
                 
                 // Build FCM v1 API payload
                 const fcmV1Payload: any = {
@@ -712,15 +733,15 @@ serve(async (req) => {
                       ),
                     },
                     android: {
-                      priority: notification.notification_type === 'call' ? 'high' : 'normal',
+                      priority: notification.notification_type === 'call' || rt ? 'high' : 'normal',
                       notification: {
                         sound: 'default',
-                        channelId: notification.notification_type === 'call' ? 'critical_calls' : 'default',
+                        channelId: androidChannel,
                       },
                     },
                     apns: {
                       headers: {
-                        'apns-priority': notification.notification_type === 'call' ? '10' : '5',
+                        'apns-priority': notification.notification_type === 'call' || rt ? '10' : '5',
                       },
                       payload: {
                         aps: {
@@ -796,7 +817,10 @@ serve(async (req) => {
                     Object.entries(notificationData.data).map(([k, v]) => [k, String(v)])
                   ),
                 },
-                priority: notification.notification_type === 'call' ? 'high' : 'normal',
+                priority:
+                  notification.notification_type === 'call' || isRealtimePushType(notification.notification_type)
+                    ? 'high'
+                    : 'normal',
                 content_available: true,
               }
 
@@ -896,12 +920,22 @@ serve(async (req) => {
                   data: notificationData.data,
                   ios_sound: 'default',
                   android_sound: 'default',
-                  priority: notification.notification_type === 'call' ? 10 : 5,
+                  priority:
+                    notification.notification_type === 'call' || isRealtimePushType(notification.notification_type)
+                      ? 10
+                      : 5,
                   content_available: true,
                   mutable_content: true,
                   ios_badgeType: 'Increase',
                   ios_badgeCount: 1,
-                  android_channel_id: notification.notification_type === 'call' ? 'critical_calls' : 'default',
+                  android_channel_id:
+                    notification.notification_type === 'call'
+                      ? 'critical_calls'
+                      : isRealtimePushType(notification.notification_type)
+                        ? notification.notification_type === 'livestream'
+                          ? 'default'
+                          : 'messages'
+                        : 'default',
                   android_visibility: 1,
                 })
               })
@@ -1437,6 +1471,18 @@ function buildNotificationData(notification: NotificationQueueItem, title: strin
       priority: 'max',
       visibility: 'public',
       sound: 'default',
+    }
+  } else if (isRealtimePushType(notification.notification_type)) {
+    result.android = {
+      channelId: notification.notification_type === 'livestream' ? 'default' : 'messages',
+      priority: 'high',
+    }
+    result.ios = {
+      sound: 'default',
+      ...(notification.notification_type === 'message' ||
+      notification.notification_type === 'message_reaction'
+        ? { categoryIdentifier: 'chat_message' as const }
+        : {}),
     }
   }
 

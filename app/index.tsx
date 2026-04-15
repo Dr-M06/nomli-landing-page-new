@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { log, warn, error } from '../utils/productionLogger';
 
 
@@ -34,7 +34,6 @@ export default function Index() {
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: '#f8fafc',
-          ...(Platform.OS === 'web' ? { minHeight: '100vh' as const, width: '100%' as const } : {}),
         }}
       >
         <ActivityIndicator size="large" />

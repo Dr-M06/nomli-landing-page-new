@@ -13,8 +13,6 @@ import {
   Platform,
   Alert,
   KeyboardAvoidingView,
-  Modal,
-  PanResponder,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +20,7 @@ import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 import { Image } from 'expo-image';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Eye, Heart, Send, MoreHorizontal, Users, Gift, UserPlus, Check, Video, Minimize2, Maximize2, Music, Clock } from 'lucide-react-native';
+import { X, Eye, Heart, Send, MoreHorizontal, Users, Gift, UserPlus, Check, Video, Minimize2, Maximize2, Clock } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../constants/Colors';
 import { useLiveStream } from './LiveStreamProvider';
@@ -56,7 +54,6 @@ import LiveStreamVideoFallback from './LiveStreamVideoFallback';
 import { livestreamLog, livestreamWarn } from '../utils/livestreamOptimizer';
 
 import RelaxingAudioAnimation from './RelaxingAudioAnimation';
-import MusicModeAnimation from './MusicModeAnimation';
 import KickedFromStreamModal from './KickedFromStreamModal';
 import GuestJoinLoadingOverlay from './GuestJoinLoadingOverlay';
 import { log, warn, error } from '../utils/productionLogger';
@@ -130,12 +127,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   const [showStreamTitle, setShowStreamTitle] = useState(true);
   const [dismissConnectionMessage, setDismissConnectionMessage] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
-  const [showSongRequestModal, setShowSongRequestModal] = useState(false);
-  const [songRequestText, setSongRequestText] = useState('');
-  const [isSendingSongRequest, setIsSendingSongRequest] = useState(false);
-  const songRequestModalPosition = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const songRequestModalDragStart = useRef({ x: 0, y: 0 });
-  const songRequestModalIsDragging = useRef(false);
   const [userCoins, setUserCoins] = useState(1000);
   // Double tap detection for TikTok-style reactions
   const lastTapTime = useRef(0);
@@ -210,82 +201,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
 
     checkKickEarly();
   }, [streamId, user?.id]);
-  
-  // PanResponder for draggable song request modal
-  const songRequestModalPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 8 || Math.abs(gestureState.dy) > 8;
-      },
-      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 8 || Math.abs(gestureState.dy) > 8;
-      },
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: (evt) => {
-        songRequestModalPosition.setOffset({
-          x: (songRequestModalPosition.x as any)._value,
-          y: (songRequestModalPosition.y as any)._value,
-        });
-        songRequestModalPosition.setValue({ x: 0, y: 0 });
-        songRequestModalDragStart.current = {
-          x: evt.nativeEvent.pageX,
-          y: evt.nativeEvent.pageY,
-        };
-        songRequestModalIsDragging.current = false;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const moveDistance = Math.sqrt(gestureState.dx ** 2 + gestureState.dy ** 2);
-        if (moveDistance > 10) {
-          songRequestModalIsDragging.current = true;
-        }
-        songRequestModalPosition.setValue({ x: gestureState.dx, y: gestureState.dy });
-      },
-      onPanResponderRelease: (evt) => {
-        songRequestModalPosition.flattenOffset();
-        const currentX = (songRequestModalPosition.x as any)._value;
-        const currentY = (songRequestModalPosition.y as any)._value;
-        const moveDistance = Math.sqrt(
-          (evt.nativeEvent.pageX - songRequestModalDragStart.current.x) ** 2 +
-          (evt.nativeEvent.pageY - songRequestModalDragStart.current.y) ** 2
-        );
-        
-        if (moveDistance < 15 && !songRequestModalIsDragging.current) {
-          songRequestModalPosition.setValue({ x: currentX, y: currentY });
-          songRequestModalIsDragging.current = false;
-          return;
-        }
-        
-        // Keep modal within screen bounds (accounting for modal size ~400px width, ~300px height)
-        const modalWidth = Math.min(width * 0.85, 400);
-        const modalHeight = 300; // Approximate height
-        const minX = -width / 2 + modalWidth / 2;
-        const maxX = width / 2 - modalWidth / 2;
-        const minY = -height / 2 + modalHeight / 2;
-        const maxY = height / 2 - modalHeight / 2;
-        
-        const boundedX = Math.max(minX, Math.min(maxX, currentX));
-        const boundedY = Math.max(minY, Math.min(maxY, currentY));
-        
-        Animated.spring(songRequestModalPosition, {
-          toValue: { x: boundedX, y: boundedY },
-          useNativeDriver: false,
-          tension: 50,
-          friction: 7,
-        }).start();
-        
-        songRequestModalIsDragging.current = false;
-      },
-    })
-  ).current;
-  
-  // Reset modal position when it closes
-  useEffect(() => {
-    if (!showSongRequestModal) {
-      songRequestModalPosition.setValue({ x: 0, y: 0 });
-    }
-  }, [showSongRequestModal]);
   
   useEffect(() => {
     const streamIdToUse = currentStream?.id || streamId;
@@ -2640,14 +2555,13 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   // Compute variables needed for hooks (safely handle null cases)
   // These must be computed before any early returns to ensure hooks are always called
   const broadcasterUid = currentStream?.broadcaster_uid || 1000;
-  const isMusicMode = currentStream?.music_mode === true;
   const broadcasterVideoState = broadcasterVideoEnabled.get(broadcasterUid) ?? broadcasterVideoEnabled.get(0);
 
   // Detect video subscription failure: adaptive timeout based on connection quality
   // Uses DRY utilities for bad connection handling
   // CRITICAL: This hook must be called before any early returns
   useEffect(() => {
-    if (!isJoinedAsViewer || !broadcasterUid || isMusicMode) {
+    if (!isJoinedAsViewer || !broadcasterUid) {
       setVideoSubscriptionFailed(false);
       setVideoFirstFrameReceived(false);
       if (videoFailureTimeoutRef.current) {
@@ -2690,7 +2604,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
         videoFailureTimeoutRef.current = null;
       }
     };
-  }, [isJoinedAsViewer, broadcasterUid, isMusicMode, broadcasterVideoState, networkQuality, currentStream?.id]);
+  }, [isJoinedAsViewer, broadcasterUid, broadcasterVideoState, networkQuality, currentStream?.id]);
 
   // Listen for first video frame via LiveStreamProvider's broadcasterVideoEnabled state
   // CRITICAL: This hook must be called before any early returns
@@ -2785,7 +2699,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   // Get broadcaster's video - use stored broadcaster_uid or fallback to first remote UID
   // Always use the stored broadcaster_uid (1000) for consistency
   // The broadcaster always joins with UID 1000, so we should look for that specific UID
-  // Note: broadcasterUid, isMusicMode, and broadcasterVideoState are already computed above before early returns
+  // Note: broadcasterUid and broadcasterVideoState are already computed above before early returns
   const hasRemoteUsers = streamRemoteUids.length > 0;
   
   // Check if the broadcaster (UID 1000) is actually in the remote users list
@@ -2808,10 +2722,10 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   // CRITICAL: If we're joined as viewer and stream is live, assume video is enabled
   // This prevents dark screen when video state hasn't been set yet
   
-  // Always assume video is enabled if joined as viewer and stream is live (not music mode)
+  // Always assume video is enabled if joined as viewer and stream is live
   // This prevents dark screen - video state will update when events fire
   const isBroadcasterVideoEnabled = 
-    (isJoinedAsViewer && currentStream?.is_live && !isMusicMode) ||
+    (isJoinedAsViewer && currentStream?.is_live) ||
     broadcasterVideoState === true ||
     broadcasterVideoState === undefined; // undefined means not set yet, assume enabled
   
@@ -2822,12 +2736,11 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
       isJoinedAsViewer,
       currentStreamIsLive: currentStream?.is_live,
       currentStreamId: currentStream?.id,
-      musicMode: currentStream?.music_mode,
       broadcasterIsPresent,
       isBroadcasterVideoEnabled,
       streamRemoteUids: streamRemoteUids.length,
       broadcasterInRemoteUids: streamRemoteUids.includes(broadcasterUid),
-      willRenderVideo: ((broadcasterIsPresent && broadcasterUid) || (isJoinedAsViewer && currentStream?.is_live && broadcasterUid)) && !currentStream?.music_mode,
+      willRenderVideo: (broadcasterIsPresent && broadcasterUid) || (isJoinedAsViewer && currentStream?.is_live && broadcasterUid),
     });
   }
   
@@ -2876,7 +2789,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
             streamId={currentStream?.id || streamId}
             onSwitchCamera={switchGuestCamera}
           />
-        ) : (isJoinedAsViewer && currentStream?.is_live && broadcasterUid && !isMusicMode) ? (
+        ) : (isJoinedAsViewer && currentStream?.is_live && broadcasterUid) ? (
           // Single broadcaster view with fallback UI (no black screen)
           <View style={styles.videoSurface}>
             {/* Video surface - hidden if subscription failed */}
@@ -2913,48 +2826,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
               />
             )}
           </View>
-        ) : (isJoinedAsViewer && currentStream?.is_live && broadcasterUid && isMusicMode) ? (
-          <View style={styles.videoSurface}>
-            <MusicModeAnimation style={StyleSheet.absoluteFill} />
-          </View>
-        ) : isJoinedAsViewer && currentStream?.is_live && broadcasterUid && showGuestJoinOverlay ? (
-          // Show streamer video even when guest is joining/waiting (overlay will be on top)
-          <>
-            {(() => {
-              // 🚀 CRITICAL FIX: Check music_mode properly (handle undefined/null as false)
-              const isMusicModeCheck = currentStream?.music_mode === true; // Explicitly check for true
-              log('🎵 [MUSIC_MODE] Checking music mode (guest joining):', {
-                streamId: currentStream?.id,
-                music_mode: currentStream?.music_mode,
-                isMusicMode: isMusicModeCheck,
-                isBroadcasterVideoEnabled,
-              });
-              
-              // Show music mode animation when music mode is explicitly enabled
-              if (isMusicModeCheck) {
-                return (
-                  <View style={styles.videoSurface}>
-                    <MusicModeAnimation style={StyleSheet.absoluteFill} />
-                  </View>
-                );
-              }
-              
-              return isBroadcasterVideoEnabled ? (
-                <RtcSurfaceView
-                  key={`video-${broadcasterUid}-guest-joining`}
-                  canvas={{
-                    uid: broadcasterUid,
-                    renderMode: 1, // Fit mode
-                    mirrorMode: 0, // No mirror for remote video
-                  }}
-                  style={styles.videoSurface}
-                  zOrderMediaOverlay={false}
-                />
-              ) : (
-                <RelaxingAudioAnimation style={styles.videoSurface} />
-              );
-            })()}
-          </>
         ) : (
           <View style={styles.videoPlaceholder}>
             <Eye size={48} color="#FFFFFF" />
@@ -3112,8 +2983,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
         {/* Join Request Status Badge - Show when request is pending */}
         {joinRequestSent && 
          !isGuest && 
-         currentStream?.allow_guests === true && 
-         !currentStream?.music_mode && (
+         currentStream?.allow_guests === true && (
           <View style={styles.joinRequestStatusBadge}>
             <Clock size={12} color="#FFD700" strokeWidth={2.5} />
             <Text style={styles.joinRequestStatusText}>Pending</Text>
@@ -3273,7 +3143,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
         {/* Join Request Button - Redesigned */}
         {!isGuest && 
          currentStream?.allow_guests === true && 
-         !currentStream?.music_mode && 
          allActiveGuests.length === 0 && (
           <TouchableOpacity 
             style={[
@@ -3479,29 +3348,13 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
           </View>
           
             
-            {/* Gift Button - Enabled for both regular video streams and audio-only/music mode streams */}
             <TouchableOpacity 
               style={styles.giftButton}
-              onPress={() => {
-                // Gift sending is always allowed for both regular streams and audio-only/music mode streams
-                setShowGiftModal(true);
-              }}
+              onPress={() => setShowGiftModal(true)}
               activeOpacity={0.8}
-              disabled={false} // Always enabled for both regular and audio streams
             >
               <Gift size={16} color="#FFFFFF" strokeWidth={1.5} />
             </TouchableOpacity>
-            
-            {/* Song Request Button - Only show when music mode is enabled */}
-            {currentStream?.music_mode && (
-              <TouchableOpacity 
-                style={styles.songRequestButton}
-                onPress={() => setShowSongRequestModal(true)}
-                activeOpacity={0.8}
-              >
-                <Music size={16} color="#FFFFFF" strokeWidth={1.5} />
-              </TouchableOpacity>
-            )}
             
             <TouchableOpacity
               style={styles.heartButton}
@@ -3612,7 +3465,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
 
               {/* Join Request Button in Profile Modal */}
               {currentStream?.allow_guests === true && 
-               !currentStream?.music_mode && 
                !isGuest && 
                allActiveGuests.length === 0 && (
                 <TouchableOpacity 
@@ -3685,187 +3537,6 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
           recipientName={currentStream?.streamer_name || 'Streamer'}
         />
       )}
-
-      {/* Song Request Modal */}
-      <Modal
-        visible={showSongRequestModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowSongRequestModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View
-            style={[
-              styles.songRequestModal,
-              { backgroundColor: themeColors.neutral.background },
-              {
-                transform: [
-                  { translateX: songRequestModalPosition.x },
-                  { translateY: songRequestModalPosition.y },
-                ],
-              },
-            ]}
-          >
-            <View
-              style={styles.songRequestModalHeader}
-              {...songRequestModalPanResponder.panHandlers}
-            >
-              <Text style={[styles.songRequestModalTitle, { color: themeColors.textLight }]}>
-                🎵 Request a Song
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowSongRequestModal(false)}
-                style={styles.songRequestModalClose}
-              >
-                <X size={20} color={themeColors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.songRequestModalContent}>
-              <Text style={[styles.songRequestModalDescription, { color: themeColors.textSecondary }]}>
-                Request a song for the streamer to play. Be specific with artist and song name!
-              </Text>
-              
-              {/* Copyright Disclaimer */}
-              <Text style={[styles.copyrightDisclaimerText, { color: themeColors.textSecondary }]}>
-                ⚠️ Copyright Notice: Playing copyrighted music may violate copyright laws. Streamers are responsible for ensuring they have proper licenses or permissions to play requested songs.
-              </Text>
-              
-              <TextInput
-                style={[
-                  styles.songRequestInput,
-                  {
-                    backgroundColor: themeColors.neutral.surface,
-                    color: themeColors.textLight,
-                    borderColor: themeColors.neutral.border,
-                  }
-                ]}
-                placeholder="e.g., Artist - Song Name"
-                placeholderTextColor={themeColors.textSecondary}
-                value={songRequestText}
-                onChangeText={setSongRequestText}
-                maxLength={100}
-                multiline={false}
-                autoFocus={true}
-              />
-              
-              <TouchableOpacity
-                style={[
-                  styles.songRequestSubmitButton,
-                  {
-                    backgroundColor: isSendingSongRequest || !songRequestText.trim() 
-                      ? themeColors.neutral.disabled 
-                      : themeColors.primary.main
-                  }
-                ]}
-                onPress={async () => {
-                  if (!songRequestText.trim() || isSendingSongRequest) {
-                    log('🎵 [SONG_REQUEST] Button press blocked:', {
-                      hasText: !!songRequestText.trim(),
-                      isSending: isSendingSongRequest,
-                    });
-                    return;
-                  }
-                  
-                  log('🎵 [SONG_REQUEST] Sending song request:', {
-                    text: songRequestText.trim(),
-                    streamId: currentStream?.id,
-                    hasCurrentStream: !!currentStream,
-                  });
-                  
-                  setIsSendingSongRequest(true);
-                  try {
-                    // Send song request as a comment with special prefix
-                    const requestMessage = `🎵 Song Request: ${songRequestText.trim()}`;
-                    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-                    
-                    if (authError) {
-                      error('🎵 [SONG_REQUEST] Auth error:', authError);
-                      Toast.show({
-                        type: 'error',
-                        text1: 'Authentication Error',
-                        text2: 'Please log in to send song requests',
-                      });
-                      setIsSendingSongRequest(false);
-                      return;
-                    }
-                    
-                    if (!currentUser) {
-                      error('🎵 [SONG_REQUEST] No user found');
-                      Toast.show({
-                        type: 'error',
-                        text1: 'Not Logged In',
-                        text2: 'Please log in to send song requests',
-                      });
-                      setIsSendingSongRequest(false);
-                      return;
-                    }
-                    
-                    if (!currentStream?.id) {
-                      error('🎵 [SONG_REQUEST] No stream ID found');
-                      Toast.show({
-                        type: 'error',
-                        text1: 'Stream Error',
-                        text2: 'Stream not found. Please try again.',
-                      });
-                      setIsSendingSongRequest(false);
-                      return;
-                    }
-                    
-                    log('🎵 [SONG_REQUEST] Inserting comment:', {
-                      stream_id: currentStream.id,
-                      user_id: currentUser.id,
-                      message: requestMessage,
-                    });
-                    
-                    const { data, error } = await supabase
-                      .from('live_stream_comments')
-                      .insert({
-                        stream_id: currentStream.id,
-                        user_id: currentUser.id,
-                        message: requestMessage,
-                      })
-                      .select();
-                    
-                    if (error) {
-                      error('🎵 [SONG_REQUEST] Database error:', error);
-                      Toast.show({
-                        type: 'error',
-                        text1: 'Failed to send request',
-                        text2: error.message || 'Please try again',
-                      });
-                    } else {
-                      log('🎵 [SONG_REQUEST] Success! Comment inserted:', data);
-                      Toast.show({
-                        type: 'success',
-                        text1: 'Song Request Sent!',
-                        text2: 'Your request has been sent to the streamer',
-                      });
-                      setSongRequestText('');
-                      setShowSongRequestModal(false);
-                    }
-                  } catch (error: any) {
-                    error('🎵 [SONG_REQUEST] Exception:', error);
-                    Toast.show({
-                      type: 'error',
-                      text1: 'Error',
-                      text2: error?.message || 'Failed to send song request. Please try again.',
-                    });
-                  } finally {
-                    setIsSendingSongRequest(false);
-                  }
-                }}
-                disabled={isSendingSongRequest || !songRequestText.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.songRequestSubmitText}>
-                  {isSendingSongRequest ? 'Sending...' : 'Send Request'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
 
       {/* TikTok-style Gift Notification Cards (side) */}
       {giftAnimations.map(({ id, gift }, index) => (
@@ -4363,82 +4034,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  songRequestButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(167, 139, 250, 0.8)', // Purple/music theme
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  songRequestModal: {
-    width: '85%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 0,
-    overflow: 'hidden',
-  },
-  songRequestModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  songRequestModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  songRequestModalClose: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  songRequestModalContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 16,
-  },
-  songRequestModalDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  copyrightDisclaimerText: {
-    fontSize: 11,
-    lineHeight: 16,
-    fontStyle: 'italic',
-    opacity: 0.8,
-  },
-  songRequestInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    minHeight: 48,
-  },
-  songRequestSubmitButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  songRequestSubmitText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
   giftButtonOld: {
     width: 36,

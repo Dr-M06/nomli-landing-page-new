@@ -12,7 +12,7 @@ if [ ! -z "$ARTIFACTS" ]; then
     echo "$ARTIFACTS"
     echo ""
     echo "🧹 Run cleanup script to remove them:"
-    echo "  ./cleanup.sh"
+    echo "  npm run clean-artifacts"
     echo ""
     echo "💡 Build artifacts are generated automatically and shouldn't be in Git."
     exit 1

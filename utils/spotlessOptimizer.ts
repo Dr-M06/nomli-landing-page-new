@@ -42,12 +42,6 @@ const PREFETCH_STRATEGIES: PrefetchStrategy[] = [
     dataTypes: ['live_streams', 'stream_metadata'],
   },
   {
-    screen: 'events',
-    priority: 'medium',
-    prefetchOn: ['community', 'profile'],
-    dataTypes: ['upcoming_events', 'event_details'],
-  },
-  {
     screen: 'nearby',
     priority: 'medium',
     prefetchOn: ['community'],
@@ -107,28 +101,6 @@ async function executePrefetch(strategy: PrefetchStrategy, userId: string): Prom
             .limit(10)
             .then(() => {
               AsyncStorage.setItem('@prefetched_live_streams', JSON.stringify({ timestamp: Date.now() })).catch(() => {});
-            })
-            .catch(() => {}); // Silent fail for prefetch
-        }
-      } catch (error) {
-        // Silent fail - prefetch is non-critical
-      }
-    }
-
-    if (strategy.dataTypes.includes('upcoming_events')) {
-      // Prefetch upcoming events (lazy import to reduce bundle size)
-      try {
-        const supabaseModule = await import('./supabase');
-        const { supabase } = supabaseModule;
-        if (supabase) {
-          await supabase
-            .from('events')
-            .select('id, title, start_date, location')
-            .gte('start_date', new Date().toISOString())
-            .order('start_date', { ascending: true })
-            .limit(5)
-            .then(() => {
-              AsyncStorage.setItem('@prefetched_events', JSON.stringify({ timestamp: Date.now() })).catch(() => {});
             })
             .catch(() => {}); // Silent fail for prefetch
         }

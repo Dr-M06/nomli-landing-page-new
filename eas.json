@@ -51,8 +51,7 @@
         "buildConfiguration": "Release",
         "simulator": false,
         "image": "macos-sequoia-15.6-xcode-16.4"
-      },
-      "autoIncrement": true
+      }
     },
     "standalone": {
       "distribution": "internal",

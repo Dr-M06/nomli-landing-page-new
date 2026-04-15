@@ -92,8 +92,8 @@ android {
         applicationId 'com.nomli.mingle2'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 117
-        versionName "1.0.50"
+        versionCode 118
+        versionName "1.0.51"
         // react-native-iap has 'store' dimension (amazon vs play); use Google Play
         missingDimensionStrategy 'store', 'play'
     }

@@ -450,3 +450,63 @@ index 0000000..da379f1
 +  }
 +  return nil;
 +}
+diff --git a/node_modules/react-native/sdks/hermes-engine/utils/replace_hermes_version.js b/node_modules/react-native/sdks/hermes-engine/utils/replace_hermes_version.js
+index 1111111..2222222 100644
+--- a/node_modules/react-native/sdks/hermes-engine/utils/replace_hermes_version.js
++++ b/node_modules/react-native/sdks/hermes-engine/utils/replace_hermes_version.js
+@@ -11,10 +11,30 @@
+
+ const {execSync} = require('child_process');
+ const fs = require('fs');
+-const yargs = require('yargs');
+ 
+ const LAST_BUILD_FILENAME = '.last_build_configuration';
+ 
++/** Avoid yargs (Xcode/Node can resolve a mismatched yargs-parser → Parser.detailed is not a function). */
++function parseHermesScriptArgs(argv) {
++  const out = {
++    configuration: undefined,
++    reactNativeVersion: undefined,
++    podsRoot: undefined,
++  };
++  const args = argv.slice(2);
++  for (let i = 0; i < args.length; i++) {
++    const a = args[i];
++    if (a === '-c' || a === '--configuration') {
++      out.configuration = args[++i];
++    } else if (a === '-r' || a === '--reactNativeVersion') {
++      out.reactNativeVersion = args[++i];
++    } else if (a === '-p' || a === '--podsRoot') {
++      out.podsRoot = args[++i];
++    }
++  }
++  return out;
++}
++
+ function validateBuildConfiguration(configuration) {
+   if (!['Debug', 'Release'].includes(configuration)) {
+     throw new Error(`Invalid configuration ${configuration}`);
+@@ -82,22 +102,7 @@
+ }
+ 
+ // This script is executed in the Pods folder, which is usually not synched to Github, so it should be ok
+-const argv = yargs
+-  .option('c', {
+-    alias: 'configuration',
+-    description:
+-      'Configuration to use to download the right Hermes version. Allowed values are "Debug" and "Release".',
+-  })
+-  .option('r', {
+-    alias: 'reactNativeVersion',
+-    description:
+-      'The Version of React Native associated with the Hermes tarball.',
+-  })
+-  .option('p', {
+-    alias: 'podsRoot',
+-    description: 'The path to the Pods root folder',
+-  })
+-  .usage('Usage: $0 -c Debug -r <version> -p <path/to/react-native>').argv;
++const argv = parseHermesScriptArgs(process.argv);
+ 
+ const configuration = argv.configuration;
+ const version = argv.reactNativeVersion;

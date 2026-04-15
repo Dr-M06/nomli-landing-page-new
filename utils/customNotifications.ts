@@ -409,6 +409,21 @@ class CustomNotificationService {
         bypassDnd: true,
       });
 
+      // Must match remote push channelId from Edge Functions (send-instant-chat-push, process-notifications).
+      // If this channel is missing, Android may not show heads-up / lock-screen when the app is killed.
+      await Notifications.setNotificationChannelAsync('messages', {
+        name: 'Messages',
+        description: 'Direct messages and reactions',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#19444d',
+        sound: 'default',
+        enableVibrate: true,
+        showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true,
+      });
+
       // Calls channel with MAX importance and custom sound
       await Notifications.setNotificationChannelAsync('calls', {
         name: 'Calls',

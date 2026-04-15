@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -60,7 +60,6 @@ const CARD_H = COMPACT_DISCOVERY_CARD
   ? Math.max(Math.round(CARD_W * 1.84), 208)
   : Math.round(CARD_W * 1.42);
 const DISCOVERY_PHOTO_PCT = COMPACT_DISCOVERY_CARD ? 50 : 56;
-const LOAD_MORE_PREFETCH_PX = 720;
 
 const DISCOVERY_HINTS = [
   'People you may know',
@@ -171,18 +170,16 @@ function toMillis(ts?: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function sortProfilesForDiscovery(list: DiscoverProfile[]): DiscoverProfile[] {
-  return [...list].sort((a, b) => {
-    const aVerified = isVerifiedProfile(a) ? 1 : 0;
-    const bVerified = isVerifiedProfile(b) ? 1 : 0;
-    if (aVerified !== bVerified) return bVerified - aVerified;
-    const aPhoto = hasRealProfilePhoto(a) ? 1 : 0;
-    const bPhoto = hasRealProfilePhoto(b) ? 1 : 0;
-    if (aPhoto !== bPhoto) return bPhoto - aPhoto;
-    const activeDiff = toMillis((b as any).last_active) - toMillis((a as any).last_active);
-    if (activeDiff !== 0) return activeDiff;
-    return toMillis((b as any).created_at) - toMillis((a as any).created_at);
-  });
+function compareDiscoveryProfiles(a: DiscoverProfile, b: DiscoverProfile): number {
+  const aVerified = isVerifiedProfile(a) ? 1 : 0;
+  const bVerified = isVerifiedProfile(b) ? 1 : 0;
+  if (aVerified !== bVerified) return bVerified - aVerified;
+  const aPhoto = hasRealProfilePhoto(a) ? 1 : 0;
+  const bPhoto = hasRealProfilePhoto(b) ? 1 : 0;
+  if (aPhoto !== bPhoto) return bPhoto - aPhoto;
+  const activeDiff = toMillis((b as any).last_active) - toMillis((a as any).last_active);
+  if (activeDiff !== 0) return activeDiff;
+  return toMillis((b as any).created_at) - toMillis((a as any).created_at);
 }
 
 /** Stable pseudo-random order per (id, seed); new ids sort in without reshuffling existing mutual order. */
@@ -212,6 +209,11 @@ export default function VideosScreen() {
   /** Bumps when discovery reloads page 0 so non-verified order re-randomizes (open / pull-to-refresh). */
   const [discoveryOrderRevision, setDiscoveryOrderRevision] = useState(0);
   const discoveryShuffleSeedRef = useRef(Math.floor(Math.random() * 0x7fffffff));
+  /** Keep row order stable while paginating (full re-sort caused visible shuffle/jump). */
+  const verifiedStableOrderRef = useRef<string[]>([]);
+  const nonVerifiedStableOrderRef = useRef<string[]>([]);
+  const discoveryRevisionSyncedRef = useRef(0);
+  const discoveryUserIdRef = useRef<string | undefined>(undefined);
   const loadMoreLockRef = useRef(false);
   const verifiedLoadInFlightRef = useRef(false);
   const verifiedLastLoadedAtRef = useRef(0);
@@ -276,9 +278,31 @@ export default function VideosScreen() {
     return () => clearInterval(id);
   }, [hintOpacity]);
 
-  const filteredProfiles = useMemo(() => {
-    // Stable order without resorting on every update:
-    // verified (real-photo) first, then regular fetched profiles (real-photo).
+  const [gridProfiles, setGridProfiles] = useState<DiscoverProfile[]>([]);
+
+  useLayoutEffect(() => {
+    if (bootstrapping) {
+      setGridProfiles([]);
+      return;
+    }
+    if (!user?.id) {
+      setGridProfiles([]);
+      verifiedStableOrderRef.current = [];
+      nonVerifiedStableOrderRef.current = [];
+      return;
+    }
+
+    if (discoveryUserIdRef.current !== user.id) {
+      discoveryUserIdRef.current = user.id;
+      verifiedStableOrderRef.current = [];
+      nonVerifiedStableOrderRef.current = [];
+    }
+    if (discoveryRevisionSyncedRef.current !== discoveryOrderRevision) {
+      discoveryRevisionSyncedRef.current = discoveryOrderRevision;
+      verifiedStableOrderRef.current = [];
+      nonVerifiedStableOrderRef.current = [];
+    }
+
     const merged = new Map<string, DiscoverProfile>();
     for (const p of verifiedBoostProfiles) {
       if (!p?.id || !hasRealProfilePhoto(p)) continue;
@@ -291,7 +315,6 @@ export default function VideosScreen() {
         merged.set(p.id, p);
         continue;
       }
-      // Merge so we never drop is_verified when one source omitted it (e.g. geo RPC vs paginated row).
       const mergedVerified =
         !!(existing.is_verified || p.is_verified || isVerifiedProfile(existing) || isVerifiedProfile(p));
       merged.set(p.id, {
@@ -300,17 +323,39 @@ export default function VideosScreen() {
         is_verified: mergedVerified,
       });
     }
+
     const list = Array.from(merged.values());
     const verified = list.filter((p) => isVerifiedProfile(p));
     const nonVerified = list.filter((p) => !isVerifiedProfile(p));
-    const orderedVerified = sortProfilesForDiscovery(verified);
+
+    const vIds = new Set(verified.map((p) => p.id));
+    let vOrder = verifiedStableOrderRef.current.filter((id) => vIds.has(id));
+    const vNew = verified.filter((p) => !vOrder.includes(p.id));
+    vNew.sort(compareDiscoveryProfiles);
+    vOrder = [...vOrder, ...vNew.map((p) => p.id)];
+    verifiedStableOrderRef.current = vOrder;
+    const orderedVerified = vOrder.map((id) => merged.get(id)!).filter(Boolean);
+
     const shuffleSeed =
       (discoveryShuffleSeedRef.current ^ (discoveryOrderRevision * 0x9e3779b9)) >>> 0;
-    nonVerified.sort(
+    const nvIds = new Set(nonVerified.map((p) => p.id));
+    let nvOrder = nonVerifiedStableOrderRef.current.filter((id) => nvIds.has(id));
+    const nvNew = nonVerified.filter((p) => !nvOrder.includes(p.id));
+    nvNew.sort(
       (a, b) => discoveryShuffleKey(a.id, shuffleSeed) - discoveryShuffleKey(b.id, shuffleSeed)
     );
-    return [...orderedVerified, ...nonVerified];
-  }, [profiles, verifiedBoostProfiles, discoveryOrderRevision]);
+    nvOrder = [...nvOrder, ...nvNew.map((p) => p.id)];
+    nonVerifiedStableOrderRef.current = nvOrder;
+    const orderedNon = nvOrder.map((id) => merged.get(id)!).filter(Boolean);
+
+    setGridProfiles([...orderedVerified, ...orderedNon]);
+  }, [
+    bootstrapping,
+    user?.id,
+    profiles,
+    verifiedBoostProfiles,
+    discoveryOrderRevision,
+  ]);
 
   const loadProfiles = useCallback(async (nextPage = 0, replace = false) => {
     if (!user?.id) {
@@ -577,7 +622,8 @@ export default function VideosScreen() {
           source={{ uri: avatar }}
           style={[styles.gridAvatar, { height: `${DISCOVERY_PHOTO_PCT}%` }]}
           contentFit="cover"
-          transition={280}
+          transition={0}
+          cachePolicy="memory-disk"
         />
         <View style={[styles.imageShade, { height: `${DISCOVERY_PHOTO_PCT}%` }]} />
         <View
@@ -638,10 +684,15 @@ export default function VideosScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <Animated.View style={[styles.listFlex, { opacity: listFade }]}>
       <FlatList
-        data={bootstrapping ? [] : filteredProfiles}
+        data={bootstrapping ? [] : gridProfiles}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         numColumns={GRID_COLUMNS}
+        removeClippedSubviews={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
         ListHeaderComponent={
           <View style={{ paddingTop: Math.max(8, insets.top + 4) }}>
             <View style={styles.topBar}>
@@ -684,15 +735,7 @@ export default function VideosScreen() {
           />
         }
         onEndReached={onLoadMore}
-        onEndReachedThreshold={1.1}
-        onScroll={(e) => {
-          const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
-          const distanceFromEnd = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-          if (distanceFromEnd <= LOAD_MORE_PREFETCH_PX) {
-            onLoadMore();
-          }
-        }}
-        scrollEventThrottle={16}
+        onEndReachedThreshold={0.4}
         ListFooterComponent={
           <View style={styles.listFooter}>
             {loadingMore ? <ActivityIndicator color={themeColors.primary.main} /> : null}

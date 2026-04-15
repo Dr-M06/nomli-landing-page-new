@@ -240,17 +240,11 @@ export default function ExpoNotificationManager() {
           warn('Navigation error (profile):', e);
         }
       } else if (data?.type === 'event_join') {
-        // Navigate to event
-        const eventId = data?.event_id;
-        log('[ExpoNotificationManager] Navigating to event:', eventId);
+        log('[ExpoNotificationManager] event_join notification — events removed; opening notifications');
         try {
-          if (eventId) {
-            router.push(`/events/${eventId}` as any);
-          } else {
-            warn('[ExpoNotificationManager] No event_id in notification data:', data);
-          }
+          router.push('/notifications' as any);
         } catch (e) {
-          warn('Navigation error (event):', e);
+          warn('Navigation error (event_join fallback):', e);
         }
       }
     });

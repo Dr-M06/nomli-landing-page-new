@@ -90,7 +90,6 @@ import { canModerate, pinComment, unpinComment, warnUser, kickUser } from '../ut
 import LivestreamAnalytics from './LivestreamAnalytics';
 import LiveAnalyticsModal from './LiveAnalyticsModal';
 import Toast from 'react-native-toast-message';
-import MusicModeAnimation from './MusicModeAnimation';
 import { formatViewerCount } from '../utils/numberFormatter';
 import { log, warn, error } from '../utils/productionLogger';
 import {
@@ -195,16 +194,6 @@ export default function LiveStreamBroadcaster({ onClose }: LiveStreamBroadcaster
   const [isClearScreenMode, setIsClearScreenMode] = useState(false);
   const [showControlDrawer, setShowControlDrawer] = useState(false);
   const drawerSlideAnim = useRef(new Animated.Value(0)).current; // 0 = closed, 1 = open
-  
-  // Song requests state (separate from comments for streamer)
-  const [songRequests, setSongRequests] = useState<Array<{
-    id: string;
-    user_id: string;
-    user_name: string;
-    user_avatar?: string;
-    songName: string;
-    timestamp: string;
-  }>>([]);
   
   // Sound controls for streamer
   const [soundsEnabled, setSoundsEnabled] = useState(true);
@@ -1169,11 +1158,7 @@ export default function LiveStreamBroadcaster({ onClose }: LiveStreamBroadcaster
           onPress={handleScreenTap}
           activeOpacity={1}
         >
-        {currentStream?.music_mode ? (
-          <View style={styles.videoSurface}>
-            <MusicModeAnimation style={StyleSheet.absoluteFill} />
-          </View>
-        ) : isStreamCameraOn && isEngineReady ? (
+        {isStreamCameraOn && isEngineReady ? (
           <>
             {currentGuests.length > 0 ? (
               <>
@@ -1232,14 +1217,12 @@ export default function LiveStreamBroadcaster({ onClose }: LiveStreamBroadcaster
             <Text style={styles.videoPlaceholderText}>Starting camera...</Text>
           </View>
         ) : audioOnlyDueToNetwork ? (
-          /* Poor network: show music mode experience (animation) instead of "Audio Only / Poor network" screen */
-          <View style={StyleSheet.absoluteFill}>
-            <MusicModeAnimation style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#1a0a2e' }]}>
             <View style={styles.musicModeBadge} pointerEvents="none">
               <Music size={20} color="rgba(255, 255, 255, 0.9)" strokeWidth={2} />
               <View style={styles.musicModeBadgeTextContainer}>
-                <Text style={styles.musicModeBadgeText}>Music mode</Text>
-                <Text style={styles.musicModeBadgeSubtext}>Saving bandwidth</Text>
+                <Text style={styles.musicModeBadgeText}>Low bandwidth</Text>
+                <Text style={styles.musicModeBadgeSubtext}>Audio continues · saving data</Text>
               </View>
             </View>
           </View>
@@ -1586,48 +1569,6 @@ export default function LiveStreamBroadcaster({ onClose }: LiveStreamBroadcaster
 
       {/* Control Buttons - REMOVED (moved to drawer) */}
 
-
-      {/* Song Requests Section - Outside comment area, only for streamer in music mode */}
-      {currentStream?.music_mode && songRequests.length > 0 && (
-        <View style={styles.songRequestsContainer}>
-          <View style={styles.songRequestsHeader}>
-            <Music size={16} color="#FFD700" strokeWidth={2.5} fill="#FFD700" />
-            <Text style={styles.songRequestsHeaderText}>
-              Song Requests ({songRequests.length})
-            </Text>
-          </View>
-          <View style={styles.songRequestsList}>
-            {songRequests.slice(0, 3).map((request) => (
-              <LinearGradient
-                key={request.id}
-                colors={['rgba(138, 43, 226, 0.9)', 'rgba(255, 20, 147, 0.9)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.songRequestItem}
-              >
-                <View style={styles.songRequestItemContent}>
-                  <View style={styles.songRequestIconSmall}>
-                    <Music size={14} color="#FFFFFF" strokeWidth={2} fill="#FFFFFF" />
-                  </View>
-                  <View style={styles.songRequestItemText}>
-                    <Text style={styles.songRequestItemName} numberOfLines={1}>
-                      {request.songName}
-                    </Text>
-                    <Text style={styles.songRequestItemUser} numberOfLines={1}>
-                      {request.user_name}
-                    </Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            ))}
-            {songRequests.length > 3 && (
-              <Text style={styles.songRequestsMore}>
-                +{songRequests.length - 3} more
-              </Text>
-            )}
-          </View>
-        </View>
-      )}
 
       {/* Live Comments - Original non-draggable version */}
       <View
@@ -2390,90 +2331,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
     textAlign: 'center',
-  },
-  songRequestsContainer: {
-    position: 'absolute',
-    top: 100,
-    right: 12,
-    width: 200,
-    maxHeight: 250,
-    zIndex: 1001,
-    pointerEvents: 'auto',
-  },
-  songRequestsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-    paddingHorizontal: 8,
-  },
-  songRequestsHeaderText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  songRequestsList: {
-    gap: 6,
-  },
-  songRequestItem: {
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 4,
-    shadowColor: '#8A2BE2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  songRequestItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  songRequestIconSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  songRequestItemText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  songRequestItemName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    marginBottom: 2,
-  },
-  songRequestItemUser: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  songRequestsMore: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    marginTop: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   commentsContainer: {
     position: 'absolute',

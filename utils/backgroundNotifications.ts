@@ -76,6 +76,9 @@ export const handleNotificationResponseReceived = async (response: Notifications
     // Navigate to Discover to see who liked you
     await storeNavigationIntent({ type: 'discover', screen: 'nearby' });
     log('[BackgroundNotifications] Stored discover navigation intent');
+  } else if (data?.type === 'livestream' && data?.stream_id) {
+    await storeNavigationIntent({ type: 'livestream', stream_id: data.stream_id });
+    log('[BackgroundNotifications] Stored livestream navigation intent:', data.stream_id);
   }
 };
 

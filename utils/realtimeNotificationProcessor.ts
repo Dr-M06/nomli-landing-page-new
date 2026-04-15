@@ -292,6 +292,9 @@ class RealtimeNotificationProcessor {
         // If Edge Function fails, try direct Expo as fallback (for backwards compatibility)
         if (notification.expo_push_token) {
           try {
+            const rtPush = ['message', 'message_reaction', 'livestream'].includes(
+              String(notification.notification_type)
+            );
             const expoPayload = {
               to: notification.expo_push_token,
               sound: 'default',
@@ -304,8 +307,15 @@ class RealtimeNotificationProcessor {
                 conversation_id: notification.conversation_id || null,
               },
               badge: 1,
-              priority: notification.notification_type === 'call' ? 'high' : 'default',
-              channelId: notification.notification_type === 'call' ? 'calls' : 'default',
+              priority: notification.notification_type === 'call' || rtPush ? 'high' : 'default',
+              channelId:
+                notification.notification_type === 'call'
+                  ? 'calls'
+                  : rtPush
+                    ? notification.notification_type === 'livestream'
+                      ? 'default'
+                      : 'messages'
+                    : 'default',
             };
 
             const expoResponse = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -361,6 +371,9 @@ class RealtimeNotificationProcessor {
       if (data && data.failed > 0 && data.processed === 0 && notification.expo_push_token && notification.notification_type !== 'profile_view') {
         try {
           const meta = notification.metadata || {};
+          const rtPush = ['message', 'message_reaction', 'livestream'].includes(
+            String(notification.notification_type)
+          );
           const expoPayload = {
             to: notification.expo_push_token,
             sound: 'default',
@@ -376,8 +389,15 @@ class RealtimeNotificationProcessor {
               body,
             },
             badge: 1,
-            priority: notification.notification_type === 'call' ? 'high' : 'default',
-            channelId: notification.notification_type === 'call' ? 'calls' : 'default',
+            priority: notification.notification_type === 'call' || rtPush ? 'high' : 'default',
+            channelId:
+              notification.notification_type === 'call'
+                ? 'calls'
+                : rtPush
+                  ? notification.notification_type === 'livestream'
+                    ? 'default'
+                    : 'messages'
+                  : 'default',
           };
           const expoResponse = await fetch('https://exp.host/--/api/v2/push/send', {
             method: 'POST',

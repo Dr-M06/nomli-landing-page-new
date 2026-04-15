@@ -157,10 +157,8 @@ The repository includes scripts to keep your project clean:
 
 ```bash
 # Remove all build artifacts (recommended before committing)
-./cleanup.sh
-
-# Or use npm scripts
 npm run clean-artifacts
+# (runs scripts/cleanup-artifacts.sh)
 
 # Complete clean (removes node_modules too)
 npm run clean-all

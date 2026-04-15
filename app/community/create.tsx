@@ -242,7 +242,6 @@ export default function CreatePostScreen() {
 
   // Share extension: images / files → mediaFiles; first video → Mux upload
   useEffect(() => {
-    if (Platform.OS === 'web') return;
     const sm = paramOne(params.shareMedia);
     if (!sm) return;
     if (appliedShareMediaKey.current === sm) return;
@@ -272,7 +271,6 @@ export default function CreatePostScreen() {
   }, [params.shareMedia]);
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
     if (!pendingSharedVideoUri || !user?.id) return;
     if (sharedVideoUploadStarted.current) return;
     sharedVideoUploadStarted.current = true;

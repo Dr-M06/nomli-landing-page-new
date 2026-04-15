@@ -28,6 +28,18 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
+# Finder duplicate copies ("file 2.ext")
+* 2.js
+* 2.jsx
+* 2.ts
+* 2.tsx
+* 2.json
+* 2.png
+* 2.webp
+* 2.mm
+* 2.h
+* 2.cpp
+* 2.plist
 
 # local env files
 .env*.local
@@ -38,6 +50,8 @@ yarn-error.*
 # Temporary files
 *.tmp
 *.temp
+*.rej
+Oops.rej
 
 # IDE
 .vscode/
@@ -259,6 +273,3 @@ service-account*.json
 
 # Nested git snapshot (breaks `git add`); keep local only
 oldrepo_ref/
-
-# Accidental duplicate Metro config filename
-metro.config 2.js

@@ -11,204 +11,6 @@ index 4ebe730..c816deb 100644
  
    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
  }
-diff --git a/node_modules/expo-in-app-purchases/android/build/generated/source/buildConfig/release/expo/modules/inapppurchases/BuildConfig.java b/node_modules/expo-in-app-purchases/android/build/generated/source/buildConfig/release/expo/modules/inapppurchases/BuildConfig.java
-new file mode 100644
-index 0000000..48e3ae5
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/generated/source/buildConfig/release/expo/modules/inapppurchases/BuildConfig.java
-@@ -0,0 +1,10 @@
-+/**
-+ * Automatically generated file. DO NOT MODIFY
-+ */
-+package expo.modules.inapppurchases;
-+
-+public final class BuildConfig {
-+  public static final boolean DEBUG = false;
-+  public static final String LIBRARY_PACKAGE_NAME = "expo.modules.inapppurchases";
-+  public static final String BUILD_TYPE = "release";
-+}
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/AndroidManifest.xml b/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/AndroidManifest.xml
-new file mode 100644
-index 0000000..b67b130
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/AndroidManifest.xml
-@@ -0,0 +1,7 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.inapppurchases" >
-+
-+    <uses-sdk android:minSdkVersion="24" />
-+
-+</manifest>
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/output-metadata.json b/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/output-metadata.json
-new file mode 100644
-index 0000000..e4004f0
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/aapt_friendly_merged_manifests/release/processReleaseManifest/aapt/output-metadata.json
-@@ -0,0 +1,18 @@
-+{
-+  "version": 3,
-+  "artifactType": {
-+    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
-+    "kind": "Directory"
-+  },
-+  "applicationId": "expo.modules.inapppurchases",
-+  "variantName": "release",
-+  "elements": [
-+    {
-+      "type": "SINGLE",
-+      "filters": [],
-+      "attributes": [],
-+      "outputFile": "AndroidManifest.xml"
-+    }
-+  ],
-+  "elementType": "File"
-+}
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/aar_metadata/release/writeReleaseAarMetadata/aar-metadata.properties b/node_modules/expo-in-app-purchases/android/build/intermediates/aar_metadata/release/writeReleaseAarMetadata/aar-metadata.properties
-new file mode 100644
-index 0000000..1211b1e
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/aar_metadata/release/writeReleaseAarMetadata/aar-metadata.properties
-@@ -0,0 +1,6 @@
-+aarFormatVersion=1.0
-+aarMetadataVersion=1.0
-+minCompileSdk=1
-+minCompileSdkExtension=0
-+minAndroidGradlePluginVersion=1.0.0
-+coreLibraryDesugaringEnabled=false
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/annotation_processor_list/release/javaPreCompileRelease/annotationProcessors.json b/node_modules/expo-in-app-purchases/android/build/intermediates/annotation_processor_list/release/javaPreCompileRelease/annotationProcessors.json
-new file mode 100644
-index 0000000..9e26dfe
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/annotation_processor_list/release/javaPreCompileRelease/annotationProcessors.json
-@@ -0,0 +1 @@
-+{}
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/compile_r_class_jar/release/generateReleaseRFile/R.jar b/node_modules/expo-in-app-purchases/android/build/intermediates/compile_r_class_jar/release/generateReleaseRFile/R.jar
-new file mode 100644
-index 0000000..3be38f3
-Binary files /dev/null and b/node_modules/expo-in-app-purchases/android/build/intermediates/compile_r_class_jar/release/generateReleaseRFile/R.jar differ
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/compile_symbol_list/release/generateReleaseRFile/R.txt b/node_modules/expo-in-app-purchases/android/build/intermediates/compile_symbol_list/release/generateReleaseRFile/R.txt
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/mergeReleaseShaders/merger.xml b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/mergeReleaseShaders/merger.xml
-new file mode 100644
-index 0000000..05b1a1f
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/mergeReleaseShaders/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/shaders"/></dataSet><dataSet config="release" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/release/shaders"/></dataSet></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/packageReleaseAssets/merger.xml b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/packageReleaseAssets/merger.xml
-new file mode 100644
-index 0000000..a5d15d8
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/packageReleaseAssets/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/assets"/></dataSet><dataSet config="release" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/release/assets"/></dataSet><dataSet config="generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/build/intermediates/shader_assets/release/compileReleaseShaders/out"/></dataSet></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/compile-file-map.properties b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/compile-file-map.properties
-new file mode 100644
-index 0000000..aba6cfe
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/compile-file-map.properties
-@@ -0,0 +1 @@
-+#Mon Jan 19 17:15:04 EET 2026
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/merger.xml b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/merger.xml
-new file mode 100644
-index 0000000..9dd7fee
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/incremental/release/packageReleaseResources/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="release$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/release/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="release" generated-set="release$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/release/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/build/generated/res/resValues/release"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/build/generated/res/resValues/release"/></dataSet><mergedItems/></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/javac/release/compileReleaseJavaWithJavac/classes/expo/modules/inapppurchases/InAppPurchasesPackage.class b/node_modules/expo-in-app-purchases/android/build/intermediates/javac/release/compileReleaseJavaWithJavac/classes/expo/modules/inapppurchases/InAppPurchasesPackage.class
-new file mode 100644
-index 0000000..11ff20d
-Binary files /dev/null and b/node_modules/expo-in-app-purchases/android/build/intermediates/javac/release/compileReleaseJavaWithJavac/classes/expo/modules/inapppurchases/InAppPurchasesPackage.class differ
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/local_only_symbol_list/release/parseReleaseLocalResources/R-def.txt b/node_modules/expo-in-app-purchases/android/build/intermediates/local_only_symbol_list/release/parseReleaseLocalResources/R-def.txt
-new file mode 100644
-index 0000000..78ac5b8
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/local_only_symbol_list/release/parseReleaseLocalResources/R-def.txt
-@@ -0,0 +1,2 @@
-+R_DEF: Internal format may change without notice
-+local
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/manifest_merge_blame_file/release/processReleaseManifest/manifest-merger-blame-release-report.txt b/node_modules/expo-in-app-purchases/android/build/intermediates/manifest_merge_blame_file/release/processReleaseManifest/manifest-merger-blame-release-report.txt
-new file mode 100644
-index 0000000..3556fe3
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/manifest_merge_blame_file/release/processReleaseManifest/manifest-merger-blame-release-report.txt
-@@ -0,0 +1,7 @@
-+1<?xml version="1.0" encoding="utf-8"?>
-+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+3    package="expo.modules.inapppurchases" >
-+4
-+5    <uses-sdk android:minSdkVersion="24" />
-+6
-+7</manifest>
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml b/node_modules/expo-in-app-purchases/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml
-new file mode 100644
-index 0000000..b67b130
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml
-@@ -0,0 +1,7 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.inapppurchases" >
-+
-+    <uses-sdk android:minSdkVersion="24" />
-+
-+</manifest>
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/navigation_json/release/extractDeepLinksRelease/navigation.json b/node_modules/expo-in-app-purchases/android/build/intermediates/navigation_json/release/extractDeepLinksRelease/navigation.json
-new file mode 100644
-index 0000000..0637a08
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/navigation_json/release/extractDeepLinksRelease/navigation.json
-@@ -0,0 +1 @@
-+[]
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/nested_resources_validation_report/release/generateReleaseResources/nestedResourcesValidationReport.txt b/node_modules/expo-in-app-purchases/android/build/intermediates/nested_resources_validation_report/release/generateReleaseResources/nestedResourcesValidationReport.txt
-new file mode 100644
-index 0000000..08f4ebe
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/nested_resources_validation_report/release/generateReleaseResources/nestedResourcesValidationReport.txt
-@@ -0,0 +1 @@
-+0 Warning/Error
-\ No newline at end of file
-diff --git a/node_modules/expo-in-app-purchases/android/build/intermediates/symbol_list_with_package_name/release/generateReleaseRFile/package-aware-r.txt b/node_modules/expo-in-app-purchases/android/build/intermediates/symbol_list_with_package_name/release/generateReleaseRFile/package-aware-r.txt
-new file mode 100644
-index 0000000..77243a4
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/intermediates/symbol_list_with_package_name/release/generateReleaseRFile/package-aware-r.txt
-@@ -0,0 +1 @@
-+expo.modules.inapppurchases
-diff --git a/node_modules/expo-in-app-purchases/android/build/outputs/logs/manifest-merger-release-report.txt b/node_modules/expo-in-app-purchases/android/build/outputs/logs/manifest-merger-release-report.txt
-new file mode 100644
-index 0000000..9cfa598
---- /dev/null
-+++ b/node_modules/expo-in-app-purchases/android/build/outputs/logs/manifest-merger-release-report.txt
-@@ -0,0 +1,14 @@
-+-- Merging decision tree log ---
-+manifest
-+ADDED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml:1:1-2:12
-+INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml:1:1-2:12
-+	package
-+		INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml
-+uses-sdk
-+INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
-+INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml
-+	android:targetSdkVersion
-+		INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml
-+	android:minSdkVersion
-+		INJECTED from /Users/nomli/Downloads/nomli-mingl/node_modules/expo-in-app-purchases/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/BillingManager.java b/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/BillingManager.java
 index d5d6d45..1a93aaf 100644
 --- a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/BillingManager.java
@@ -227,7 +29,7 @@ index d5d6d45..1a93aaf 100644
          mBillingClient.launchBillingFlow(mActivity, purchaseParams.build());
        }
 diff --git a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesModule.java b/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesModule.java
-index f763c17..81d09c9 100644
+index f763c17..e627b84 100644
 --- a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesModule.java
 +++ b/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesModule.java
 @@ -1,98 +1,15 @@
@@ -249,9 +51,9 @@ index f763c17..81d09c9 100644
 -import expo.modules.core.interfaces.services.EventEmitter;
  
 -public class InAppPurchasesModule extends ExportedModule implements RegistryLifecycleListener {
-+// iOS-only module - Android implementation is completely stubbed to prevent build errors with Expo SDK 52
-+// The createExportedModules method in InAppPurchasesPackage returns empty list for Android.
-+// This class is never instantiated on Android, but must compile to avoid build errors.
++// iOS-only module - Android implementation is stubbed to prevent build errors with Expo SDK 52.
++// InAppPurchasesPackage extends BasePackage without registering exported modules on Android.
++// This class is never instantiated on Android but must compile.
 +public class InAppPurchasesModule {
    private static final String TAG = InAppPurchasesModule.class.getSimpleName();
    private static final String NAME = "ExpoInAppPurchases";
@@ -335,12 +137,17 @@ index f763c17..81d09c9 100644
    }
  }
 diff --git a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesPackage.java b/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesPackage.java
-index 663bf07..b9fb962 100644
+index 663bf07..854687f 100644
 --- a/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesPackage.java
 +++ b/node_modules/expo-in-app-purchases/android/src/main/java/expo/modules/inapppurchases/InAppPurchasesPackage.java
-@@ -6,11 +6,10 @@ import java.util.Collections;
- import java.util.List;
+@@ -1,16 +1,10 @@
+ package expo.modules.inapppurchases;
  
+-import android.content.Context;
+-
+-import java.util.Collections;
+-import java.util.List;
+-
  import expo.modules.core.BasePackage;
 -import expo.modules.core.ExportedModule;
  

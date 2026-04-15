@@ -11,7 +11,6 @@ const IGNORE_DIRS = new Set([
   'ios',
   'android',
   '.expo',
-  '.web-stubs',
   'dist',
   'build',
 ]);

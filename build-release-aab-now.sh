@@ -5,7 +5,29 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -d "$SCRIPT_DIR/android" ]; then
+  REPO_ROOT="$SCRIPT_DIR"
+else
+  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
+cd "$REPO_ROOT"
+
+# Version embedded in the AAB: android/app/defaultConfig (must match app.config.js android.versionCode + expo.version)
+read_android_versions() {
+    ANDROID_VERSION_CODE=""
+    ANDROID_VERSION_NAME=""
+    if [ -f "android/app/build.gradle" ]; then
+        ANDROID_VERSION_CODE=$(grep -E '[[:space:]]versionCode[[:space:]]+[0-9]+' android/app/build.gradle | head -1 | sed -E 's/.*versionCode[[:space:]]+([0-9]+).*/\1/')
+        ANDROID_VERSION_NAME=$(grep -E '[[:space:]]versionName[[:space:]]+"' android/app/build.gradle | head -1 | sed -E 's/.*versionName[[:space:]]+"([^"]+)".*/\1/')
+    fi
+}
+read_android_versions
+
 echo "🔨 Building Release AAB..."
+if [ -n "$ANDROID_VERSION_CODE" ] && [ -n "$ANDROID_VERSION_NAME" ]; then
+    echo "   (Play versionCode $ANDROID_VERSION_CODE, versionName $ANDROID_VERSION_NAME — from android/app/build.gradle)"
+fi
 echo ""
 
 # Check if passwords are provided as arguments
@@ -33,17 +55,72 @@ else
     exit 1
 fi
 
-# Determine keystore location (check both possible locations)
+# Expand leading ~ to $HOME (bash)
+expand_keystore_path() {
+    local p="$1"
+    if [[ "$p" == '~' ]]; then
+        p="$HOME"
+    elif [[ "$p" == '~/'* ]]; then
+        p="$HOME/${p:2}"
+    fi
+    printf '%s' "$p"
+}
+
+# Determine keystore location (env override, then default paths, then interactive prompt)
+# Keystores are gitignored — copy yours from backup or Play App Signing export.
 KEYSTORE_PATH=""
-if [ -f "android/app/nomli-mingle-release-key.keystore" ]; then
+if [ -n "$MYAPP_RELEASE_KEYSTORE_PATH" ]; then
+    if [ -f "$MYAPP_RELEASE_KEYSTORE_PATH" ]; then
+        KEYSTORE_PATH="$MYAPP_RELEASE_KEYSTORE_PATH"
+    else
+        echo "⚠️  MYAPP_RELEASE_KEYSTORE_PATH is not a valid file (will prompt if interactive):"
+        echo "   $MYAPP_RELEASE_KEYSTORE_PATH"
+        case "$MYAPP_RELEASE_KEYSTORE_PATH" in
+            *"/absolute/path/"*|*"your-upload-key"*|*"your-release"*)
+                echo "   (That looks like the docs example — use a real path or enter it below.)"
+                ;;
+        esac
+        echo ""
+    fi
+fi
+if [ -z "$KEYSTORE_PATH" ] && [ -f "android/app/nomli-mingle-release-key.keystore" ]; then
     KEYSTORE_PATH="android/app/nomli-mingle-release-key.keystore"
-elif [ -f "nomli-mingle-release-key.keystore" ]; then
+fi
+if [ -z "$KEYSTORE_PATH" ] && [ -f "nomli-mingle-release-key.keystore" ]; then
     KEYSTORE_PATH="nomli-mingle-release-key.keystore"
-else
-    echo "❌ Keystore not found!"
-    echo "   Checked locations:"
-    echo "   - android/app/nomli-mingle-release-key.keystore"
-    echo "   - nomli-mingle-release-key.keystore"
+fi
+if [ -z "$KEYSTORE_PATH" ] && [ -f "${HOME}/Desktop/nomli-mingle-release-key.keystore" ]; then
+    KEYSTORE_PATH="${HOME}/Desktop/nomli-mingle-release-key.keystore"
+fi
+
+if [ -z "$KEYSTORE_PATH" ]; then
+    if [ -t 0 ] && [ -t 1 ]; then
+        echo "Keystore not found in default locations."
+        echo "You can paste or type the path (e.g. ~/Keys/upload.keystore), or drag the .keystore file into this terminal."
+        echo ""
+        for _try in 1 2 3 4 5; do
+            read -r -p "Path to release .keystore (Enter to abort): " _ks || true
+            _ks="${_ks#"${_ks%%[![:space:]]*}"}"
+            _ks="${_ks%"${_ks##*[![:space:]]}"}"
+            if [ -z "$_ks" ]; then
+                echo "Aborted."
+                exit 1
+            fi
+            _ks="$(expand_keystore_path "$_ks")"
+            if [ -f "$_ks" ]; then
+                KEYSTORE_PATH="$_ks"
+                break
+            fi
+            echo "❌ Not a file: $_ks"
+        done
+    fi
+fi
+
+if [ -z "$KEYSTORE_PATH" ] || [ ! -f "$KEYSTORE_PATH" ]; then
+    echo "❌ Keystore not found."
+    echo "   Defaults: android/app/…, repo root, or ~/Desktop/nomli-mingle-release-key.keystore"
+    echo "   Or: export MYAPP_RELEASE_KEYSTORE_PATH=\"/real/path/to/upload.keystore\""
+    echo "   Run this script in a terminal (not piped) to be prompted for the path interactively."
     exit 1
 fi
 
@@ -84,8 +161,8 @@ echo "🧹 Cleaning previous build..."
 
 echo ""
 echo "📦 Building Release AAB..."
-echo "   Version Code: 100"
-echo "   Version Name: 1.0.38"
+echo "   Version Code: ${ANDROID_VERSION_CODE:-?}"
+echo "   Version Name: ${ANDROID_VERSION_NAME:-?}"
 echo "   Keystore: $KEYSTORE_PATH"
 echo "   Key Alias: $MYAPP_RELEASE_KEY_ALIAS"
 echo ""

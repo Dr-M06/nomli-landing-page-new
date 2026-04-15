@@ -129,6 +129,7 @@ serve(async (req) => {
       },
       badge: 1,
       priority: 'high',
+      android: { channelId: 'default', priority: 'high' },
     }))
 
     let totalSuccess = 0

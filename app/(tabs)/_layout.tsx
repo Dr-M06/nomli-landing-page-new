@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Platform, AppState, View, Text } from 'react-native';
+import { AppState, View, Text } from 'react-native';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { House, CircleUserRound, Plus, Inbox, Compass, Radio } from 'lucide-react-native';
 import { Colors, getThemeColors } from '../../constants/Colors';
@@ -39,7 +39,6 @@ class TabLayoutErrorBoundary extends React.Component<
         <View
           style={{
             flex: 1,
-            minHeight: Platform.OS === 'web' ? ('100vh' as const) : undefined,
             backgroundColor: '#0a0b0e',
             justifyContent: 'center',
             alignItems: 'center',
