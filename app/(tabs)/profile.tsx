@@ -1489,11 +1489,7 @@ export default function ProfileScreen() {
       if (cachedPosts && cachedPosts.length > 0) {
         log('[ProfileScreen] ✅ Using cached user posts for instant display');
         // Validate and set cached posts immediately
-        const validatedCached = cachedPosts.filter(post => {
-          if (!post || !post.id) return false;
-          if (post.video_url && post.video_url.includes('cloudinary.com')) return false;
-          return true;
-        });
+        const validatedCached = cachedPosts.filter((post) => post && post.id);
         const { media, text } = separatePosts(validatedCached);
         setUserPosts(media);
         setUserTextPosts(text);
@@ -1504,11 +1500,7 @@ export default function ProfileScreen() {
           try {
             const freshPosts = await getUserPosts(user.id, false);
             log('[ProfileScreen] ✅ Refreshed user posts in background:', (freshPosts?.length || 0));
-            const validatedFresh = freshPosts.filter(post => {
-              if (!post || !post.id) return false;
-              if (post.video_url && post.video_url.includes('cloudinary.com')) return false;
-              return true;
-            });
+            const validatedFresh = freshPosts.filter((post) => post && post.id);
             const { media: freshMedia, text: freshText } = separatePosts(validatedFresh);
             setUserPosts(freshMedia);
             setUserTextPosts(freshText);
@@ -1523,19 +1515,11 @@ export default function ProfileScreen() {
       const posts = await getUserPosts(user.id, true);
       log('[ProfileScreen] Loaded user posts:', (posts?.length || 0));
       
-      // Validate post data before setting state and filter out Cloudinary videos
-      const validatedPosts = posts.filter(post => {
+      const validatedPosts = posts.filter((post) => {
         if (!post || !post.id) {
           error('Invalid post found in user posts:', post);
           return false;
         }
-        
-        // Filter out Cloudinary videos (now using Mux)
-        if (post.video_url && post.video_url.includes('cloudinary.com')) {
-          log(`[Profile] Filtering out Cloudinary video post (now using Mux): ${post.id}`);
-          return false;
-        }
-        
         return true;
       });
       

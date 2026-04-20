@@ -24,9 +24,6 @@ EXPO_PUBLIC_AGORA_APP_ID=ef36215444d4414083baaf7166b5b06b
 # Add your other environment variables here
 # EXPO_GEOAPIFY_API_KEY=your_geoapify_key
 # WHATSAPP_SUPPORT_NUMBER=your_whatsapp_number
-# EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-# EXPO_PUBLIC_CLOUDINARY_API_KEY=your_cloudinary_api_key
-# EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
 `;
 
   try {

@@ -1,7 +1,7 @@
-// Side-effect imports: order matters — polyfills must run before expo-router (Hermes has no DOMException / streams).
+// Side-effect imports: order matters — quiet console first, then polyfills (before expo-router / Hermes streams).
+import './disableConsoleInProduction';
 import './polyfills';
 import { Platform } from 'react-native';
-import './disableConsoleInProduction'; // Must run before app entry so logs are off in production
 import 'expo-router/entry';
 
 // Initialize Firebase app before using any Firebase services

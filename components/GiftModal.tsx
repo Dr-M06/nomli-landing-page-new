@@ -1027,7 +1027,7 @@ export default function GiftModal({ visible, onClose, onSendGift, recipientName 
                   {
                     id: 'earn',
                     q: 'How do I get tokens?',
-                    a: 'You can buy tokens in the app or earn them through promotions/events (when available).',
+                    a: 'You can buy tokens in the app or earn them through promotions (when available).',
                   },
                   {
                     id: 'withdraw',

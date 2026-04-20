@@ -15,14 +15,13 @@ import { ExternalLink } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { Event } from '../utils/eventUtils';
-import { trackBannerImpression, trackBannerClick } from '../utils/promoBannerUtils';
+import { trackBannerImpression, trackBannerClick, type PromoBanner } from '../utils/promoBannerUtils';
 import useAuth from '../hooks/useAuth';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface PromoBannerProps {
-  banner: Event;
+  banner: PromoBanner;
   onDismiss?: () => void;
   fullScreen?: boolean;
   containerHeight?: number;

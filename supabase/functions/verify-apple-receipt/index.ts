@@ -217,15 +217,18 @@ serve(async (req) => {
     // Idempotency: any prior row for this Apple transaction (tokens or Creator Pro)
     const { data: existingTx } = await supabaseClient
       .from('wallet_transactions')
-      .select('id')
+      .select('id, transaction_type')
       .eq('user_id', userId)
       .eq('reference_id', String(transactionId))
       .maybeSingle();
 
     if (existingTx) {
-      console.log('✅ [verify-apple-receipt] Transaction already processed');
+      const t = (existingTx as { transaction_type?: string }).transaction_type;
+      const kind =
+        t === 'creator_pro_apple' || t === 'creator_pro_google' ? 'creator_pro' : 'tokens';
+      console.log('✅ [verify-apple-receipt] Transaction already processed', { kind, transaction_type: t });
       return new Response(
-        JSON.stringify({ success: true, message: 'Transaction already processed' }),
+        JSON.stringify({ success: true, message: 'Transaction already processed', kind }),
         {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -281,6 +284,16 @@ serve(async (req) => {
           JSON.stringify({ success: false, error: 'Failed to activate Creator Pro' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      {
+        const { error: fcErr } = await supabaseClient.rpc('schedule_founding_creator_credit_vesting', {
+          p_user_id: userId,
+          p_period_end: expiresIso,
+        });
+        if (fcErr) {
+          console.warn('⚠️ [verify-apple-receipt] schedule_founding_creator_credit_vesting:', fcErr.message);
+        }
       }
 
       await supabaseClient.from('wallet_transactions').insert({

@@ -21,9 +21,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * Convert Post objects to VideoPost format for video feed
  */
 export const convertPostsToVideoFeed = (posts: Post[]): VideoPost[] => {
-  // Filter out posts without video URLs.
-  // IMPORTANT: Do NOT exclude Cloudinary here, because the main home feed still plays them.
-  // The fullscreen video feed should mirror the regular feed’s behaviour and show every playable video.
+  // Filter out posts without video URLs (fullscreen feed mirrors whatever the feed includes).
   if (!Array.isArray(posts)) return [];
   const videoPosts = posts.filter(post => post != null && !!post.video_url && typeof post.id === 'string');
   // Only log in development mode and when processing a significant batch

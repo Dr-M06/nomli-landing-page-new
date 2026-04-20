@@ -194,23 +194,6 @@ if (Notifications.setNotificationHandler) {
 
 // Define custom toast configuration
 const toastConfig = {
-  // Subtle toast for dating like (no bright green, no second line)
-  dating_like: ({ text1 }: BaseToastProps) => (
-    <View style={{
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      borderRadius: 24,
-      alignSelf: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
-    }}>
-      <Text style={{ fontSize: 15, fontWeight: '600', color: 'white' }}>{text1}</Text>
-    </View>
-  ),
   success: ({ text1, text2, ...rest }: BaseToastProps) => (
     <View style={{
       height: 60,

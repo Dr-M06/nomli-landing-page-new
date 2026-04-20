@@ -1,9 +1,4 @@
-// Mux Configuration - Better & Cheaper than Cloudinary
-// Mux provides:
-// - Live streaming: $0.0015/minute (vs Cloudinary $0.04-0.10/minute)
-// - Better quality and lower latency
-// - Built-in analytics and insights
-// - Mobile-optimized delivery
+// Mux video upload / playback configuration (client + edge function integration).
 
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';

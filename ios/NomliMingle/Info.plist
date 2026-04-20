@@ -49,8 +49,6 @@
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-6717303461104359~2459195924</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>

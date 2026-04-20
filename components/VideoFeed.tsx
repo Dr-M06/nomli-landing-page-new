@@ -125,9 +125,7 @@ export interface VideoPost {
   boost_expires_at?: string | null;
 }
 
-// Import banner types (uses Event from events table)
 import { PromoBanner } from '../utils/promoBannerUtils';
-import { Event } from '../utils/eventUtils';
 import { log, warn, error } from '../utils/productionLogger';
 
 /** Total FlatList rows (videos + inserted promo banners). Must match mixedFeed useMemo. */

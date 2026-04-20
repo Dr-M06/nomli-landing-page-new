@@ -5,13 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, getThemeColors } from '../constants/Colors';
 import { FontFamily, FontSizes } from '../constants/Theme';
 import { OFFICIAL_ACCOUNT_EMAIL } from '../constants/ContactEmails';
-import { User, Crown } from 'lucide-react-native';
+import { User } from 'lucide-react-native';
 import VipBadge from './VipBadge';
 import UserBadge, { UserBadgeData } from './UserBadge';
 import { getUserBadges } from '../utils/badgeService';
 import { getSafeAvatarUrl } from '../utils/safeAvatarUrl';
 import AvatarZoomModal from './AvatarZoomModal';
-import { useIsLeaderboardUser } from '../contexts/LeaderboardContext';
 import { log, warn, error } from '../utils/productionLogger';
 
 
@@ -81,9 +80,6 @@ const EnhancedAvatar: React.FC<EnhancedAvatarProps> = ({
   const [userBadges, setUserBadges] = useState<UserBadgeData[]>(providedBadges || []);
   const [badgesLoaded, setBadgesLoaded] = useState(!!providedBadges);
   const [showZoomModal, setShowZoomModal] = useState(false);
-  
-  // Check if user is on daily leaderboard (top 5 contributors)
-  const { isOnLeaderboard, rank } = useIsLeaderboardUser(userId);
 
   // Check if user is official account
   const isOfficialAccount = useMemo(() => {
@@ -368,43 +364,6 @@ const EnhancedAvatar: React.FC<EnhancedAvatarProps> = ({
             position={showOnlineIndicator ? "top-right" : "bottom-right"}
           />
         )}
-
-        {/* Leaderboard Crown Badge (top-left, above verified badge) */}
-        {isOnLeaderboard && rank && (
-          <View
-            style={[
-              styles.crownBadge,
-              {
-                top: -2,
-                left: -2,
-                width: Math.min(28, Math.max(16, size * 0.22)),
-                height: Math.min(28, Math.max(16, size * 0.22)),
-              },
-            ]}
-          >
-            <Crown
-              size={Math.min(22, Math.max(12, size * 0.18))}
-              color={
-                rank === 1
-                  ? '#FFD700' // Gold
-                  : rank === 2
-                  ? '#C0C0C0' // Silver
-                  : rank === 3
-                  ? '#CD7F32' // Bronze
-                  : themeColors.primary.main
-              }
-              fill={
-                rank === 1
-                  ? '#FFD700'
-                  : rank === 2
-                  ? '#C0C0C0'
-                  : rank === 3
-                  ? '#CD7F32'
-                  : themeColors.primary.main
-              }
-            />
-          </View>
-        )}
       </View>
 
       {/* User Badges - Display next to avatar (only show on avatars 32px or larger) */}
@@ -503,15 +462,6 @@ const styles = StyleSheet.create({
   },
   onlineIndicator: {
     position: 'absolute',
-  },
-  crownBadge: {
-    position: 'absolute',
-    zIndex: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 8,
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { createStripeCheckout, type PaymentPlan } from './stripeService';
-import { error as logError } from './productionLogger';
+import { error as logError, warn as logWarn } from './productionLogger';
 
 export type CreatorBreakdownRow = { label: string; points: number };
 
@@ -32,6 +32,12 @@ export type CreatorGiftRow = {
 export type CreatorMonetizationSnapshot = {
   creator_pro_active: boolean;
   creator_pro_until: string | null;
+  /** Ledger-backed founding credit (default $1). */
+  founding_credit_amount_usd: number;
+  founding_credit_state: 'awaiting_pro' | 'vesting' | 'credited' | 'ineligible' | string;
+  founding_credit_vest_at: string | null;
+  /** Extra USD to show on Go Pro paywall while awaiting_pro (0 if ineligible / already past paywall). */
+  founding_credit_paywall_usd: number;
   token_usd_rate: number;
   engagement_score_month: number;
   engagement_score_last_month: number;
@@ -63,11 +69,27 @@ function parseSnapshot(raw: unknown): CreatorMonetizationSnapshot | null {
   const o = raw as Record<string, unknown>;
   const num = (v: unknown, d = 0) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
   const str = (v: unknown) => (typeof v === 'string' ? v : null);
+  const boolish = (v: unknown) => v === true || v === 'true' || v === 1 || v === '1';
   const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+  const vestAt = (v: unknown): string | null => {
+    if (v == null || v === 'null') return null;
+    if (typeof v === 'string') return v;
+    return null;
+  };
+
+  const creatorProUntil = str(o.creator_pro_until);
+  const untilMs = creatorProUntil ? new Date(creatorProUntil).getTime() : NaN;
+  const untilActive = !Number.isNaN(untilMs) && untilMs > Date.now();
 
   return {
-    creator_pro_active: o.creator_pro_active === true,
-    creator_pro_until: str(o.creator_pro_until),
+    // Coerce JSON/PostgREST oddities; fall back to subscription end date so Pro unlocks reliably.
+    creator_pro_active: boolish(o.creator_pro_active) || untilActive,
+    creator_pro_until: creatorProUntil,
+    founding_credit_amount_usd: num(o.founding_credit_amount_usd, 1),
+    founding_credit_state:
+      typeof o.founding_credit_state === 'string' ? o.founding_credit_state : 'awaiting_pro',
+    founding_credit_vest_at: vestAt(o.founding_credit_vest_at),
+    founding_credit_paywall_usd: num(o.founding_credit_paywall_usd, 1),
     token_usd_rate: num(o.token_usd_rate, 0.01),
     engagement_score_month: num(o.engagement_score_month),
     engagement_score_last_month: num(o.engagement_score_last_month),
@@ -151,16 +173,33 @@ export async function fetchProfileCreatorProUntil(): Promise<string | null> {
   }
 }
 
-async function fetchCreatorRecurringPlans(): Promise<PaymentPlan[]> {
+type FetchPlansResult = { plans: PaymentPlan[]; error: string | null };
+
+/**
+ * Loads Creator Pro rows from Supabase. Stores (App Store / Play) only work if these rows exist
+ * and include the correct `iap_product_id_*` for the current platform.
+ */
+async function fetchCreatorRecurringPlans(): Promise<FetchPlansResult> {
   const { data, error } = await supabase
     .from('payment_plans')
     .select('*')
     .eq('is_active', true)
     .eq('plan_type', 'recurring')
-    .eq('plan_category', 'creator')
+    // Case-insensitive: avoids "Creator" vs "creator" mismatches in the table
+    .ilike('plan_category', 'creator')
     .order('display_order', { ascending: true });
-  if (error || !data?.length) return [];
-  return data as PaymentPlan[];
+
+  if (error) {
+    logError('[CreatorMonetization] payment_plans query failed:', error);
+    return { plans: [], error: error.message };
+  }
+  if (!data?.length) {
+    logWarn(
+      '[CreatorMonetization] No creator payment_plans visible to this app. (1) Confirm rows: is_active, plan_type=recurring, plan_category=creator, IAP ids set. (2) If rows show in Supabase Table Editor but not here, add SELECT RLS for authenticated/anon — see supabase/seed_creator_pro_payment_plans.sql section "RLS". (3) Restart Metro with --clear if logs still mention old "No rows:" text.',
+    );
+    return { plans: [], error: null };
+  }
+  return { plans: data as PaymentPlan[], error: null };
 }
 
 /** Infer tier from IAP ids / name (e.g. *.monthly vs *.yearly). */
@@ -173,22 +212,18 @@ function billingPeriodFromPlan(plan: PaymentPlan): 'monthly' | 'yearly' | 'unkno
 
 function plansEligibleForCurrentPlatform(plans: PaymentPlan[]): PaymentPlan[] {
   if (Platform.OS === 'ios') {
-    return plans.filter((p) => !!p.iap_product_id_apple);
+    return plans.filter((p) => !!p.iap_product_id_apple?.trim());
   }
   if (Platform.OS === 'android') {
-    return plans.filter((p) => !!p.iap_product_id_google);
+    return plans.filter((p) => !!p.iap_product_id_google?.trim());
   }
   return plans.filter((p) => !!p.stripe_price_id_usd || !!p.stripe_price_id_ngn);
 }
 
 /**
- * Creator Pro plan for checkout: `monthly` vs `yearly` (separate `payment_plans` rows per SKU).
+ * Picks monthly vs yearly SKU from plans that already passed platform eligibility (IAP ids present).
  */
-export async function getCreatorProPlanForCheckout(
-  period: 'monthly' | 'yearly'
-): Promise<PaymentPlan | null> {
-  const plans = await fetchCreatorRecurringPlans();
-  const eligible = plansEligibleForCurrentPlatform(plans);
+function pickEligibleCreatorPlan(eligible: PaymentPlan[], period: 'monthly' | 'yearly'): PaymentPlan | null {
   if (!eligible.length) return null;
 
   if (period === 'yearly') {
@@ -200,6 +235,17 @@ export async function getCreatorProPlanForCheckout(
   const unknown = eligible.filter((p) => billingPeriodFromPlan(p) === 'unknown');
   if (unknown.length) return unknown[0];
   return eligible[0];
+}
+
+/**
+ * Creator Pro plan for checkout: `monthly` vs `yearly` (separate `payment_plans` rows per SKU).
+ */
+export async function getCreatorProPlanForCheckout(
+  period: 'monthly' | 'yearly'
+): Promise<PaymentPlan | null> {
+  const { plans } = await fetchCreatorRecurringPlans();
+  const eligible = plansEligibleForCurrentPlatform(plans);
+  return pickEligibleCreatorPlan(eligible, period);
 }
 
 /** Default Creator Pro row for UI (monthly price, primary CTA). */
@@ -216,20 +262,58 @@ export function tokensToUsd(tokens: number, rate: number): number {
 }
 
 /**
- * iOS / Android: in-app subscription (Apple / Google). Web: Stripe Checkout.
- * @param period `monthly` | `yearly` — must match a `payment_plans` row with the right IAP / Stripe price.
+ * iOS / Android: in-app subscription (Apple / Google). Web: hosted checkout session.
+ * @param period `monthly` | `yearly` — must match a `payment_plans` row with the right IAP / web price ids.
  */
 export async function startCreatorProCheckout(
   period: 'monthly' | 'yearly' = 'monthly'
 ): Promise<{ ok: boolean; error?: string }> {
-  const plan = await getCreatorProPlanForCheckout(period);
-  if (!plan?.id) {
+  const { plans, error: fetchError } = await fetchCreatorRecurringPlans();
+
+  if (fetchError) {
+    return {
+      ok: false,
+      error: `Could not load subscription plans (${fetchError}). If products work in App Store Connect but not here, check Supabase RLS: authenticated users need SELECT on payment_plans.`,
+    };
+  }
+
+  const eligible = plansEligibleForCurrentPlatform(plans);
+
+  if (!plans.length) {
     return {
       ok: false,
       error:
-        period === 'yearly'
-          ? 'Creator Pro yearly plan is not configured (add a payment_plans row with yearly IAP / Stripe).'
-          : 'Creator Pro plan is not configured yet.',
+        'No Creator Pro row in Supabase. Add payment_plans: is_active=true, plan_type=recurring, plan_category=creator, plus iap_product_id_apple / iap_product_id_google.',
+    };
+  }
+
+  if (!eligible.length) {
+    const col =
+      Platform.OS === 'ios'
+        ? 'iap_product_id_apple'
+        : Platform.OS === 'android'
+          ? 'iap_product_id_google'
+          : 'stripe_price_id_usd or stripe_price_id_ngn';
+    return {
+      ok: false,
+      error: `Creator Pro rows exist but none have ${col} set (non-empty) for this device. App Store / Play being “ready” does not fill Supabase—you must copy the product IDs into payment_plans.`,
+    };
+  }
+
+  const plan = pickEligibleCreatorPlan(eligible, period);
+
+  if (!plan?.id) {
+    if (period === 'yearly') {
+      return {
+        ok: false,
+        error:
+          'No yearly Creator Pro SKU in payment_plans. Add a row with yearly/annual in the IAP product id or plan name, or a separate yearly subscription row.',
+      };
+    }
+    return {
+      ok: false,
+      error:
+        'No monthly Creator Pro SKU matched. Ensure one row has “monthly” in the Apple/Google product id or plan name, or a single row with unknown period for the default CTA.',
     };
   }
 
@@ -254,7 +338,7 @@ export async function startCreatorProCheckout(
   const currency = plan.currency === 'NGN' ? 'NGN' : 'USD';
   const priceId = currency === 'NGN' ? plan.stripe_price_id_ngn : plan.stripe_price_id_usd;
   if (!priceId) {
-    return { ok: false, error: 'Stripe price not configured for web checkout.' };
+    return { ok: false, error: 'Web checkout is not configured for this plan yet.' };
   }
 
   const res = await createStripeCheckout(plan.id, currency);

@@ -1,52 +1,18 @@
-const { getDefaultConfig } = require('@expo/metro-config');
-const { withShareExtension } = require('expo-share-extension/metro');
-const path = require('path');
-const os = require('os');
+// Learn more https://docs.expo.dev/guides/customizing-metro
+// Keep this file fully local (not iCloud-only); Metro reads it synchronously and will fail with ETIMEDOUT otherwise.
+const { getDefaultConfig } = require('expo/metro-config');
+const exclusionList = require('metro-config/src/defaults/exclusionList');
 
+/** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
-const defaultResolveRequest = config.resolver.resolveRequest;
 
-config.maxWorkers = Math.max(1, Math.floor(os.cpus().length / 2));
-config.resetCache = false;
+// Never resolve app imports into these trees (safety net). They are not part of the app runtime
+// but can be huge; a mistaken `import` would bloat `:app:createBundleReleaseJsAndAssets`.
+// Metro still only bundles what the graph reaches — this does not remove legitimate deps.
+config.resolver.blockList = exclusionList([
+  /[/\\]archive[/\\].*/,
+  /[/\\]oldrepo_ref[/\\].*/,
+  /[/\\]supabase[/\\]migrations[/\\].*/,
+]);
 
-config.transformer = {
-  ...config.transformer,
-  getTransformOptions: async () => ({
-    transform: {
-      experimentalImportSupport: true,
-      inlineRequires: false,
-    },
-  }),
-};
-
-config.resolver = {
-  ...config.resolver,
-  unstable_enablePackageExports: false,
-  alias: {
-    '@': path.resolve(__dirname, '.'),
-    'expo-location': path.resolve(__dirname, 'utils/expoLocationStub.ts'),
-  },
-  resolverMainFields: ['react-native', 'browser', 'main'],
-  platforms: ['ios', 'android', 'native'],
-  sourceExts: ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'],
-  nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
-  resolveRequest(context, moduleName, platform) {
-    if (typeof defaultResolveRequest === 'function') {
-      return defaultResolveRequest(context, moduleName, platform);
-    }
-    return require('metro-resolver').resolve(context, moduleName, platform);
-  },
-};
-
-const existingBlockList = Array.isArray(config.resolver.blockList)
-  ? config.resolver.blockList
-  : (config.resolver.blockList ? [config.resolver.blockList] : []);
-
-config.resolver.blockList = [
-  ...existingBlockList,
-  /node_modules\.__old__.*\/.*/,
-];
-
-config.projectRoot = path.resolve(__dirname);
-
-module.exports = withShareExtension(config);
+module.exports = config;

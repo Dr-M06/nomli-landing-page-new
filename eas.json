@@ -8,7 +8,10 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "CI": "true",
+        "EXPO_NO_DOTENV": "1",
+        "NODE_OPTIONS": "--max-old-space-size=8192"
       },
       "ios": {
         "simulator": true
@@ -36,6 +39,12 @@
       }
     },
     "production": {
+      "env": {
+        "CI": "true",
+        "EXPO_NO_DOTENV": "1",
+        "NODE_OPTIONS": "--max-old-space-size=8192",
+        "RNFB_SUPPRESS_NEW_ARCHITECTURE_WARNING": "1"
+      },
       "android": {
         "buildType": "app-bundle",
         "image": "ubuntu-22.04-jdk-17-ndk-r26b",
@@ -44,7 +53,10 @@
           "disabled": false,
           "key": "gradle-cache-v1"
         },
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "env": {
+          "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+        }
       },
       "ios": {
         "distribution": "store",

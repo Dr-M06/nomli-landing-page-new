@@ -132,7 +132,6 @@ export async function backgroundPreloadAll(userId?: string): Promise<void> {
     await Promise.allSettled([
       preloadChatScreen(userId),
       preloadLiveScreen(),
-      preloadEventsScreen(),
       preloadNearbyScreen(userId),
       preloadProfileScreen(userId),
     ]);
@@ -155,16 +154,6 @@ async function preloadChatScreen(userId: string): Promise<void> {
 async function preloadLiveScreen(): Promise<void> {
   try {
     // Livestream feature removed; keep as no-op for backward compatibility
-  } catch (error) {
-    // Silent fail - preload is non-critical
-  }
-}
-
-async function preloadEventsScreen(): Promise<void> {
-  try {
-    // Use existing eventUtils instead of direct query (reduces bundle size)
-    const { fetchUpcomingEvents } = await import('./eventUtils');
-    await fetchUpcomingEvents(5, true).catch(() => {}); // Use cache if available
   } catch (error) {
     // Silent fail - preload is non-critical
   }

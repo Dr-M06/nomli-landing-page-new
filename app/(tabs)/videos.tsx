@@ -22,10 +22,10 @@ import { getThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Theme';
 import useAuth from '../../hooks/useAuth';
 import FollowButton from '../../components/FollowButton';
+import { InlineVerifiedBadge } from '../../components/InlineVerifiedBadge';
 import { fetchVisibleProfilesPaginated } from '../../utils/paginatedDataFetch';
 import { getSafeDisplayName, stripAtSymbol } from '../../utils/contentFilter';
 import { getSafeAvatarUrl } from '../../utils/safeAvatarUrl';
-import { InlineVerifiedBadge } from '../../components/InlineVerifiedBadge';
 import { supabase } from '../../utils/supabase';
 import { getFloatingTabBarReservedHeight } from '../../utils/tabBarInset';
 import { isVerifiedEntity } from '../../utils/verification';
@@ -54,7 +54,6 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const GRID_COLUMNS = 2;
 const CARD_GAP = 10;
 const CARD_W = Math.floor((SCREEN_W - 24 - CARD_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS);
-/** Narrow grid cells: taller card + stacked actions so Follow/Message are not clipped. */
 const COMPACT_DISCOVERY_CARD = CARD_W < 172;
 const CARD_H = COMPACT_DISCOVERY_CARD
   ? Math.max(Math.round(CARD_W * 1.84), 208)
@@ -597,87 +596,92 @@ export default function VideosScreen() {
     }, 700);
   }, [loading, refreshing, loadingMore, hasMore, page, loadProfiles]);
 
-  const renderItem = useCallback(({ item, index }: { item: DiscoverProfile; index: number }) => {
-    const handle = stripAtSymbol(item.username || item.full_name || 'user');
-    const displayName = getSafeDisplayName(item.username, item.full_name) || `@${handle}`;
-    const avatar = getSafeAvatarUrl(item.avatar_url, item.id) || `https://api.dicebear.com/7.x/avataaars/png?seed=${item.id}`;
-    const isLastInRow = (index + 1) % GRID_COLUMNS === 0;
+  const renderItem = useCallback(
+    ({ item, index }: { item: DiscoverProfile; index: number }) => {
+      const handle = stripAtSymbol(item.username || item.full_name || 'user');
+      const displayName = getSafeDisplayName(item.username, item.full_name) || `@${handle}`;
+      const avatar =
+        getSafeAvatarUrl(item.avatar_url, item.id) ||
+        `https://api.dicebear.com/7.x/avataaars/png?seed=${item.id}`;
+      const isLastInRow = (index + 1) % GRID_COLUMNS === 0;
 
-    return (
-      <TouchableOpacity
-        activeOpacity={0.86}
-        onPress={() => router.push(`/profile/${item.id}`)}
-        style={[
-          styles.gridCard,
-          {
-            width: CARD_W,
-            height: CARD_H,
-            marginRight: isLastInRow ? 0 : CARD_GAP,
-            backgroundColor: isDarkMode ? '#101621' : '#fff',
-            borderColor: themeColors.neutral.border,
-          },
-        ]}
-      >
-        <Image
-          source={{ uri: avatar }}
-          style={[styles.gridAvatar, { height: `${DISCOVERY_PHOTO_PCT}%` }]}
-          contentFit="cover"
-          transition={0}
-          cachePolicy="memory-disk"
-        />
-        <View style={[styles.imageShade, { height: `${DISCOVERY_PHOTO_PCT}%` }]} />
-        <View
+      return (
+        <TouchableOpacity
+          activeOpacity={0.86}
+          onPress={() => router.push(`/profile/${item.id}`)}
           style={[
-            styles.infoPanel,
-            { top: `${DISCOVERY_PHOTO_PCT}%`, backgroundColor: isDarkMode ? '#101624' : '#ffffff' },
-            COMPACT_DISCOVERY_CARD && styles.infoPanelCompact,
+            styles.gridCard,
+            {
+              width: CARD_W,
+              height: CARD_H,
+              marginRight: isLastInRow ? 0 : CARD_GAP,
+              backgroundColor: isDarkMode ? '#101621' : '#fff',
+              borderColor: themeColors.neutral.border,
+            },
           ]}
         >
-          <View style={styles.gridNameRow}>
-            <Text style={[styles.gridName, { color: themeColors.neutral.text }]} numberOfLines={1}>
-              {displayName}
-            </Text>
-            {isVerifiedProfile(item) ? (
-              <InlineVerifiedBadge size={13} style={styles.gridNameVerified} />
-            ) : null}
-          </View>
-          <Text style={[styles.gridHandle, { color: themeColors.neutral.textSecondary }]} numberOfLines={1}>
-            @{handle}
-          </Text>
-          <Text
-            style={[styles.bioHighlight, { color: themeColors.neutral.textSecondary }]}
-            numberOfLines={COMPACT_DISCOVERY_CARD ? 1 : 2}
+          <Image
+            source={{ uri: avatar }}
+            style={[styles.gridAvatar, { height: `${DISCOVERY_PHOTO_PCT}%` }]}
+            contentFit="cover"
+            transition={0}
+            cachePolicy="memory-disk"
+          />
+          <View style={[styles.imageShade, { height: `${DISCOVERY_PHOTO_PCT}%` }]} />
+          <View
+            style={[
+              styles.infoPanel,
+              { top: `${DISCOVERY_PHOTO_PCT}%`, backgroundColor: isDarkMode ? '#101624' : '#ffffff' },
+              COMPACT_DISCOVERY_CARD && styles.infoPanelCompact,
+            ]}
           >
-            {item.bio?.trim() || 'Open profile to learn what they do and connect.'}
-          </Text>
-          <View style={[styles.cardActionsRow, COMPACT_DISCOVERY_CARD && styles.cardActionsStack]}>
-            <FollowButton
-              userId={item.id}
-              size="compact"
-              variant="outline"
-              profileVisible={item.profile_visible !== false}
-              style={[styles.gridFollowButtonScale, COMPACT_DISCOVERY_CARD && styles.followBtnStacked]}
-            />
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push(`/chat/${item.id}` as any)}
-              style={[
-                styles.messageBtn,
-                COMPACT_DISCOVERY_CARD && styles.messageBtnStacked,
-                {
-                  borderColor: themeColors.neutral.border,
-                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8faff',
-                },
-              ]}
+            <View style={styles.gridNameRow}>
+              <Text style={[styles.gridName, { color: themeColors.neutral.text }]} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {isVerifiedProfile(item) ? (
+                <InlineVerifiedBadge size={13} style={styles.gridNameVerified} />
+              ) : null}
+            </View>
+            <Text style={[styles.gridHandle, { color: themeColors.neutral.textSecondary }]} numberOfLines={1}>
+              @{handle}
+            </Text>
+            <Text
+              style={[styles.bioHighlight, { color: themeColors.neutral.textSecondary }]}
+              numberOfLines={COMPACT_DISCOVERY_CARD ? 1 : 2}
             >
-              <MessageCircle size={12} color={themeColors.primary.main} strokeWidth={2} />
-              <Text style={[styles.messageBtnText, { color: themeColors.primary.main }]}>Message</Text>
-            </TouchableOpacity>
+              {item.bio?.trim() || 'Open profile to learn what they do and connect.'}
+            </Text>
+            <View style={[styles.cardActionsRow, COMPACT_DISCOVERY_CARD && styles.cardActionsStack]}>
+              <FollowButton
+                userId={item.id}
+                size="compact"
+                variant="outline"
+                profileVisible={item.profile_visible !== false}
+                style={[styles.gridFollowButtonScale, COMPACT_DISCOVERY_CARD && styles.followBtnStacked]}
+              />
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push(`/chat/${item.id}` as any)}
+                style={[
+                  styles.messageBtn,
+                  COMPACT_DISCOVERY_CARD && styles.messageBtnStacked,
+                  {
+                    borderColor: themeColors.neutral.border,
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8faff',
+                  },
+                ]}
+              >
+                <MessageCircle size={12} color={themeColors.primary.main} strokeWidth={2} />
+                <Text style={[styles.messageBtnText, { color: themeColors.primary.main }]}>Message</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-    );
-  }, [router, isDarkMode, themeColors.neutral.border, themeColors.neutral.text, themeColors.neutral.textSecondary, themeColors.primary.main]);
+        </TouchableOpacity>
+      );
+    },
+    [router, isDarkMode, themeColors.neutral.border, themeColors.neutral.text, themeColors.neutral.textSecondary, themeColors.primary.main]
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.neutral.background }]}>
@@ -705,7 +709,10 @@ export default function VideosScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={() => router.push('/dating-app')}
-                  style={[styles.datingBtn, { borderColor: themeColors.neutral.border, backgroundColor: isDarkMode ? '#101521' : '#fff' }]}
+                  style={[
+                    styles.datingBtn,
+                    { borderColor: themeColors.neutral.border, backgroundColor: isDarkMode ? '#101521' : '#fff' },
+                  ]}
                   activeOpacity={0.85}
                 >
                   <Text style={[styles.datingBtnText, { color: themeColors.primary.main }]}>Dating</Text>
@@ -717,7 +724,6 @@ export default function VideosScreen() {
                 {DISCOVERY_HINTS[hintIndex]}
               </Animated.Text>
             </View>
-            {/* Filters removed intentionally: verified profiles are now mixed into one feed and prioritized. */}
           </View>
         }
         contentContainerStyle={[

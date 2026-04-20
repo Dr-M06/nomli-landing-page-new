@@ -89,42 +89,6 @@ export async function getCachedPosts(options: CacheOptions = {}): Promise<any[]>
 }
 
 /**
- * Get cached events
- */
-export async function getCachedEvents(options: CacheOptions = {}): Promise<any[]> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const params = new URLSearchParams();
-    if (options.forceRefresh) {
-      params.append('_t', Date.now().toString());
-    }
-
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/app-cache/events?${params}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (response.ok) {
-      return await response.json();
-    } else {
-      return await fallbackEventsQuery();
-    }
-  } catch (error) {
-    warn('⚠️ [REDIS-CACHE] Cache fetch failed, using fallback:', error);
-    return await fallbackEventsQuery();
-  }
-}
-
-/**
  * Get cached live streams
  */
 export async function getCachedLiveStreams(options: CacheOptions = {}): Promise<any[]> {
@@ -235,16 +199,6 @@ async function fallbackPostsQuery(): Promise<any[]> {
     .from('posts')
     .select('id, user_id, content, media_url, created_at, likes_count, comments_count, views_count')
     .order('created_at', { ascending: false })
-    .limit(20);
-  
-  return data || [];
-}
-
-async function fallbackEventsQuery(): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('events')
-    .select('id, title, description, location, start_time, end_time, created_at, organizer_id')
-    .order('start_time', { ascending: true })
     .limit(20);
   
   return data || [];

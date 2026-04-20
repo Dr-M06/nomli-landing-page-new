@@ -24,9 +24,6 @@ export * from './contentModerator';
 
 export * from './conversationCache';
 export * from './countryChat';
-export * from './eventActions';
-export * from './eventCategories';
-export * from './eventsRealtime';
 export * from './expoPushNotifications';
 export * from './fileCache';
 export * from './formatters';

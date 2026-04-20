@@ -14,7 +14,9 @@ import {
   type ActivitySummaryCounts,
 } from '../utils/activitySummaryCounts';
 
-const STORAGE_PREFIX = 'nomli_activity_summary_sig_v1:';
+/** v1 stored a plain signature string (only updated on dismiss). v2 stores JSON so we can remember "already shown" even if the app was killed before Got it. */
+const STORAGE_KEY_V2 = 'nomli_activity_summary_state_v2:';
+const LEGACY_SIG_PREFIX = 'nomli_activity_summary_sig_v1:';
 const OPEN_DELAY_MS = 2000;
 const FLAMINGO_MAIN = '#FF6FAE';
 
@@ -64,7 +66,9 @@ type Props = {
 };
 
 /**
- * Home feed: short “what’s new” row with mascot; dismiss stores a signature until counts change.
+ * Home feed: short “what’s new” row with mascot.
+ * - Dismiss stores a digest until counts change.
+ * - We also persist the digest when the card is first shown so force-quit without “Got it” does not re-show the same summary on every app launch.
  */
 export default function ActivitySummaryCard({ overlay = false }: Props) {
   const { user, isLoaded } = useAuth();
@@ -75,25 +79,64 @@ export default function ActivitySummaryCard({ overlay = false }: Props) {
   const [visible, setVisible] = useState(false);
   const [counts, setCounts] = useState<ActivitySummaryCounts | null>(null);
 
-  const storageKey = user?.id ? `${STORAGE_PREFIX}${user.id}` : '';
+  const storageKeyV2 = user?.id ? `${STORAGE_KEY_V2}${user.id}` : '';
+  const legacySigKey = user?.id ? `${LEGACY_SIG_PREFIX}${user.id}` : '';
+
+  type SummaryStateV2 = { dismissedSig?: string; presentedSig?: string };
+
+  const readSummaryState = useCallback(async (): Promise<SummaryStateV2> => {
+    if (!storageKeyV2) return {};
+    try {
+      const raw = await AsyncStorage.getItem(storageKeyV2);
+      if (raw) {
+        try {
+          const o = JSON.parse(raw) as SummaryStateV2;
+          if (o && typeof o === 'object') return o;
+        } catch {
+          /* fall through */
+        }
+      }
+      const legacy = legacySigKey ? await AsyncStorage.getItem(legacySigKey) : null;
+      if (legacy && typeof legacy === 'string' && legacy.includes('|')) {
+        return { dismissedSig: legacy };
+      }
+    } catch {
+      /* ignore */
+    }
+    return {};
+  }, [storageKeyV2, legacySigKey]);
+
+  const writeSummaryState = useCallback(
+    async (next: SummaryStateV2) => {
+      if (!storageKeyV2) return;
+      try {
+        await AsyncStorage.setItem(storageKeyV2, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+    },
+    [storageKeyV2]
+  );
 
   const dismissWithSignature = useCallback(
     async (c: ActivitySummaryCounts) => {
       const sig = activitySummarySignature(c);
-      if (storageKey) {
+      const prev = await readSummaryState();
+      await writeSummaryState({ ...prev, dismissedSig: sig, presentedSig: sig });
+      if (legacySigKey) {
         try {
-          await AsyncStorage.setItem(storageKey, sig);
+          await AsyncStorage.removeItem(legacySigKey);
         } catch {
           /* ignore */
         }
       }
       setVisible(false);
     },
-    [storageKey]
+    [readSummaryState, writeSummaryState, legacySigKey]
   );
 
   useEffect(() => {
-    if (!isLoaded || !user?.id || !storageKey) {
+    if (!isLoaded || !user?.id || !storageKeyV2) {
       setVisible(false);
       setCounts(null);
       return;
@@ -108,8 +151,16 @@ export default function ActivitySummaryCard({ overlay = false }: Props) {
         if (!activitySummaryHasAny(c)) return;
 
         const sig = activitySummarySignature(c);
-        const stored = await AsyncStorage.getItem(storageKey);
-        if (stored === sig) return;
+        const state = await readSummaryState();
+        if (cancelled) return;
+        // Same digest user already dismissed — hide.
+        if (state.dismissedSig === sig) return;
+        // Same digest we already surfaced (even if they force-quit without "Got it") — don't nag every cold start.
+        if (state.presentedSig === sig) return;
+        if (cancelled) return;
+
+        await writeSummaryState({ ...state, presentedSig: sig });
+        if (cancelled) return;
 
         setCounts(c);
         setVisible(true);
@@ -122,7 +173,7 @@ export default function ActivitySummaryCard({ overlay = false }: Props) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [isLoaded, user?.id, storageKey]);
+  }, [isLoaded, user?.id, storageKeyV2, readSummaryState, writeSummaryState]);
 
   if (!visible || !counts || !activitySummaryHasAny(counts)) {
     return null;

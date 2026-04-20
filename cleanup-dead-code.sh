@@ -106,7 +106,6 @@ echo "-------------------------------------------"
 POTENTIALLY_UNUSED_COMPONENTS=(
   "DiscoSoundBubbles"
   "FollowButtonShowcase"
-  "SimpleLocationDisclosureModal"
   "SimpleCameraCapture"
   "SimpleAvatar"
   "OneSignalManager"

@@ -13,6 +13,14 @@ else
 fi
 cd "$REPO_ROOT"
 
+# Gradle + Metro need several GB free; "No space left on device" otherwise.
+_avail_kb="$(df -k "$REPO_ROOT" 2>/dev/null | tail -1 | awk '{print $4}')"
+if [ -n "$_avail_kb" ] && [ "$_avail_kb" -lt 6291456 ] 2>/dev/null; then
+  echo "❌ Not enough free disk space on: $REPO_ROOT"
+  echo "   Available: $(( _avail_kb / 1024 / 1024 )) GiB (need at least ~6 GiB). Run: npm run wipe:native"
+  exit 1
+fi
+
 # Version embedded in the AAB: android/app/defaultConfig (must match app.config.js android.versionCode + expo.version)
 read_android_versions() {
     ANDROID_VERSION_CODE=""
@@ -150,14 +158,29 @@ KEYSTORE_ABSOLUTE_PATH=$(cd "$(dirname "$KEYSTORE_PATH")" && pwd)/$(basename "$K
 cd android
 echo ""
 
+# Same env as local dev: faster/safer JS bundle + embed (createBundleReleaseJsAndAssets can take many minutes).
+export EXPO_NO_DOTENV="${EXPO_NO_DOTENV:-1}"
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=16384}"
+export CI="${CI:-true}"
+
 # Export with standard names for Gradle
 export MYAPP_RELEASE_KEY_ALIAS="${MYAPP_RELEASE_KEY_ALIAS:-nomli-mingle-key-alias}"
 
 # Use absolute path to keystore to avoid path resolution issues
 export MYAPP_RELEASE_STORE_FILE="$KEYSTORE_ABSOLUTE_PATH"
 
-echo "🧹 Cleaning previous build..."
-./gradlew clean
+echo "🧹 Preparing clean build (stop daemons → remove outputs + Gradle project cache)..."
+./gradlew --stop 2>/dev/null || true
+sleep 2
+cd "$REPO_ROOT"
+# android/.gradle holds execution history; stale paths (e.g. deleted oldrepo_ref/**) break :createBundleReleaseJsAndAssets.
+rm -rf android/app/build android/build android/.gradle node_modules/.cache .expo 2>/dev/null || true
+cd android
+
+# Gradle 8 + AGP can fail :app:checkReleaseDuplicateClasses with "Cannot access output property
+# dummyOutputDirectory" / NoSuchFileException if the global build cache + parallel workers race a
+# freshly deleted app/build. Pre-create the output leaf and disable build-cache for this invocation.
+mkdir -p "app/build/intermediates/duplicate_classes_check/release/checkReleaseDuplicateClasses" 2>/dev/null || true
 
 echo ""
 echo "📦 Building Release AAB..."
@@ -166,9 +189,18 @@ echo "   Version Name: ${ANDROID_VERSION_NAME:-?}"
 echo "   Keystore: $KEYSTORE_PATH"
 echo "   Key Alias: $MYAPP_RELEASE_KEY_ALIAS"
 echo ""
+echo "⏳  :app:createBundleReleaseJsAndAssets (Expo export:embed + Metro + Hermes)"
+echo "   Gradle often stays around ~40–50% for a long time with little new output."
+echo "   That is normal on large apps (commonly 20–60+ minutes). If a \"node\" process"
+echo "   is using CPU, the bundle step is still working — not necessarily stuck."
+echo "   More embed logs:  EXPO_DEBUG=1 ./build-release-aab-now.sh …"
+echo "   Metro parallelism: EXPO_METRO_MAX_WORKERS=6 ./build-release-aab-now.sh …"
+echo ""
 
-# Build the AAB with explicit Gradle properties
+# Build the AAB with explicit Gradle properties (--no-build-cache / --max-workers=1: see mkdir note above)
 ./gradlew bundleRelease \
+    --no-build-cache \
+    --max-workers=1 \
     -PMYAPP_RELEASE_STORE_FILE="$MYAPP_RELEASE_STORE_FILE" \
     -PMYAPP_RELEASE_STORE_PASSWORD="$MYAPP_RELEASE_STORE_PASSWORD" \
     -PMYAPP_RELEASE_KEY_ALIAS="$MYAPP_RELEASE_KEY_ALIAS" \

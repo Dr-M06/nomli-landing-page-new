@@ -19,6 +19,16 @@ react {
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
 
+    // Release bundle step (:createBundleReleaseJsAndAssets) can sit at low Gradle % for a long time
+    // while Node/Metro runs; extra heap avoids GC thrashing and OOM on large apps (matches package.json dev scripts).
+    nodeExecutableAndArgs = ["node", "--max-old-space-size=16384"]
+
+    // Optional: EXPO_METRO_MAX_WORKERS=6 (or half your CPU cores) — passed to `expo export:embed` as --max-workers.
+    def expoMetroMaxWorkers = System.getenv("EXPO_METRO_MAX_WORKERS")?.trim()
+    if (expoMetroMaxWorkers) {
+        extraPackagerArgs = ["--max-workers", expoMetroMaxWorkers]
+    }
+
     /* Folders */
      //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
@@ -92,8 +102,8 @@ android {
         applicationId 'com.nomli.mingle2'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 118
-        versionName "1.0.51"
+        versionCode 121
+        versionName "1.0.53"
         // react-native-iap has 'store' dimension (amazon vs play); use Google Play
         missingDimensionStrategy 'store', 'play'
     }
@@ -136,6 +146,16 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+
+    // RNGP writes `com.facebook.react.PackageList` here; include explicitly so Kotlin/Java
+    // always see it (avoids intermittent "Unresolved reference: PackageList" on clean builds).
+    sourceSets {
+        main {
+            java {
+                srcDirs += "$buildDir/generated/autolinking/src/main/java"
+            }
+        }
     }
 }
 
@@ -185,6 +205,16 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Kotlin compile can otherwise race `generateAutolinkingPackageList` on parallel release builds.
+afterEvaluate {
+    def gen = tasks.findByName("generateAutolinkingPackageList")
+    if (gen != null) {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { t ->
+            t.dependsOn(gen)
+        }
     }
 }
 

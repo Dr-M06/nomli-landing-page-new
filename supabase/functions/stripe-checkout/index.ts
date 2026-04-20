@@ -103,8 +103,8 @@ serve(async (req) => {
     if (!stripePriceId) {
       console.error('❌ [STRIPE] Stripe Price ID not configured for plan:', planId, 'currency:', currency);
       return new Response(
-        JSON.stringify({ 
-          error: 'Stripe Price ID not configured for this plan and currency. Please configure Stripe products first.' 
+        JSON.stringify({
+          error: 'Checkout is not available for this plan and currency yet.',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

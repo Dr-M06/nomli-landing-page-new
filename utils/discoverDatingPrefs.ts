@@ -4,7 +4,10 @@ import { supabase } from './supabase';
 const DISCOVER_DATING_OPTED_IN_KEY = 'discover_dating_opted_in';
 const DISCOVER_DATING_SINGLE_DECLINED_KEY = 'discover_dating_single_declined';
 
-/** Read opt-in: try server first (for push notifications), fallback to local. */
+/**
+ * Whether the user opted in to sync their Nomli profile to the Nomli Vibe app (`profiles.discover_dating_opted_in`).
+ * Try server first, fallback to local AsyncStorage.
+ */
 export async function getDiscoverDatingOptedIn(): Promise<boolean> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -40,7 +43,7 @@ export async function getDiscoverDatingOptedIn(): Promise<boolean> {
   }
 }
 
-/** Persist opt-in: local + server (for "someone liked your profile" push). */
+/** Persist opt-in: local + `profiles.discover_dating_opted_in` so Vibe can pick up / auto-ship the profile. */
 export async function setDiscoverDatingOptedIn(enabled: boolean): Promise<void> {
   try {
     await AsyncStorage.setItem(DISCOVER_DATING_OPTED_IN_KEY, enabled ? 'true' : 'false');

@@ -83,11 +83,14 @@ if command -v watchman >/dev/null 2>&1; then
     watchman watch-del-all 2>/dev/null || echo "⚠️ Watchman clean failed, continuing..."
 fi
 
-# Reinstall pods after removing ios/Pods (fixes stale font / NFS issues in Xcode)
-if [ -f "ios/Podfile" ] && command -v pod >/dev/null 2>&1; then
+# Reinstall pods after removing ios/Pods (needs node_modules from npm install first)
+if [ -f "ios/Podfile" ] && command -v pod >/dev/null 2>&1 && [ -d "node_modules/expo" ]; then
     echo ""
     echo "📦 Running pod install..."
     (cd ios && pod install) || echo "⚠️ pod install failed — run: cd ios && pod install"
+elif [ -f "ios/Podfile" ] && [ ! -d "node_modules/expo" ]; then
+    echo ""
+    echo "⏭️ Skipping pod install (node_modules not ready). After npm install, run: cd ios && pod install"
 fi
 
 # Show final size

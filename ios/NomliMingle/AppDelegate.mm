@@ -2,6 +2,7 @@
 
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTLinkingManager.h>
+#import <TargetConditionals.h>
 
 @implementation AppDelegate
 
@@ -24,6 +25,15 @@
 - (NSURL *)bundleURL
 {
 #if DEBUG
+  // Simulator: match Expo `--localhost` (127.0.0.1) and drop stale UserDefaults from older LAN sessions.
+  // RCTBundleURLProvider may ignore jsLocation if /status fails (e.g. Metro still rebuilding after --clear);
+  // wait until Metro shows “waiting on” before opening the simulator.
+#if TARGET_OS_SIMULATOR
+  NSUserDefaults *defs = [NSUserDefaults standardUserDefaults];
+  [defs removeObjectForKey:@"RCT_jsLocation"];
+  [defs removeObjectForKey:@"RCT_packager_scheme"];
+  [[RCTBundleURLProvider sharedSettings] setJsLocation:@"127.0.0.1:8081"];
+#endif
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@".expo/.virtual-metro-entry"];
 #else
   return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];

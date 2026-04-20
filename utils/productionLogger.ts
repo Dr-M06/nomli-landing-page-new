@@ -1,13 +1,9 @@
 /**
  * Production-Safe Logger
- * 
- * IMPORTANT: Use this instead of console.log/warn/error in production builds
- * 
- * Benefits:
- * - Automatically disabled in production (reduces bundle size)
- * - Can be configured to send errors to remote logging (Sentry, etc.)
- * - Prevents sensitive data exposure
- * - Improves performance
+ *
+ * In development, global `console.log` / `warn` / `info` / `debug` are no-oped unless
+ * `EXPO_PUBLIC_VERBOSE_LOGS` is set (see `disableConsoleInProduction.js`), so these
+ * helpers stay quiet by default. `error` / `errorWithContext` still use `console.error`.
  */
 
 // Check if we're in production

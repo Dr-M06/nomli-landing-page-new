@@ -1,18 +1,54 @@
-const { config } = require('dotenv');
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
 
-// Load .env file if it exists, but don't fail if it doesn't
-try {
-  config();
-  // Only log in development
-  if (process.env.NODE_ENV !== 'production') {
-  console.log('✅ .env file loaded successfully');
+/**
+ * Load env without taking down config if `.env` is an iCloud placeholder (read → ETIMEDOUT).
+ * Prefer `EXPO_NO_DOTENV=1` in npm scripts so Expo CLI does not read `.env` twice.
+ * Optional: `NOMLI_ENV_FILE=/absolute/path/to/.env` for a copy outside iCloud Documents.
+ */
+(function loadProjectEnv() {
+  const root = __dirname;
+  const candidates = [
+    process.env.NOMLI_ENV_FILE,
+    path.join(root, '.env.local'),
+    path.join(root, '.env'),
+  ].filter(Boolean);
+
+  for (const p of candidates) {
+    const abs = path.isAbsolute(p) ? p : path.join(root, p);
+    try {
+      if (!fs.existsSync(abs)) continue;
+      const r = dotenv.config({ path: abs });
+      if (r.error) {
+        if (r.error.code === 'ETIMEDOUT') {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              `[app.config] Skipped ${path.basename(abs)} (read timed out — iCloud/offline file). Use a local copy or NOMLI_ENV_FILE.`,
+            );
+          }
+          continue;
+        }
+        throw r.error;
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ Loaded env from', path.relative(root, abs) || abs);
+      }
+      return;
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'ETIMEDOUT') {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`[app.config] Skipped ${path.basename(abs)} (ETIMEDOUT).`);
+        }
+        continue;
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[app.config] Env load:', (e && e.message) || e);
+      }
+    }
   }
-} catch (error) {
-  // Silent in production
-  if (process.env.NODE_ENV !== 'production') {
-  console.warn('No .env file found, using fallback values');
-  }
-}
+})();
 
 // Check if this is a development build
 const isDev = process.env.NODE_ENV !== 'production';
@@ -21,7 +57,7 @@ module.exports = {
   expo: {
     name: "Nomli",
     slug: "nomli-mingle",
-    version: "1.0.51",
+    version: "1.0.53",
     platforms: ['ios', 'android'],
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -43,7 +79,7 @@ module.exports = {
     },
     android: {
       package: "com.nomli.mingle2",
-      versionCode: 118,
+      versionCode: 121,
       googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
@@ -124,8 +160,6 @@ module.exports = {
       },
       infoPlist: {
         CFBundleDisplayName: "Nomli",
-        // AdMob (Google Mobile Ads) - required to prevent runtime crash
-        GADApplicationIdentifier: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS,
         UIBackgroundModes: [
           "remote-notification",
           "fetch",
@@ -195,12 +229,6 @@ module.exports = {
       typedRoutes: true
     },
     extra: {
-      // AdMob (Google Mobile Ads)
-      ADMOB_APP_ID_IOS: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS,
-      ADMOB_APP_ID_ANDROID: process.env.EXPO_PUBLIC_ADMOB_APP_ID_ANDROID,
-      ADMOB_UNIT_POST_SCREEN_IOS: process.env.EXPO_PUBLIC_ADMOB_UNIT_POST_SCREEN_IOS,
-      ADMOB_UNIT_POST_SCREEN_ANDROID: process.env.EXPO_PUBLIC_ADMOB_UNIT_POST_SCREEN_ANDROID,
-
       // Google Maps API key
       GEOAPIFY_API_KEY: process.env.EXPO_GEOAPIFY_API_KEY,
 
@@ -209,12 +237,7 @@ module.exports = {
       
       // Agora configuration (for development)
       AGORA_APP_ID: process.env.EXPO_PUBLIC_AGORA_APP_ID,
-      
-      // Cloudinary configuration for video uploads
-      CLOUDINARY_CLOUD_NAME: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      CLOUDINARY_API_KEY: process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY,
-      CLOUDINARY_UPLOAD_PRESET: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
-      
+
       // Video uploads: Mux signing keys only in Supabase Edge Function `mux-upload` secrets (not in the app).
       MUX_ACCESS_TOKEN_ID: process.env.EXPO_PUBLIC_MUX_ACCESS_TOKEN_ID,
       MUX_ASSET_DOMAIN: process.env.EXPO_PUBLIC_MUX_ASSET_DOMAIN,

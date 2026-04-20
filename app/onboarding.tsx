@@ -9,6 +9,9 @@ import {
   TextInput,
   Alert,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { Colors, getThemeColors } from '../constants/Colors';
 import { BorderRadius, FontFamily, FontSizes, Spacing } from '../constants/Theme';
-import { Globe, MessageCircle, Shield } from 'lucide-react-native';
+import { Globe, MessageCircle, Shield, KeyboardOff } from 'lucide-react-native';
 import { computeAge } from '../utils/ageGate';
 
 const { height } = Dimensions.get('window');
@@ -139,6 +142,122 @@ export default function OnboardingScreen() {
   const inputBg = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
   const isAgeStep = step.id === 'age';
 
+  const body = (
+    <>
+      {/* Skip */}
+      <View style={[styles.skipWrap, { top: insets.top + 8 }]}>
+        <TouchableOpacity onPress={completeOnboarding} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={[styles.skipText, { color: themeColors.neutral.subtext }]}>Skip</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content - lowered, less top space */}
+      <View style={[styles.content, isAgeStep && styles.contentAgeStep]}>
+        <View style={[styles.iconWrap, { backgroundColor: step.iconBg }]}>
+          <Icon size={40} color={step.iconColor} strokeWidth={1.5} />
+        </View>
+        <Text style={[styles.title, { color: themeColors.neutral.text }]}>{step.title}</Text>
+        <Text style={[styles.description, { color: themeColors.neutral.subtext }]}>{step.description}</Text>
+
+        {isAgeStep && (
+          <View style={styles.dobWrap}>
+            <View style={styles.dobRow}>
+              <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
+                <TextInput
+                  value={dobMonth}
+                  onChangeText={(t) => {
+                    setDobError(null);
+                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
+                    setDobMonth(cleaned);
+                  }}
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  placeholder="MM"
+                  placeholderTextColor={themeColors.neutral.textTertiary}
+                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
+                  maxLength={2}
+                  returnKeyType="next"
+                />
+              </View>
+              <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
+                <TextInput
+                  value={dobDay}
+                  onChangeText={(t) => {
+                    setDobError(null);
+                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
+                    setDobDay(cleaned);
+                  }}
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  placeholder="DD"
+                  placeholderTextColor={themeColors.neutral.textTertiary}
+                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
+                  maxLength={2}
+                  returnKeyType="next"
+                />
+              </View>
+              <View style={[styles.dobInputWrap, { flex: 1.2, backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
+                <TextInput
+                  value={dobYear}
+                  onChangeText={(t) => {
+                    setDobError(null);
+                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 4);
+                    setDobYear(cleaned);
+                  }}
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  placeholder="YYYY"
+                  placeholderTextColor={themeColors.neutral.textTertiary}
+                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
+                  maxLength={4}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.keyboardDismissRow}
+              onPress={Keyboard.dismiss}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Hide keyboard"
+            >
+              <KeyboardOff size={18} color={primaryColor} strokeWidth={2} />
+              <Text style={[styles.keyboardDismissText, { color: primaryColor }]}>Hide keyboard</Text>
+            </TouchableOpacity>
+            {dobError ? (
+              <Text style={[styles.dobError, { color: isDarkMode ? '#fca5a5' : '#dc2626' }]}>{dobError}</Text>
+            ) : (
+              <Text style={[styles.dobHint, { color: themeColors.neutral.subtext }]}>
+                We don’t show your age on your profile.
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Bottom - dots + CTA only */}
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + Spacing.lg }]}>
+        <View style={styles.dots}>
+          {STEPS.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === currentStep && styles.dotActive,
+                { backgroundColor: i === currentStep ? primaryColor : themeColors.neutral.border },
+              ]}
+            />
+          ))}
+        </View>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: primaryColor }]}
+          onPress={onPrimary}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryButtonText}>{isLast ? 'Continue' : 'Next'}</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaWrapper
       topInset={false}
@@ -151,107 +270,24 @@ export default function OnboardingScreen() {
         translucent
       />
       <View style={[styles.container, { backgroundColor: isDarkMode ? themeColors.neutral.background : '#FFFFFF' }]}>
-        {/* Skip */}
-        <View style={[styles.skipWrap, { top: insets.top + 8 }]}>
-          <TouchableOpacity onPress={completeOnboarding} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Text style={[styles.skipText, { color: themeColors.neutral.subtext }]}>Skip</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content - lowered, less top space */}
-        <View style={styles.content}>
-          <View style={[styles.iconWrap, { backgroundColor: step.iconBg }]}>
-            <Icon size={40} color={step.iconColor} strokeWidth={1.5} />
-          </View>
-          <Text style={[styles.title, { color: themeColors.neutral.text }]}>{step.title}</Text>
-          <Text style={[styles.description, { color: themeColors.neutral.subtext }]}>
-            {step.description}
-          </Text>
-
-          {isAgeStep && (
-            <View style={styles.dobWrap}>
-              <View style={styles.dobRow}>
-                <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                  <TextInput
-                    value={dobMonth}
-                    onChangeText={(t) => {
-                      setDobError(null);
-                      const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
-                      setDobMonth(cleaned);
-                    }}
-                    keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                    placeholder="MM"
-                    placeholderTextColor={themeColors.neutral.textTertiary}
-                    style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                    maxLength={2}
-                  />
-                </View>
-                <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                  <TextInput
-                    value={dobDay}
-                    onChangeText={(t) => {
-                      setDobError(null);
-                      const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
-                      setDobDay(cleaned);
-                    }}
-                    keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                    placeholder="DD"
-                    placeholderTextColor={themeColors.neutral.textTertiary}
-                    style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                    maxLength={2}
-                  />
-                </View>
-                <View style={[styles.dobInputWrap, { flex: 1.2, backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                  <TextInput
-                    value={dobYear}
-                    onChangeText={(t) => {
-                      setDobError(null);
-                      const cleaned = t.replace(/[^\d]/g, '').slice(0, 4);
-                      setDobYear(cleaned);
-                    }}
-                    keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                    placeholder="YYYY"
-                    placeholderTextColor={themeColors.neutral.textTertiary}
-                    style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                    maxLength={4}
-                  />
-                </View>
-              </View>
-              {dobError ? (
-                <Text style={[styles.dobError, { color: isDarkMode ? '#fca5a5' : '#dc2626' }]}>{dobError}</Text>
-              ) : (
-                <Text style={[styles.dobHint, { color: themeColors.neutral.subtext }]}>
-                  We don’t show your age on your profile.
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Bottom - dots + CTA only */}
-        <View style={[styles.bottom, { paddingBottom: insets.bottom + Spacing.lg }]}>
-          <View style={styles.dots}>
-            {STEPS.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  i === currentStep && styles.dotActive,
-                  { backgroundColor: i === currentStep ? primaryColor : themeColors.neutral.border },
-                ]}
-              />
-            ))}
-          </View>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: primaryColor }]}
-            onPress={onPrimary}
-            activeOpacity={0.85}
+        {isAgeStep ? (
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoid}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           >
-            <Text style={styles.primaryButtonText}>
-              {isLast ? 'Continue' : 'Next'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.ageScrollContent}
+              bounces={false}
+            >
+              <View style={{ minHeight: height }}>{body}</View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        ) : (
+          body
+        )}
       </View>
     </SafeAreaWrapper>
   );
@@ -260,6 +296,29 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  ageScrollContent: {
+    flexGrow: 1,
+    paddingBottom: Spacing.md,
+  },
+  contentAgeStep: {
+    justifyContent: 'flex-start',
+    paddingTop: height < 700 ? height * 0.03 : height * 0.04,
+  },
+  keyboardDismissRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  keyboardDismissText: {
+    fontSize: FontSizes.sm,
+    fontFamily: FontFamily.semibold,
   },
   skipWrap: {
     position: 'absolute',

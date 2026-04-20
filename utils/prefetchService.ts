@@ -8,7 +8,6 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { fetchStories } from './storyUtils';
 import { fetchPosts } from './communityUtils';
-import { fetchUpcomingEvents } from './eventUtils';
 import { log, warn, error } from './productionLogger';
 
 
@@ -22,7 +21,6 @@ const CACHE_EXPIRY_MS = 72 * 60 * 60 * 1000; // 72 hours (Nigeria-optimized, inc
 interface PrefetchCache {
   stories: any[];
   posts: any[];
-  events: any[];
   userProfile: any | null;
   timestamp: number;
 }
@@ -38,7 +36,6 @@ export const initializeEmptyCache = async (): Promise<void> => {
       const emptyCache: PrefetchCache = {
         stories: [],
         posts: [],
-        events: [],
         userProfile: null,
         timestamp: Date.now(),
       };
@@ -84,17 +81,15 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
               const refreshCache = async () => {
                 try {
                   // Fetch fresh data without checking cache again (to prevent recursion)
-                  const [storiesResult, postsResult, eventsResult, profileResult] = await Promise.allSettled([
+                  const [storiesResult, postsResult, profileResult] = await Promise.allSettled([
                     fetchStories().catch(() => []),
                     fetchPosts(5, 0, true).catch(() => []),
-                    fetchUpcomingEvents(3, true).catch(() => []),
                     fetchUserProfile().catch(() => null),
                   ]);
                   
                   const freshData: PrefetchCache = {
                     stories: storiesResult.status === 'fulfilled' ? storiesResult.value : [],
                     posts: postsResult.status === 'fulfilled' ? postsResult.value : [],
-                    events: eventsResult.status === 'fulfilled' ? eventsResult.value : [],
                     userProfile: profileResult.status === 'fulfilled' ? profileResult.value : null,
                     timestamp: Date.now(),
                   };
@@ -133,17 +128,13 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
     // iOS: Use even smaller batch (3 posts) due to AsyncStorage limits and slower JSON parsing
     const initialBatchSize = Platform.OS === 'ios' ? 3 : 5;
     
-    const [storiesResult, postsResult, eventsResult, profileResult] = await Promise.allSettled([
+    const [storiesResult, postsResult, profileResult] = await Promise.allSettled([
       fetchStories().catch(err => {
         warn('[Prefetch] Stories fetch failed:', err);
         return [];
       }),
       fetchPosts(initialBatchSize, 0, true).catch(err => {
         warn('[Prefetch] Posts fetch failed:', err);
-        return [];
-      }),
-      fetchUpcomingEvents(3, true).catch(err => {
-        warn('[Prefetch] Events fetch failed:', err);
         return [];
       }),
       fetchUserProfile().catch(err => {
@@ -154,13 +145,11 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
 
     const stories = storiesResult.status === 'fulfilled' ? storiesResult.value : [];
     const posts = postsResult.status === 'fulfilled' ? postsResult.value : [];
-    const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
     const userProfile = profileResult.status === 'fulfilled' ? profileResult.value : null;
 
     const prefetchData: PrefetchCache = {
       stories,
       posts: posts || [],
-      events: events || [],
       userProfile,
       timestamp: Date.now(),
     };
@@ -181,7 +170,6 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
         const reducedCache: PrefetchCache = {
           stories: prefetchData.stories.slice(0, 5), // Limit stories more on iOS
           posts: prefetchData.posts.slice(0, 3), // Limit posts more on iOS
-          events: prefetchData.events.slice(0, 2), // Limit events more on iOS
           userProfile: prefetchData.userProfile,
           timestamp: prefetchData.timestamp,
         };
@@ -220,7 +208,6 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
           const smallerCache: PrefetchCache = {
             stories: prefetchData.stories.slice(0, 10), // Limit stories
             posts: prefetchData.posts.slice(0, 10), // Limit posts
-            events: prefetchData.events.slice(0, 3), // Limit events
             userProfile: prefetchData.userProfile,
             timestamp: prefetchData.timestamp,
           };
@@ -236,7 +223,7 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
     }
 
     const duration = Date.now() - startTime;
-    log(`✅ [Prefetch] Completed in ${duration}ms - Stories: ${stories.length}, Posts: ${posts?.length || 0}, Events: ${events?.length || 0}`);
+    log(`✅ [Prefetch] Completed in ${duration}ms - Stories: ${stories.length}, Posts: ${posts?.length || 0}`);
 
     return prefetchData;
   } catch (error) {
@@ -246,7 +233,6 @@ export const prefetchCriticalData = async (): Promise<PrefetchCache> => {
     const fallbackCache: PrefetchCache = {
       stories: [],
       posts: [],
-      events: [],
       userProfile: null,
       timestamp: Date.now(),
     };
@@ -286,7 +272,7 @@ export const getPrefetchedData = async (): Promise<PrefetchCache | null> => {
       const parsed = JSON.parse(cachedData);
       // Verify cache structure
       if (parsed && typeof parsed === 'object' && Array.isArray(parsed.posts)) {
-        log(`[Prefetch] ✅ Loaded cache: ${parsed.posts.length} posts, ${parsed.stories?.length || 0} stories, ${parsed.events?.length || 0} events`);
+        log(`[Prefetch] ✅ Loaded cache: ${parsed.posts.length} posts, ${parsed.stories?.length || 0} stories`);
         return parsed;
       } else {
         warn('[Prefetch] ⚠️ Invalid cache structure, clearing...');

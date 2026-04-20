@@ -6,7 +6,6 @@ yarn-error.log*
 
 # Expo
 .expo/
-.expo-atlas-export/
 dist/
 web-build/
 
@@ -274,3 +273,14 @@ service-account*.json
 
 # Nested git snapshot (breaks `git add`); keep local only
 oldrepo_ref/
+
+# --- EAS upload only: not required to compile the iOS/Android app (see Expo easignore docs) ---
+archive/
+api/
+supabase/functions/
+scripts/
+cloudflare-cache-worker.js
+cloudflare-cache-worker.ts
+cloudflare-worker.js
+cloudflare-worker-keepalive.js
+wrangler.toml.example

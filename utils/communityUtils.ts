@@ -501,7 +501,7 @@ const isPostBoostActive = (post: Post, now = Date.now()): boolean => {
  */
 export const sortFeedPosts = (posts: Post[]): Post[] => {
   const now = Date.now();
-  const freshWindowMs = 6 * 60 * 60 * 1000; // 6 hours: keep fresh posts visibly prioritized
+  const freshWindowMs = 24 * 60 * 60 * 1000; // 24h: newest-first before engagement kicks in (was 6h)
   // Zaps (likes) weighted above comments so each zap bumps rank more than a single comment.
   const baseEngagement = (p: Post) => (p.likes_count || 0) * 2 + (p.comments_count || 0);
   // Recency assist: prevent brand‑new posts from being tanked by older high‑engagement posts.
@@ -621,9 +621,17 @@ export const ensureLeadingHasMedia = (posts: Post[]): Post[] => {
  * @param offset - Pagination offset
  * @param useCache - Whether to use cached data
  * @param excludeVideos - Whether to exclude video posts (for community feed, since videos have their own tab)
+ * @param videoOnly - When true, only rows with video_url set (offset/limit apply to that subset). Ignores excludeVideos.
  */
-export const fetchPosts = async (limit?: number, offset = 0, useCache = true, excludeVideos = true): Promise<Post[]> => {
-  const cacheKey = limit ? `posts_${limit}_${offset}${excludeVideos ? '_novideos' : ''}` : `posts_all_${offset}${excludeVideos ? '_novideos' : ''}`;
+export const fetchPosts = async (
+  limit?: number,
+  offset = 0,
+  useCache = true,
+  excludeVideos = true,
+  videoOnly = false
+): Promise<Post[]> => {
+  const cacheSuffix = videoOnly ? '_videoonly' : excludeVideos ? '_novideos' : '';
+  const cacheKey = limit ? `posts_${limit}_${offset}${cacheSuffix}` : `posts_all_${offset}${cacheSuffix}`;
   
   try {
     // 1. Check in-memory cache first (fastest, but only lasts 1 minute)
@@ -806,7 +814,7 @@ export const fetchPosts = async (limit?: number, offset = 0, useCache = true, ex
         const backgroundFetch = async () => {
           try {
             log('[CommunityUtils] 🔄 Background refresh: Fetching fresh data from database...');
-            const freshPosts = await fetchPosts(limit, offset, false, excludeVideos); // Force fresh data
+            const freshPosts = await fetchPosts(limit, offset, false, excludeVideos, videoOnly); // Force fresh data
             if (freshPosts && freshPosts.length > 0) {
               log(`[CommunityUtils] ✅ Background refresh: Found ${freshPosts.length} fresh posts (cache had ${cachedResult.length})`);
             } else {
@@ -843,13 +851,14 @@ export const fetchPosts = async (limit?: number, offset = 0, useCache = true, ex
       if (limit) {
         // Fetch with limit and offset (for pagination)
         // Note: We fetch profiles separately to avoid foreign key relationship errors
-        log(`[CommunityUtils] Querying posts: limit=${limit}, offset=${offset}, range=${offset} to ${offset + limit - 1}, excludeVideos=${excludeVideos}`);
-        let query = supabase
-          .from('posts')
-          .select('*');
-        
-        // Exclude video posts if requested (videos have their own dedicated tab)
-        if (excludeVideos) {
+        log(
+          `[CommunityUtils] Querying posts: limit=${limit}, offset=${offset}, range=${offset} to ${offset + limit - 1}, excludeVideos=${excludeVideos}, videoOnly=${videoOnly}`
+        );
+        let query = supabase.from('posts').select('*');
+
+        if (videoOnly) {
+          query = query.not('video_url', 'is', null);
+        } else if (excludeVideos) {
           query = query.is('video_url', null);
         }
         
@@ -863,14 +872,21 @@ export const fetchPosts = async (limit?: number, offset = 0, useCache = true, ex
       } else {
         // Fetch all posts without limit - use comprehensive fetch for large datasets
         // Supabase has a default limit of 1000 rows, so we need pagination
-        log(`[CommunityUtils] No limit specified - using comprehensive fetch to get ALL posts (excludeVideos=${excludeVideos})`);
+        log(
+          `[CommunityUtils] No limit specified - using comprehensive fetch to get ALL posts (excludeVideos=${excludeVideos}, videoOnly=${videoOnly})`
+        );
         const { fetchAllPostsComprehensive } = await import('./comprehensiveDataFetch');
         let allPosts = await fetchAllPostsComprehensive(userId, useCache);
-        
-        // Filter out video posts if requested (videos have their own dedicated tab)
-        if (excludeVideos) {
+
+        if (videoOnly) {
           const beforeCount = allPosts.length;
-          allPosts = allPosts.filter(post => !post.video_url);
+          allPosts = allPosts.filter((post) => !!post.video_url);
+          log(
+            `[CommunityUtils] Video-only comprehensive: ${beforeCount} -> ${allPosts.length} posts with video_url`
+          );
+        } else if (excludeVideos) {
+          const beforeCount = allPosts.length;
+          allPosts = allPosts.filter((post) => !post.video_url);
           log(`[CommunityUtils] Filtered out ${beforeCount - allPosts.length} video posts (${beforeCount} -> ${allPosts.length})`);
         }
         
@@ -1005,16 +1021,7 @@ export const fetchPosts = async (limit?: number, offset = 0, useCache = true, ex
     
     // Filter blocked users from posts (bidirectional check)
     posts = filterBlockedUsers(posts);
-    
-    // Filter out posts with Cloudinary video URLs (service deactivated)
-    posts = posts.filter(post => {
-      if (post.video_url && post.video_url.includes('cloudinary.com')) {
-        log(`[CommunityUtils] Filtering out Cloudinary video post (service deactivated): ${post.id}`);
-        return false;
-      }
-      return true;
-    });
-    
+
     log(`[CommunityUtils] After filtering: ${posts?.length || 0} posts remaining`);
     
     // Helper function to validate image URLs

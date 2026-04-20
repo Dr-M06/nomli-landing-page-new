@@ -8,6 +8,7 @@
  */
 
 import { Platform, Alert } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../constants/Endpoints';
 import { log as devLog, warn as devWarn, error as devError } from './productionLogger';
@@ -104,15 +105,49 @@ const IAP_PRODUCT_IDS = [
 let extraIapProductIds: string[] = [];
 
 export function addIapProductIdsForFetching(productIds: string[]) {
+  let added = false;
   for (const id of productIds) {
     if (!id || IAP_PRODUCT_IDS.includes(id) || extraIapProductIds.includes(id)) continue;
     extraIapProductIds.push(id);
+    added = true;
   }
-  fetchProductsPromise = null;
+  if (added) {
+    fetchProductsPromise = null;
+    // Next getProductsAsync must merge new IDs; a coin-only cache cannot contain Creator Pro.
+    availableProducts = [];
+  }
 }
 
 let creatorProPurchaseResolve: ((r: { ok: boolean; error?: string }) => void) | null = null;
 let creatorProPendingProductId: string | null = null;
+let creatorProPurchaseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function iapProductIdsMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+}
+
+/** Always clear the Creator Pro purchase promise so UI never stays on “Opening App Store…”. */
+function settlePendingCreatorProPurchase(result: { ok: boolean; error?: string }) {
+  if (!creatorProPurchaseResolve) return;
+  if (creatorProPurchaseTimeout) {
+    clearTimeout(creatorProPurchaseTimeout);
+    creatorProPurchaseTimeout = null;
+  }
+  const fn = creatorProPurchaseResolve;
+  creatorProPurchaseResolve = null;
+  creatorProPendingProductId = null;
+  fn(result);
+}
+
+function settlePendingCreatorProIfProductMatches(
+  storeProductId: string | undefined,
+  result: { ok: boolean; error?: string }
+) {
+  if (!creatorProPendingProductId || !creatorProPurchaseResolve) return;
+  if (!iapProductIdsMatch(storeProductId, creatorProPendingProductId)) return;
+  settlePendingCreatorProPurchase(result);
+}
 
 let isInitialized = false;
 let availableProducts: IAPProduct[] = [];
@@ -190,23 +225,33 @@ export const fetchProducts = async (): Promise<IAPProduct[]> => {
       
     const allIds = [...new Set([...IAP_PRODUCT_IDS, ...extraIapProductIds])];
     const { results } = await InAppPurchases.getProductsAsync(allIds);
+
+    const returnedIds = new Set((results || []).map((p: { productId: string }) => p.productId));
+    const missingFromApple = allIds.filter((id) => !returnedIds.has(id));
+    if (missingFromApple.length) {
+      iapWarn(
+        '[StoreKit] App Store did not return these IDs (typo, wrong app, or IAP not Ready for Sale):',
+        missingFromApple.join(', ')
+      );
+    }
+
+    iapLog('[StoreKit] 📦 Requested product ID count:', allIds.length);
+    iapLog('[StoreKit] 📦 Products returned from App Store:', results?.length ?? 0);
     
-    iapLog('[StoreKit] 📦 Requested product IDs:', IAP_PRODUCT_IDS);
-    iapLog('[StoreKit] 📦 Products returned from App Store:', results.length);
-    
-    if (results.length === 0) {
+    const resultRows = results || [];
+    if (resultRows.length === 0) {
       iapWarn('[StoreKit] ⚠️ No products returned from App Store Connect. This could mean:');
       iapWarn('[StoreKit]   1. Products are still pending review in App Store Connect');
       iapWarn('[StoreKit]   2. Products are not available in sandbox environment');
       iapWarn('[StoreKit]   3. Product IDs don\'t match App Store Connect');
       iapWarn('[StoreKit]   4. You need to test with a sandbox tester account');
     } else {
-      results.forEach((product) => {
+      resultRows.forEach((product: { productId: string; title: string; price: string }) => {
         iapLog(`[StoreKit]   - ${product.productId}: ${product.title} (${product.price})`);
       });
     }
     
-    availableProducts = results.map((product) => ({
+    availableProducts = resultRows.map((product: { productId: string; price: string; currency?: string; title: string; description?: string }) => ({
       productId: product.productId,
       price: product.price,
       currency: product.currency || 'USD',
@@ -265,6 +310,14 @@ export const purchaseTokensWithIAP = async (
       await fetchProducts();
     }
 
+    // DB-driven subscription SKUs (Creator Pro) are merged via extraIapProductIds after first fetch.
+    // If we only ever fetched the static coin list, availableProducts omits them — refetch before purchase.
+    if (!IAP_PRODUCT_IDS.includes(iapProductId)) {
+      iapLog('[StoreKit] Non-coin SKU — invalidating cache and refetching product catalog...');
+      fetchProductsPromise = null;
+      await fetchProducts();
+    }
+
     // Verify product exists
     const product = availableProducts.find((p) => p.productId === iapProductId);
     if (!product) {
@@ -277,9 +330,10 @@ export const purchaseTokensWithIAP = async (
       const retryProduct = availableProducts.find((p) => p.productId === iapProductId);
       
       if (!retryProduct) {
+        const bundleId = Constants.expoConfig?.ios?.bundleIdentifier || 'this iOS app';
         return {
           success: false,
-          error: `Product "${iapProductId}" not found. Available products: ${availableProducts.map(p => p.productId).join(', ') || 'none'}. Make sure the product is configured in App Store Connect.`,
+          error: `Product "${iapProductId}" was not returned by Apple. In App Store Connect, add this subscription to bundle ${bundleId}, complete IAP metadata, attach it to an app version, then match the exact product ID in Supabase payment_plans. Apple returned: ${availableProducts.map((p) => p.productId).join(', ') || 'none'}.`,
         };
       }
     }
@@ -413,6 +467,7 @@ export const initIAPAtAppRoot = () => {
           if (!transactionId) {
             const errMsg = 'Purchase completed but transaction ID is missing';
             iapError('[StoreKit] ❌ Missing transaction ID!');
+            settlePendingCreatorProIfProductMatches(productId, { ok: false, error: errMsg });
             if (errorListener) errorListener(errMsg); else Alert.alert('Purchase Error', errMsg);
             return;
           }
@@ -458,6 +513,7 @@ export const initIAPAtAppRoot = () => {
             const errorMsg = 'Purchase completed but receipt is missing. This may be a sandbox testing issue. Please try again or contact support.';
             iapError('[StoreKit] ❌ Missing transaction receipt after all attempts!');
             iapError('[StoreKit] ❌ RECEIPT MISSING - Edge Function NOT called. Full purchase object:', JSON.stringify(purchase, null, 2));
+            settlePendingCreatorProIfProductMatches(productId, { ok: false, error: errorMsg });
             if (errorListener) errorListener(errorMsg); else Alert.alert('Purchase Error', errorMsg);
             // DO NOT call purchaseListener - verification failed, purchase should not be marked as successful
             // The transaction will remain in queue and can be retried
@@ -477,6 +533,7 @@ export const initIAPAtAppRoot = () => {
               receipt: transactionReceipt,
               purchaseObject: JSON.stringify(purchase, null, 2),
             });
+            settlePendingCreatorProIfProductMatches(productId, { ok: false, error: errorMsg });
             if (errorListener) errorListener(errorMsg); else Alert.alert('Purchase Error', errorMsg);
             // DO NOT call purchaseListener - verification failed, purchase should not be marked as successful
             // The transaction will remain in queue and can be retried
@@ -501,8 +558,10 @@ export const initIAPAtAppRoot = () => {
 
             if (verifyResult.success) {
               const isCreatorPro = verifyResult.kind === 'creator_pro';
-              const consume = !isCreatorPro;
-              iapLog('[StoreKit] ✅ Backend verification successful', { isCreatorPro, consume });
+              const matchesPendingCreatorSku = iapProductIdsMatch(productId, creatorProPendingProductId);
+              const treatAsCreatorPro = isCreatorPro || matchesPendingCreatorSku;
+              const consume = !treatAsCreatorPro;
+              iapLog('[StoreKit] ✅ Backend verification successful', { isCreatorPro, matchesPendingCreatorSku, consume });
               
               try {
                 if (typeof InAppPurchases.finishTransactionAsync === 'function') {
@@ -517,18 +576,16 @@ export const initIAPAtAppRoot = () => {
                 iapWarn('[StoreKit] finishTransactionAsync error (non-fatal):', finishErr?.message);
               }
 
-              const pendingCreator =
-                creatorProPendingProductId && productId === creatorProPendingProductId;
-              if (pendingCreator && creatorProPurchaseResolve) {
-                if (creatorProPurchaseTimeout) clearTimeout(creatorProPurchaseTimeout);
-                creatorProPurchaseTimeout = null;
-                creatorProPurchaseResolve({ ok: true });
-                creatorProPurchaseResolve = null;
-                creatorProPendingProductId = null;
-              } else if (purchaseListener && !isCreatorPro) {
+              if (
+                creatorProPurchaseResolve &&
+                creatorProPendingProductId &&
+                (isCreatorPro || matchesPendingCreatorSku)
+              ) {
+                settlePendingCreatorProPurchase({ ok: true });
+              } else if (purchaseListener && !treatAsCreatorPro) {
                 iapLog('[StoreKit] 🔔 Calling purchase listener callback (backend verified)...');
                 purchaseListener(transactionId, productId);
-              } else if (!isCreatorPro) {
+              } else if (!treatAsCreatorPro) {
                 Alert.alert('Success', 'Tokens have been added to your wallet! Open your wallet to see your balance.');
               }
             } else {
@@ -544,6 +601,7 @@ export const initIAPAtAppRoot = () => {
               };
               const errorMsg = 'Failed to verify purchase with server. Tokens were not credited. The purchase will be retried automatically. Please check your internet connection.';
               iapError('[StoreKit] ❌ VERIFICATION FAILED DETAILS:', JSON.stringify(errorDetails, null, 2));
+              settlePendingCreatorProIfProductMatches(productId, { ok: false, error: errorMsg });
               if (errorListener) errorListener(errorMsg, errorDetails); else Alert.alert('Purchase Error', errorMsg);
               
               // DO NOT call purchaseListener - verification failed, purchase should not be marked as successful
@@ -572,6 +630,7 @@ export const initIAPAtAppRoot = () => {
             } else if (err.message) {
               userErrorMsg = `Purchase verification failed: ${err.message}. Tokens were not credited.`;
             }
+            settlePendingCreatorProIfProductMatches(productId, { ok: false, error: userErrorMsg });
             if (errorListener) errorListener(userErrorMsg); else Alert.alert('Purchase Error', userErrorMsg);
           }
         } else if (errorCode || (responseCode && responseCode !== 0)) {
@@ -581,6 +640,9 @@ export const initIAPAtAppRoot = () => {
             result,
           });
           const errMsg = `Purchase failed: ${errorCode || responseCode}`;
+          if (creatorProPurchaseResolve) {
+            settlePendingCreatorProPurchase({ ok: false, error: errMsg });
+          }
           errorListener?.(errMsg);
           if (!errorListener) Alert.alert('Purchase Error', errMsg);
         } else {
@@ -589,6 +651,12 @@ export const initIAPAtAppRoot = () => {
         } catch (listenerErr: any) {
           iapError('[StoreKit] ❌ Purchase listener threw:', listenerErr);
           iapError('[StoreKit] ❌ LISTENER EXCEPTION:', listenerErr?.message, listenerErr?.stack);
+          if (creatorProPurchaseResolve) {
+            settlePendingCreatorProPurchase({
+              ok: false,
+              error: listenerErr?.message || 'Purchase processing failed',
+            });
+          }
           if (errorListener) errorListener(listenerErr?.message || 'Purchase processing failed');
           else Alert.alert('Purchase Error', listenerErr?.message || 'Purchase processing failed');
         }
@@ -831,8 +899,6 @@ const verifyReceiptAndCreditTokens = async (
     return { success: false };
   }
 };
-
-let creatorProPurchaseTimeout: ReturnType<typeof setTimeout> | null = null;
 
 /** Subscribe to Nomli Creator Pro via App Store (auto-renewable). Resolves when receipt is verified. */
 export function purchaseCreatorProWithStoreKit(iapProductId: string): Promise<{ ok: boolean; error?: string }> {

@@ -50,6 +50,15 @@ async function applyProfilePremiumForPlan(
     console.error('❌ [STRIPE] Error updating profiles premium flags:', error);
   } else if (active && periodEndIso) {
     console.log('✅ [STRIPE] Premium flag set for', cat, 'until:', periodEndIso);
+    if (cat === 'creator') {
+      const { error: fcErr } = await supabase.rpc('schedule_founding_creator_credit_vesting', {
+        p_user_id: userId,
+        p_period_end: periodEndIso,
+      });
+      if (fcErr) {
+        console.warn('⚠️ [STRIPE] schedule_founding_creator_credit_vesting:', fcErr.message);
+      }
+    }
   }
 }
 
@@ -362,6 +371,22 @@ async function handleInvoicePaymentSucceeded(event: StripeEvent, supabase: any) 
   if (updateError) {
     console.error('❌ [STRIPE] Error updating subscription period:', updateError);
     return;
+  }
+
+  const periodEndIso = new Date(invoice.period_end * 1000).toISOString();
+  const { data: planRow } = await supabase
+    .from('payment_plans')
+    .select('plan_category')
+    .eq('id', subscription.plan_id)
+    .maybeSingle();
+  if (planRow?.plan_category === 'creator') {
+    const { error: fcErr } = await supabase.rpc('schedule_founding_creator_credit_vesting', {
+      p_user_id: subscription.user_id,
+      p_period_end: periodEndIso,
+    });
+    if (fcErr) {
+      console.warn('⚠️ [STRIPE] invoice schedule_founding_creator_credit_vesting:', fcErr.message);
+    }
   }
 
   // Credit tokens for new period

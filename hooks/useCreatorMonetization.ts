@@ -5,6 +5,7 @@ import {
   fetchCreatorMonetizationSnapshot,
   getActiveCreatorProPlan,
   getCreatorProAnnualPlan,
+  isCreatorProActive,
   startCreatorProCheckout,
   type CreatorMonetizationSnapshot,
 } from '../utils/creatorMonetizationService';
@@ -22,6 +23,7 @@ export function useCreatorMonetization() {
     const s = await fetchCreatorMonetizationSnapshot();
     setSnapshot(s);
     setLoading(false);
+    return s;
   }, []);
 
   useEffect(() => {
@@ -56,6 +58,21 @@ export function useCreatorMonetization() {
     }
   }, []);
 
+  /** After IAP / web checkout, DB can lag briefly; poll until Pro is visible or attempts exhausted. */
+  const refetchUntilProVisible = useCallback(
+    async (maxAttempts = 8) => {
+      let last = await load();
+      for (let i = 0; i < maxAttempts - 1; i++) {
+        const active = !!last?.creator_pro_active || isCreatorProActive(last?.creator_pro_until);
+        if (active) break;
+        await new Promise((r) => setTimeout(r, 450 + i * 350));
+        last = await load();
+      }
+      return last;
+    },
+    [load]
+  );
+
   return {
     snapshot,
     loading,
@@ -63,6 +80,7 @@ export function useCreatorMonetization() {
     creatorPlan,
     creatorAnnualPlan,
     refetch: load,
+    refetchUntilProVisible,
     subscribeCreatorPro,
   };
 }

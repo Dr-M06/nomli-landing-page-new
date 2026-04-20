@@ -5,6 +5,19 @@ import { WALLET_LEMON, WALLET_MINT, WALLET_MINT_BRIGHT } from '../../constants/w
 import { formatTimeAgo } from '../../utils/formatters';
 import { WalletTransaction } from '../../utils/walletService';
 import { DailyTokenClaim } from '../../utils/dailyTokenRewards';
+import { tokensToUsd } from '../../utils/creatorMonetizationService';
+
+/** In-app gifts: 1 token = $0.01 (see GiftModal / giftService). */
+const WALLET_TOKEN_USD = 0.01;
+
+function formatUsdTwoDecimals(n: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
 
 function formatFullDate(iso: string) {
   try {
@@ -30,6 +43,10 @@ interface TransactionItemProps {
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, colors, isDarkMode }) => {
   const [expanded, setExpanded] = useState(false);
   const isPositive = transaction.amount > 0;
+  const isGiftLedger =
+    transaction.transaction_type === 'gift_received' || transaction.transaction_type === 'gift_sent';
+  const giftAbs = Math.abs(transaction.amount);
+  const giftUsdEst = isGiftLedger ? tokensToUsd(giftAbs, WALLET_TOKEN_USD) : 0;
 
   const getTransactionIcon = () => {
     switch (transaction.transaction_type) {
@@ -123,8 +140,15 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, c
           <Text style={[styles.transactionAmountText, {
             color: isPositive ? WALLET_MINT : colors.text,
           }]}>
-            {isPositive ? '+' : ''}{transaction.amount.toLocaleString()}
+            {isGiftLedger
+              ? `${isPositive ? '+' : '-'}${giftAbs.toLocaleString()} tokens`
+              : `${isPositive ? '+' : ''}${transaction.amount.toLocaleString()}`}
           </Text>
+          {isGiftLedger ? (
+            <Text style={[styles.transactionGiftUsd, { color: colors.textTertiary }]}>
+              ~{formatUsdTwoDecimals(giftUsdEst)} USD
+            </Text>
+          ) : null}
           <Text style={[styles.transactionBalance, { color: colors.textTertiary }]}>
             Balance: {transaction.balance_after.toLocaleString()}
           </Text>
@@ -332,6 +356,11 @@ const styles = StyleSheet.create({
   transactionBalance: {
     fontSize: 10,
     fontWeight: '500',
+    letterSpacing: -0.1,
+  },
+  transactionGiftUsd: {
+    fontSize: 10,
+    fontWeight: '600',
     letterSpacing: -0.1,
   },
 });

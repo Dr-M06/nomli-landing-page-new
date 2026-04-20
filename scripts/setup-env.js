@@ -25,11 +25,6 @@ EXPO_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
-# Optional: Cloudinary configuration for video uploads
-# EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-# EXPO_PUBLIC_CLOUDINARY_API_KEY=your_cloudinary_api_key
-# EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
-
 # Optional: WhatsApp support
 # WHATSAPP_SUPPORT_NUMBER=your_whatsapp_number
 
@@ -51,11 +46,6 @@ EXPO_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
 # Get these from your Supabase project settings
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
-# Optional: Cloudinary configuration for video uploads
-# EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-# EXPO_PUBLIC_CLOUDINARY_API_KEY=your_cloudinary_api_key
-# EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
 
 # Optional: WhatsApp support
 # WHATSAPP_SUPPORT_NUMBER=your_whatsapp_number

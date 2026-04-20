@@ -29,6 +29,7 @@ import {
   fetchPosts,
   getCachedPosts,
   getCachedPostsSync,
+  clearPostsCache,
   toggleLike,
   toggleBookmark,
   createPost,
@@ -36,6 +37,7 @@ import {
   type Post,
 } from '../../utils/communityUtils';
 import { rankHomeFeedPosts } from '../../utils/homeFeedRanking';
+import { appendHomeFeedSeenPostIds, loadHomeFeedSeenPostIds } from '../../utils/homeFeedSession';
 import { toggleReaction, getReactionCounts, getUserReaction, type ReactionType } from '../../utils/reactionUtils';
 import { badgeCounter } from '../../utils/badgeCounter';
 import { error } from '../../utils/productionLogger';
@@ -53,8 +55,39 @@ import { useLiveStream } from '../LiveStreamProvider';
 import { useVideoUpload } from '../../contexts/VideoUploadContext';
 
 const PAGE = 20;
-const INITIAL_PREFETCH_PAGES = 2;
-type HomeFeedRow = Post & { __isHomeAd?: boolean };
+/** Wider candidate pool so ranking + fresh/rediscover lanes have more to choose from. */
+const INITIAL_PREFETCH_PAGES = 4;
+/**
+ * Deep slices per media class (offset is within that class’s created_at order), merged into the
+ * home pool—mirrors “algo + archive” feeds where not everything is the latest 80 global rows.
+ */
+const HOME_ARCHIVE_PAGE_LIMIT = 24;
+const HOME_ARCHIVE_BAND_MIN = 36;
+const HOME_ARCHIVE_BAND_STEP = 34;
+
+function homeArchiveOffsets(sessionSalt: number): { videoOffset: number; textOffset: number } {
+  const band = HOME_ARCHIVE_BAND_MIN + (sessionSalt % 5) * HOME_ARCHIVE_BAND_STEP;
+  return {
+    videoOffset: band,
+    textOffset: band + 22,
+  };
+}
+/** When merging after a network refresh, don’t re-rank thousands of older loaded posts (they bury new items). */
+const MERGE_TAIL_MAX = 80;
+
+/**
+ * Stable “random” order for non-following posts: varies per refresh (salt) but new pages from
+ * loadMore don’t reshuffle items already in the list (unlike a full Fisher–Yates each time).
+ */
+function discoveryOrderKey(postId: string, salt: number): number {
+  let h = (salt ^ 0x6f6c6c6f) >>> 0;
+  for (let i = 0; i < postId.length; i++) {
+    h = (Math.imul(h, 31) + postId.charCodeAt(i)) >>> 0;
+  }
+  return h >>> 0;
+}
+
+type HomeFeedRow = Post;
 
 export default function HomeFeedScreen() {
   const { height: windowHeight } = useWindowDimensions();
@@ -86,6 +119,10 @@ export default function HomeFeedScreen() {
   const { liveStreams, loadLiveStreams } = useLiveStream();
   const { uploads, uploadVideo } = useVideoUpload();
   const mounted = useRef(true);
+  /** Recently viewed post IDs (loaded from storage + updated while scrolling). */
+  const seenPostIdsRef = useRef<Set<string>>(new Set());
+  /** New on each full load / pull-to-refresh so ordering isn’t identical every time. */
+  const sessionFeedSaltRef = useRef<number>((Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0);
   const nextOffsetRef = useRef(0);
   const emptyLoadMoreStreakRef = useRef(0);
   const retryBindingsRef = useRef<Record<string, { tempId: string; content: string }>>({});
@@ -117,6 +154,22 @@ export default function HomeFeedScreen() {
         comments_count: p.comments_count != null ? p.comments_count : (old?.comments_count ?? 0),
       };
     });
+  }, []);
+
+  /** FYP-style rank: deboost seen posts, session jitter, fresh lane + author mix. */
+  const rankFeed = useCallback((list: Post[]) => {
+    return rankHomeFeedPosts(list, {
+      deboostRecentIds: seenPostIdsRef.current,
+      sessionSalt: sessionFeedSaltRef.current,
+    });
+  }, []);
+
+  const handleSeenPosts = useCallback((ids: string[]) => {
+    if (!ids?.length) return;
+    for (const id of ids) {
+      if (id) seenPostIdsRef.current.add(id);
+    }
+    void appendHomeFeedSeenPostIds(ids.filter(Boolean));
   }, []);
 
   const handleVideoLike = useCallback(async (postId: string, isLiked: boolean) => {
@@ -406,11 +459,15 @@ export default function HomeFeedScreen() {
   const loadInitial = useCallback(async () => {
     try {
       setLoading(true);
+      const seen = await loadHomeFeedSeenPostIds();
+      seenPostIdsRef.current = seen;
+      sessionFeedSaltRef.current = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+
       // Instant-first: show in-memory cache immediately (no auth/network wait).
       let showedInstantContent = false;
       const warmCache = getCachedPostsSync(PAGE, 0) || getCachedPostsSync(undefined, 0);
       if (mounted.current && warmCache && warmCache.length > 0) {
-        setPosts(rankHomeFeedPosts(warmCache));
+        setPosts(rankFeed(warmCache));
         nextOffsetRef.current = PAGE;
         setHasMore(true);
         setLoading(false);
@@ -419,7 +476,7 @@ export default function HomeFeedScreen() {
         // Persistent cache fallback (still fast, async storage only).
         const cached = await getCachedPosts(PAGE, 0);
         if (mounted.current && cached && cached.length > 0) {
-          setPosts(rankHomeFeedPosts(cached));
+          setPosts(rankFeed(cached));
           nextOffsetRef.current = PAGE;
           setHasMore(true);
           setLoading(false);
@@ -431,6 +488,21 @@ export default function HomeFeedScreen() {
       const fresh = await fetchPosts(PAGE, 0, false, false);
       if (mounted.current && fresh.length > 0) {
         let merged: Post[] = [...fresh];
+        const { videoOffset, textOffset } = homeArchiveOffsets(sessionFeedSaltRef.current);
+        const videoArchivePromise = fetchPosts(
+          HOME_ARCHIVE_PAGE_LIMIT,
+          videoOffset,
+          false,
+          false,
+          true
+        ).catch(() => []);
+        const textArchivePromise = fetchPosts(
+          HOME_ARCHIVE_PAGE_LIMIT,
+          textOffset,
+          false,
+          true,
+          false
+        ).catch(() => []);
         const extraPages = await Promise.all(
           Array.from({ length: INITIAL_PREFETCH_PAGES }, (_, idx) =>
             fetchPosts(PAGE, (idx + 1) * PAGE, false, false).catch(() => [])
@@ -440,17 +512,31 @@ export default function HomeFeedScreen() {
           if (!mounted.current || !batch.length) continue;
           merged = mergeUniquePosts(merged, batch);
         }
-        const nextOrdered = rankHomeFeedPosts(merged);
+        const [videoArchive, textArchive] = await Promise.all([videoArchivePromise, textArchivePromise]);
+        if (mounted.current && videoArchive.length > 0) {
+          merged = mergeUniquePosts(merged, videoArchive);
+        }
+        if (mounted.current && textArchive.length > 0) {
+          merged = mergeUniquePosts(merged, textArchive);
+        }
+        const nextOrdered = rankFeed(merged);
         if (showedInstantContent) {
-          // Merge fresh fetch with any local-only cards, then re-rank (uploads/pinned + score).
+          // Merge fresh fetch with a capped slice of older rows (most recent first) so stale viral posts
+          // from a long scroll session don’t dominate after every open.
           setPosts((prev) => {
             const withCounts = mergeEngagementFromPrevious(nextOrdered, prev);
             const freshIds = new Set(nextOrdered.map((p) => p.id));
-            const tail = prev.filter((p) => !freshIds.has(p.id));
-            return rankHomeFeedPosts([...withCounts, ...tail]);
+            const tail = prev
+              .filter((p) => !freshIds.has(p.id))
+              .sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              )
+              .slice(0, MERGE_TAIL_MAX);
+            return rankFeed([...withCounts, ...tail]);
           });
         } else {
-          setPosts(rankHomeFeedPosts(mergeEngagementFromPrevious(nextOrdered, [])));
+          setPosts(rankFeed(mergeEngagementFromPrevious(nextOrdered, [])));
         }
         nextOffsetRef.current = PAGE * (INITIAL_PREFETCH_PAGES + 1);
         setHasMore(true);
@@ -463,20 +549,46 @@ export default function HomeFeedScreen() {
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [mergeUniquePosts, mergeEngagementFromPrevious]);
+  }, [mergeUniquePosts, mergeEngagementFromPrevious, rankFeed]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      await clearPostsCache();
+      sessionFeedSaltRef.current = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+      const seen = await loadHomeFeedSeenPostIds();
+      seenPostIdsRef.current = seen;
       const fresh = await fetchPosts(PAGE, 0, false, false);
       if (mounted.current) {
         let merged: Post[] = [...fresh];
+        const { videoOffset, textOffset } = homeArchiveOffsets(sessionFeedSaltRef.current);
+        const videoArchivePromise = fetchPosts(
+          HOME_ARCHIVE_PAGE_LIMIT,
+          videoOffset,
+          false,
+          false,
+          true
+        ).catch(() => []);
+        const textArchivePromise = fetchPosts(
+          HOME_ARCHIVE_PAGE_LIMIT,
+          textOffset,
+          false,
+          true,
+          false
+        ).catch(() => []);
         for (let i = 1; i <= INITIAL_PREFETCH_PAGES; i += 1) {
           const batch = await fetchPosts(PAGE, i * PAGE, false, false);
           if (!mounted.current || batch.length === 0) break;
           merged = mergeUniquePosts(merged, batch);
         }
-        setPosts((prev) => rankHomeFeedPosts(mergeEngagementFromPrevious(merged, prev)));
+        const [videoArchive, textArchive] = await Promise.all([videoArchivePromise, textArchivePromise]);
+        if (videoArchive.length > 0) {
+          merged = mergeUniquePosts(merged, videoArchive);
+        }
+        if (textArchive.length > 0) {
+          merged = mergeUniquePosts(merged, textArchive);
+        }
+        setPosts((prev) => rankFeed(mergeEngagementFromPrevious(merged, prev)));
         nextOffsetRef.current = PAGE * (INITIAL_PREFETCH_PAGES + 1);
         setHasMore(fresh.length > 0);
       }
@@ -485,7 +597,7 @@ export default function HomeFeedScreen() {
     } finally {
       if (mounted.current) setRefreshing(false);
     }
-  }, [mergeUniquePosts, mergeEngagementFromPrevious]);
+  }, [mergeUniquePosts, mergeEngagementFromPrevious, rankFeed]);
 
   /** Tab bar re-tap on Home: pop feed to top + same as pull-to-refresh. */
   const handleTapHomeTabRefresh = useCallback(() => {
@@ -568,15 +680,41 @@ export default function HomeFeedScreen() {
           const flag = await AsyncStorage.getItem('should_refresh_community');
           if (flag !== 'true' || cancelled) return;
           await AsyncStorage.removeItem('should_refresh_community');
+          await clearPostsCache();
+          sessionFeedSaltRef.current = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+          const seenReload = await loadHomeFeedSeenPostIds();
+          seenPostIdsRef.current = seenReload;
           const fresh = await fetchPosts(PAGE, 0, false, false);
           if (!cancelled && mounted.current) {
             let merged: Post[] = [...fresh];
+            const { videoOffset, textOffset } = homeArchiveOffsets(sessionFeedSaltRef.current);
+            const videoArchivePromise = fetchPosts(
+              HOME_ARCHIVE_PAGE_LIMIT,
+              videoOffset,
+              false,
+              false,
+              true
+            ).catch(() => []);
+            const textArchivePromise = fetchPosts(
+              HOME_ARCHIVE_PAGE_LIMIT,
+              textOffset,
+              false,
+              true,
+              false
+            ).catch(() => []);
             for (let i = 1; i <= INITIAL_PREFETCH_PAGES; i += 1) {
               const batch = await fetchPosts(PAGE, i * PAGE, false, false);
               if (!mounted.current || batch.length === 0) break;
               merged = mergeUniquePosts(merged, batch);
             }
-            setPosts((prev) => rankHomeFeedPosts(mergeEngagementFromPrevious(merged, prev)));
+            const [videoArchive, textArchive] = await Promise.all([videoArchivePromise, textArchivePromise]);
+            if (videoArchive.length > 0) {
+              merged = mergeUniquePosts(merged, videoArchive);
+            }
+            if (textArchive.length > 0) {
+              merged = mergeUniquePosts(merged, textArchive);
+            }
+            setPosts((prev) => rankFeed(mergeEngagementFromPrevious(merged, prev)));
             nextOffsetRef.current = PAGE * (INITIAL_PREFETCH_PAGES + 1);
             setHasMore(fresh.length > 0);
           }
@@ -587,7 +725,7 @@ export default function HomeFeedScreen() {
       return () => {
         cancelled = true;
       };
-    }, [mergeUniquePosts, mergeEngagementFromPrevious])
+    }, [mergeUniquePosts, mergeEngagementFromPrevious, rankFeed])
   );
 
   useEffect(() => {
@@ -783,7 +921,7 @@ export default function HomeFeedScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Post; index: number }) => (
+    ({ item }: { item: Post }) => (
       <View>
         <FeedPostCard
           post={item}
@@ -799,13 +937,6 @@ export default function HomeFeedScreen() {
           onRetryUpload={handleRetryVideoUpload}
           onReportPost={() => handleReportPost(item)}
         />
-
-        {/* Home ads disabled intentionally */}
-        {/* {(index + 1) % 5 === 0 && (
-          <View style={styles.inlineAdWrap}>
-            <PostScreenAd isDark={isDarkMode} />
-          </View>
-        )} */}
       </View>
     ),
     [
@@ -888,12 +1019,27 @@ export default function HomeFeedScreen() {
   const displayedPosts = useMemo(() => {
     if (feedMode === 'following') {
       const followingPosts = posts.filter((p) => followingIds.has(p.user_id));
-      // If following has too few items, blend with For You so feed isn't stuck on 1-2 posts.
-      if (followingPosts.length < 4) {
-        const remainder = posts.filter((p) => !followingIds.has(p.user_id));
-        return [...followingPosts, ...remainder];
+      const nonFollowing = posts.filter((p) => !followingIds.has(p.user_id));
+      const mixSalt = sessionFeedSaltRef.current;
+      const discovery = [...nonFollowing].sort((a, b) => {
+        const ka = discoveryOrderKey(a.id, mixSalt);
+        const kb = discoveryOrderKey(b.id, mixSalt);
+        if (ka !== kb) return ka - kb;
+        return a.id.localeCompare(b.id);
+      });
+      // Mostly people you follow, with shuffled discovery every ~3 slots so the tab never feels empty.
+      if (followingPosts.length === 0) {
+        return discovery.length > 0 ? discovery : posts;
       }
-      return followingPosts;
+      const mixed: Post[] = [];
+      let fi = 0;
+      let di = 0;
+      while (fi < followingPosts.length || di < discovery.length) {
+        if (fi < followingPosts.length) mixed.push(followingPosts[fi++]);
+        if (fi < followingPosts.length) mixed.push(followingPosts[fi++]);
+        if (di < discovery.length) mixed.push(discovery[di++]);
+      }
+      return mixed;
     }
     // For You: prioritize discovery by mixing in users outside follow/follower graph.
     if (!user?.id) return posts;
@@ -972,6 +1118,7 @@ export default function HomeFeedScreen() {
                 }
               }}
               currentUserId={user?.id}
+              onSeenPosts={handleSeenPosts}
               onRefresh={onRefresh}
               onEndReached={loadMore}
               refreshing={refreshing}
@@ -1085,11 +1232,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: FontFamily.semibold,
     fontSize: 12,
-  },
-  inlineAdWrap: {
-    marginHorizontal: 14,
-    marginTop: 8,
-    marginBottom: 10,
   },
   emptyWrap: {
     alignItems: 'center',

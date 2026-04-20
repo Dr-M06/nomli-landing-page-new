@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,7 +19,7 @@ import { FontFamily } from '../../constants/Theme';
 import { getFloatingTabBarReservedHeight } from '../../utils/tabBarInset';
 import Toast from 'react-native-toast-message';
 import { useCreatorMonetization } from '../../hooks/useCreatorMonetization';
-import { tokensToUsd } from '../../utils/creatorMonetizationService';
+import { isCreatorProActive } from '../../utils/creatorMonetizationService';
 
 /** Dark creator shell with mint highlights + lemon primary CTAs (no pink). */
 const D = {
@@ -49,16 +50,35 @@ const D = {
 
 /** If `payment_plans` is missing or slow to load; match App Store / Play list price. */
 const CREATOR_PRO_FALLBACK_USD = 4.99;
+/** Recurring subscription legal (store + Nomli policies). */
+const LEGAL_TERMS_URL = 'https://www.nomlimingle.com/terms';
+const LEGAL_PRIVACY_URL = 'https://www.nomlimingle.com/privacy';
+/** iOS auto-renewable IAP — required functional link to standard license terms. */
+const IOS_SUBSCRIPTION_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+const GOOGLE_PLAY_TERMS_URL = 'https://play.google.com/intl/ALL_us/about/play-terms/';
+
+function openSubscriptionLegalUrl(url: string) {
+  Linking.openURL(url).catch(() => {
+    Toast.show({
+      type: 'info',
+      text1: 'Could not open link',
+      text2: 'Copy the URL from nomlimingle.com if this persists.',
+      position: 'bottom',
+    });
+  });
+}
 /** Yearly SKU list price (add matching IAP + `payment_plans` when you ship annual). */
 const CREATOR_PRO_ANNUAL_USD = 44.99;
 
 const H_PAD = 16;
 const TAB_ROW_GAP = 6;
+/** Bank / payout minimum shown in creator gift UI (must match backend when withdraw ships). */
+const MIN_CREATOR_WITHDRAWAL_USD = 5;
 
 export type CreatorTabId = 'locked' | 'dashboard' | 'posts' | 'gifts' | 'history' | 'upgrade';
 
 const TAB_LABELS: Record<CreatorTabId, string> = {
-  locked: 'Teaser',
+  locked: 'Earnings',
   dashboard: 'Home',
   posts: 'Posts',
   gifts: 'Gifts',
@@ -70,6 +90,9 @@ const TAB_ROWS: CreatorTabId[][] = [
   ['locked', 'dashboard', 'posts'],
   ['gifts', 'history', 'upgrade'],
 ];
+
+/** Non–Creator Pro: earnings preview, live gift earnings, and subscribe. */
+const TAB_ROWS_NON_PRO: CreatorTabId[][] = [['locked', 'gifts', 'upgrade']];
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
@@ -96,6 +119,12 @@ function formatCount(n: number): string {
   if (n >= 10_000) return `${Math.round(n / 1000)}K`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(Math.round(n));
+}
+
+/** Gift ledger amounts are Nomli tokens (same unit as wallet); do not show USD here. */
+function formatGiftTokens(n: number): string {
+  const t = Math.round(Math.max(0, n));
+  return `${t.toLocaleString()} tokens`;
 }
 
 function formatRelative(iso: string): string {
@@ -191,6 +220,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     creatorPlan,
     creatorAnnualPlan,
     refetch,
+    refetchUntilProVisible,
     subscribeCreatorPro,
   } = useCreatorMonetization();
   const [hydrated, setHydrated] = useState(false);
@@ -204,24 +234,29 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
   const proUnlocked = !hydrated
     ? initialProUnlocked
     : snapshot !== null
-      ? snapshot.creator_pro_active
+      ? snapshot.creator_pro_active || isCreatorProActive(snapshot.creator_pro_until)
       : initialProUnlocked;
 
-  const rate = snapshot?.token_usd_rate ?? 0.01;
   const lastMonthCombinedUsd = useMemo(() => {
     if (!snapshot) return 0;
     return snapshot.estimated_content_usd_last_month + snapshot.estimated_gift_usd_last_month;
   }, [snapshot]);
+  const foundingAmountUsd = snapshot?.founding_credit_amount_usd ?? 1;
+  const foundingPaywallUsd = snapshot?.founding_credit_paywall_usd ?? 1;
+  const foundingState = snapshot?.founding_credit_state ?? 'awaiting_pro';
+  const upgradeWalletDisplayUsd = useMemo(
+    () => lastMonthCombinedUsd + foundingPaywallUsd,
+    [lastMonthCombinedUsd, foundingPaywallUsd]
+  );
   const thisMonthCombinedUsd = useMemo(() => {
     if (!snapshot) return 0;
     return snapshot.estimated_content_usd_month + snapshot.estimated_gift_usd_month;
   }, [snapshot]);
-  const walletGiftUsd = useMemo(() => {
+  const walletGiftTokens = useMemo(() => {
     if (!snapshot) return 0;
-    const tokens = snapshot.wallet_earned_token_balance > 0 ? snapshot.wallet_earned_token_balance : snapshot.wallet_token_balance;
-    return tokensToUsd(tokens, rate);
-  }, [snapshot, rate]);
-  const giftAllTimeUsd = useMemo(() => (snapshot ? tokensToUsd(snapshot.gift_tokens_all_time, rate) : 0), [snapshot, rate]);
+    return snapshot.wallet_earned_token_balance > 0 ? snapshot.wallet_earned_token_balance : snapshot.wallet_token_balance;
+  }, [snapshot]);
+  const giftAllTimeTokens = useMemo(() => Math.round(snapshot?.gift_tokens_all_time ?? 0), [snapshot]);
   const breakdownBars = useMemo(() => {
     if (!snapshot?.breakdown_month?.length) return [];
     const pts = snapshot.breakdown_month.map((b) => Math.max(0, b.points));
@@ -234,7 +269,11 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     }));
   }, [snapshot]);
 
-  const activeTab: CreatorTabId = proUnlocked ? tab : 'upgrade';
+  const activeTab: CreatorTabId = useMemo(() => {
+    if (proUnlocked) return tab;
+    if (tab === 'locked' || tab === 'gifts' || tab === 'upgrade') return tab;
+    return 'upgrade';
+  }, [proUnlocked, tab]);
 
   const bottomPad = getFloatingTabBarReservedHeight(insets.bottom) + 24;
   const colW = (width - H_PAD * 2 - 8) / 2;
@@ -302,7 +341,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     if (Platform.OS === 'android') {
       return 'Cancel anytime · Billed through Google Play';
     }
-    return 'Cancel anytime · Secure payment via Stripe';
+    return 'Cancel anytime · Secure checkout in your browser';
   }, []);
 
   const subscribeLoadingLabel = useMemo(() => {
@@ -321,15 +360,16 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
           text2: 'Your subscription is active.',
           position: 'bottom',
         });
+        await refetchUntilProVisible();
       } else {
         Toast.show({
           type: 'info',
           text1: 'Complete checkout',
-          text2: 'Finish payment in the browser. Creator Pro unlocks when Stripe confirms.',
+          text2: 'Finish payment in your browser. Creator Pro unlocks once payment completes.',
           position: 'bottom',
         });
+        await refetch();
       }
-      refetch();
     } else {
       Toast.show({ type: 'error', text1: res.error || 'Checkout failed', position: 'bottom' });
     }
@@ -345,15 +385,16 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
           text2: 'Your subscription is active.',
           position: 'bottom',
         });
+        await refetchUntilProVisible();
       } else {
         Toast.show({
           type: 'info',
           text1: 'Complete checkout',
-          text2: 'Finish payment in the browser. Creator Pro unlocks when Stripe confirms.',
+          text2: 'Finish payment in your browser. Creator Pro unlocks once payment completes.',
           position: 'bottom',
         });
+        await refetch();
       }
-      refetch();
     } else {
       Toast.show({ type: 'error', text1: res.error || 'Checkout failed', position: 'bottom' });
     }
@@ -363,29 +404,27 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     <View style={[styles.root, { paddingTop: insets.top, backgroundColor: D.screen }]}>
       <StatusBar style="light" />
 
-      {proUnlocked ? (
-        <View style={styles.tabGrid}>
-          {TAB_ROWS.map((row, ri) => (
-            <View key={ri} style={styles.tabRow}>
-              {row.map((id) => {
-                const on = id === tab;
-                return (
-                  <TouchableOpacity
-                    key={id}
-                    onPress={() => setTab(id)}
-                    style={[styles.tabChip, on && styles.tabChipOn]}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.tabChipText, on && styles.tabChipTextOn]} numberOfLines={1}>
-                      {TAB_LABELS[id]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ))}
-        </View>
-      ) : null}
+      <View style={styles.tabGrid}>
+        {(proUnlocked ? TAB_ROWS : TAB_ROWS_NON_PRO).map((row, ri) => (
+          <View key={ri} style={styles.tabRow}>
+            {row.map((id) => {
+              const on = id === activeTab;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => setTab(id)}
+                  style={[styles.tabChip, on && styles.tabChipOn]}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.tabChipText, on && styles.tabChipTextOn]} numberOfLines={1}>
+                    {TAB_LABELS[id]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
 
       <TopBar title={titleAndPill.title} onBack={onBack} right={titleAndPill.right} />
 
@@ -393,6 +432,9 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
         style={styles.bodyScroll}
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
+        // Avoids jagged “shadow” fringes on rounded CTAs from subview clipping / compositing (Android).
+        clipSubviews={false}
+        removeClippedSubviews={false}
       >
         {loading ? (
           <View style={styles.loadingRow}>
@@ -403,6 +445,8 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
           <>
             <SectionHead>Your potential</SectionHead>
             <View style={styles.lockOverlay}>
+              <Text style={styles.foundingCreditHero}>{formatUsd(foundingAmountUsd)}</Text>
+              <Text style={styles.foundingCreditHint}>Founding creator credit (USD) when you subscribe</Text>
               <View style={styles.lockIconWrap}>
                 <Lock size={22} color={D.mint} strokeWidth={1.75} />
               </View>
@@ -430,9 +474,9 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
             </View>
             <SectionHead>Gift earnings</SectionHead>
             <CardD>
-              <RowD label="Wallet balance (est.)" value={formatCreatorUsd(walletGiftUsd)} valueColor={D.mintBright} />
-              <RowD label="Total received (all time, est.)" value={formatCreatorUsd(giftAllTimeUsd)} />
-              <RowD label="Min. withdrawal" value={formatUsd(2)} valueColor={D.muted} isLast />
+              <RowD label="Wallet balance (tokens)" value={formatGiftTokens(walletGiftTokens)} valueColor={D.mintBright} />
+              <RowD label="Total received (all time, tokens)" value={formatGiftTokens(giftAllTimeTokens)} />
+              <RowD label="Min. withdrawal" value={formatUsd(MIN_CREATOR_WITHDRAWAL_USD)} valueColor={D.muted} isLast />
             </CardD>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 16 }}>
               <TouchableOpacity style={styles.outlineWithdraw} activeOpacity={0.85} onPress={() => toastSoon('Withdraw')}>
@@ -449,6 +493,19 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
               <Text style={styles.estLbl}>est. this month</Text>
             </View>
             <Text style={[styles.subline, { paddingHorizontal: H_PAD }]}>Updates daily · Paid out on the 15th</Text>
+            {snapshot?.founding_credit_state === 'vesting' && snapshot.founding_credit_vest_at ? (
+              <View style={[styles.tipCard, { marginHorizontal: H_PAD, marginTop: 10 }]}>
+                <View style={styles.tipIcon}>
+                  <Info size={14} color={D.mint} strokeWidth={2} />
+                </View>
+                <Text style={styles.tipTxt}>
+                  <Text style={{ color: D.mintBright, fontFamily: FontFamily.semibold }}>Founding credit — </Text>
+                  {`${formatUsd(foundingAmountUsd)} unlocks for withdrawal after your current billing period ends (${new Date(
+                    snapshot.founding_credit_vest_at
+                  ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}).`}
+                </Text>
+              </View>
+            ) : null}
             <View style={[styles.metricGrid, { paddingHorizontal: H_PAD, gap: 8 }]}>
               <View style={{ width: colW }}>
                 <View style={styles.metricCard}>
@@ -573,8 +630,8 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
         {activeTab === 'gifts' && (
           <>
             <View style={[styles.estimateRow, { paddingHorizontal: H_PAD }]}>
-              <Text style={[styles.bigNumAccent, { color: D.mintBright }]}>{formatCreatorUsd(walletGiftUsd)}</Text>
-              <Text style={styles.estLbl}>wallet (est. USD)</Text>
+              <Text style={[styles.bigNumAccent, { color: D.mintBright }]}>{formatGiftTokens(walletGiftTokens)}</Text>
+              <Text style={styles.estLbl}>gift wallet (tokens)</Text>
             </View>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 12 }}>
               <TouchableOpacity style={styles.withdrawGreen} activeOpacity={0.9} onPress={() => toastSoon('Withdraw to bank')}>
@@ -584,7 +641,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
             <CardD style={{ marginBottom: 14 }}>
               <RowD label="You keep" value="70% of each gift" />
               <RowD label="Platform keeps" value="30%" valueColor={D.muted} />
-              <RowD label="Min. withdrawal" value={formatUsd(2)} valueColor={D.muted} isLast />
+              <RowD label="Min. withdrawal" value={formatUsd(MIN_CREATOR_WITHDRAWAL_USD)} valueColor={D.muted} isLast />
             </CardD>
             <SectionHead>Recent gifts</SectionHead>
             {(snapshot?.recent_gifts?.length ?? 0) === 0 ? (
@@ -601,7 +658,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
                       {(g.description || 'Gift').trim()} · {formatRelative(g.created_at)}
                     </Text>
                   </View>
-                  <Text style={styles.giftAmt}>+{formatCreatorUsd(tokensToUsd(g.amount, rate))}</Text>
+                  <Text style={styles.giftAmt}>+{formatGiftTokens(g.amount)}</Text>
                 </View>
               ))
             )}
@@ -653,9 +710,13 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
               <Text style={styles.upgradeHeroSub}>Your content is already earning. Start collecting.</Text>
             </View>
             <View style={[styles.cardHero, { marginHorizontal: H_PAD }]}>
-              <Text style={styles.cardHeroLbl}>You would have earned last month</Text>
-              <Text style={styles.cardHeroNum}>{formatCreatorUsd(lastMonthCombinedUsd)}</Text>
-              <Text style={styles.cardHeroHint}>based on your posts and gifts (est.)</Text>
+              <Text style={styles.cardHeroLbl}>Your creator wallet</Text>
+              <Text style={styles.cardHeroNum}>{formatCreatorUsd(upgradeWalletDisplayUsd)}</Text>
+              <Text style={styles.cardHeroHint}>
+                {foundingState === 'ineligible'
+                  ? `Last month's engagement (est.). Subscribe to unlock creator earnings and payouts.`
+                  : `${formatUsd(foundingAmountUsd)} founding creator credit · unlocks after your first billing month`}
+              </Text>
             </View>
             <View style={{ paddingHorizontal: H_PAD, marginBottom: 10 }}>
               <View style={styles.proFeatureCard}>
@@ -668,7 +729,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
                 </View>
                 {[
                   'Earn from post engagement monthly',
-                  'Keep 70% of all livestream gifts',
+                  'Priority processing for gift payouts',
                   'Creator dashboard and score tracking',
                   'Monthly payout on the 15th',
                 ].map((line) => (
@@ -684,28 +745,67 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
               </View>
             </View>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 8 }}>
-              <TouchableOpacity
-                style={[styles.upgradeBtn, checkoutLoading && { opacity: 0.7 }]}
-                activeOpacity={0.9}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.upgradeBtn,
+                  checkoutLoading && { opacity: 0.7 },
+                  Platform.OS === 'ios' && pressed && styles.upgradeCtaPressedIOS,
+                ]}
                 onPress={onSubscribe}
                 disabled={checkoutLoading}
+                android_ripple={{ color: D.lemon, borderless: false }}
               >
                 <Text style={styles.upgradeBtnTxt}>
                   {checkoutLoading ? subscribeLoadingLabel : `Subscribe — ${subscribePriceLabel}/month`}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 16 }}>
-              <TouchableOpacity
-                style={[styles.upgradeOutline, checkoutLoading && { opacity: 0.7 }]}
-                activeOpacity={0.85}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.upgradeAnnualSecondary,
+                  checkoutLoading && { opacity: 0.7 },
+                  Platform.OS === 'ios' && pressed && styles.upgradeCtaPressedIOS,
+                ]}
                 onPress={onSubscribeYearly}
                 disabled={checkoutLoading}
+                android_ripple={{ color: D.card, borderless: false }}
               >
                 <Text style={styles.upgradeOutlineTxt}>{annualPayTeaserLabel}</Text>
-              </TouchableOpacity>
+              </Pressable>
+              <View style={styles.upgradeSubscribeFoot}>
+                <Text style={styles.payFoot}>{payFootNote}</Text>
+                <Text style={styles.payFootFollow}>
+                  Auto-renews until you cancel. Manage in {Platform.OS === 'ios' ? 'App Store' : Platform.OS === 'android' ? 'Google Play' : 'your account'} settings.
+                </Text>
+                <View style={styles.legalLinksInner}>
+                  <Text style={styles.legalLinksLine}>
+                    <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_TERMS_URL)}>
+                      Terms of Service
+                    </Text>
+                    <Text style={styles.legalSep}> · </Text>
+                    <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_PRIVACY_URL)}>
+                      Privacy Policy
+                    </Text>
+                    {Platform.OS === 'ios' ? (
+                      <>
+                        <Text style={styles.legalSep}> · </Text>
+                        <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(IOS_SUBSCRIPTION_EULA_URL)}>
+                          Standard EULA
+                        </Text>
+                      </>
+                    ) : Platform.OS === 'android' ? (
+                      <>
+                        <Text style={styles.legalSep}> · </Text>
+                        <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(GOOGLE_PLAY_TERMS_URL)}>
+                          Google Play terms
+                        </Text>
+                      </>
+                    ) : null}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.payFoot}>{payFootNote}</Text>
             <View style={{ height: 16 }} />
           </>
         )}
@@ -833,6 +933,21 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: D.cardBorder,
   },
+  foundingCreditHero: {
+    fontSize: 34,
+    fontFamily: FontFamily.bold,
+    letterSpacing: -0.5,
+    color: D.mintBright,
+    marginBottom: 4,
+  },
+  foundingCreditHint: {
+    fontSize: 12,
+    color: D.muted2,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginBottom: 14,
+    paddingHorizontal: 8,
+  },
   lockIconWrap: {
     width: 48,
     height: 48,
@@ -882,13 +997,20 @@ const styles = StyleSheet.create({
     color: D.meta,
     marginTop: 2,
   },
+  /** iOS only: tiny opacity on press (Android uses same-color ripple to avoid dark fringes). */
+  upgradeCtaPressedIOS: {
+    opacity: 0.96,
+  },
   upgradeBtn: {
+    alignSelf: 'stretch',
     backgroundColor: D.lemon,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 13,
     alignItems: 'center',
     width: '100%',
     marginTop: 14,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   upgradeBtnTxt: {
     color: D.ctaText,
@@ -1319,23 +1441,66 @@ const styles = StyleSheet.create({
     color: D.muted2,
     fontFamily: FontFamily.regular,
   },
-  upgradeOutline: {
-    borderWidth: StyleSheet.hairlineWidth,
+  /** Secondary plan CTA — same-color ripple on Android avoids dark “shadow” band at top. */
+  upgradeAnnualSecondary: {
+    alignSelf: 'stretch',
+    backgroundColor: D.card,
+    borderRadius: 14,
+    borderWidth: 2,
     borderColor: D.mint,
-    borderRadius: 12,
-    paddingVertical: 11,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   upgradeOutlineTxt: {
     fontSize: 13,
     fontFamily: FontFamily.medium,
     color: D.mintBright,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  upgradeSubscribeFoot: {
+    marginTop: 18,
+    paddingTop: 6,
   },
   payFoot: {
     fontSize: 11,
     color: D.subtle,
     textAlign: 'center',
-    paddingHorizontal: H_PAD,
+    fontFamily: FontFamily.regular,
+    lineHeight: 16,
+  },
+  payFootFollow: {
+    fontSize: 11,
+    color: D.subtle,
+    textAlign: 'center',
+    fontFamily: FontFamily.regular,
+    lineHeight: 16,
+    marginTop: 8,
+  },
+  legalLinksInner: {
+    marginTop: 12,
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  legalLinksLine: {
+    fontSize: 11,
+    color: D.muted,
+    textAlign: 'center',
+    lineHeight: 18,
+    fontFamily: FontFamily.regular,
+  },
+  legalLink: {
+    color: D.mintBright,
+    textDecorationLine: 'underline',
+    fontFamily: FontFamily.medium,
+  },
+  legalSep: {
+    color: D.muted,
     fontFamily: FontFamily.regular,
   },
 });

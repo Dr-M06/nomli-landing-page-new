@@ -236,6 +236,16 @@ serve(async (req) => {
         );
       }
 
+      {
+        const { error: fcErr } = await supabaseClient.rpc('schedule_founding_creator_credit_vesting', {
+          p_user_id: userId,
+          p_period_end: expiresIso,
+        });
+        if (fcErr) {
+          console.warn('⚠️ [verify-google-receipt] schedule_founding_creator_credit_vesting:', fcErr.message);
+        }
+      }
+
       const { data: existingAudit } = await supabaseClient
         .from('wallet_transactions')
         .select('id')

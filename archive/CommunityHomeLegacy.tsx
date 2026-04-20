@@ -2565,7 +2565,7 @@ export default function CommunityScreen() {
         // Extract videos from fetched posts and process them immediately
         // NOTE: Skip video processing during forceRefresh because handleVideoRefresh handles videos separately
         // This prevents race condition where processVideos overwrites videos set by handleVideoRefresh
-        const videoPostsInBatch = fetchedPosts.filter(post => post.video_url && !post.video_url.includes('cloudinary.com'));
+        const videoPostsInBatch = fetchedPosts.filter(post => !!post.video_url);
         if (videoPostsInBatch.length > 0 && !forceRefresh) {
           log(`[Community] 🚀 Processing ${videoPostsInBatch.length} videos immediately (prioritizing over images)`);
           // Process videos immediately without waiting
@@ -2578,7 +2578,7 @@ export default function CommunityScreen() {
         const textPostsInBatch = fetchedPosts.filter(post => {
           const hasContent = post.content && post.content.trim().length > 0;
           const hasImages = post.image_urls && post.image_urls.length > 0;
-          const hasVideo = post.video_url && !post.video_url.includes('cloudinary.com');
+          const hasVideo = !!post.video_url;
           return hasContent && !hasImages && !hasVideo;
         });
         if (textPostsInBatch.length > 0) {
@@ -2630,11 +2630,11 @@ export default function CommunityScreen() {
           });
             
           // Process all content types; ordering is unified in getSortedPosts via sortFeedPosts
-            const videoPostsInBatch = realPostsOnly.filter(post => post.video_url && !post.video_url.includes('cloudinary.com'));
+            const videoPostsInBatch = realPostsOnly.filter(post => !!post.video_url);
             const textPostsInBatch = realPostsOnly.filter(post => {
               const hasContent = post.content && post.content.trim().length > 0;
               const hasImages = post.image_urls && post.image_urls.length > 0;
-              const hasVideo = post.video_url && !post.video_url.includes('cloudinary.com');
+              const hasVideo = !!post.video_url;
               return hasContent && !hasImages && !hasVideo;
             });
             
@@ -2659,7 +2659,7 @@ export default function CommunityScreen() {
                 // Only preload images (not videos or text posts) - fast content already shown
                 const imagePosts = realPostsOnly.filter(post => {
                   const hasImages = post.image_urls && post.image_urls.length > 0;
-                  const hasVideo = post.video_url && !post.video_url.includes('cloudinary.com');
+                  const hasVideo = !!post.video_url;
                   return hasImages && !hasVideo;
                 });
                 if (imagePosts.length > 0) {

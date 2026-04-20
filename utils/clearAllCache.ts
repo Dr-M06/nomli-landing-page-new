@@ -16,9 +16,6 @@ import {
   clearPostsCache 
 } from './communityUtils';
 import { 
-  clearEventCache 
-} from './eventUtils';
-import { 
   clearPrefetchCache 
 } from './prefetchService';
 import { 
@@ -44,7 +41,6 @@ import {
  * - Message caches
  * - Profile caches
  * - Post/comment caches
- * - Event caches
  * - Image caches
  * - Prefetch caches
  * - Chat caches
@@ -104,17 +100,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing posts:', error);
     }
 
-    // 5. Clear event caches
-    try {
-      await clearEventCache();
-      cleared.push('Events');
-      log('[ClearCache] ✅ Cleared event caches');
-    } catch (error) {
-      errors.push('Events');
-      error('[ClearCache] ❌ Error clearing events:', error);
-    }
-
-    // 6. Clear image caches
+    // 5. Clear image caches
     try {
       await clearImageCache();
       cleared.push('Images');
@@ -124,7 +110,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing images:', error);
     }
 
-    // 7. Clear prefetch caches
+    // 6. Clear prefetch caches
     try {
       await clearPrefetchCache();
       cleared.push('Prefetch Data');
@@ -134,7 +120,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing prefetch:', error);
     }
 
-    // 8. Clear chat caches
+    // 7. Clear chat caches
     try {
       await clearChatCache();
       cleared.push('Chat History');
@@ -144,7 +130,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing chat:', error);
     }
 
-    // 9. Clear wallet caches (if userId provided)
+    // 8. Clear wallet caches (if userId provided)
     if (userId) {
       try {
         await clearWalletCache(userId);
@@ -156,7 +142,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       }
     }
 
-    // 10. Clear aggressive caches
+    // 9. Clear aggressive caches
     try {
       await clearAggressiveCache();
       cleared.push('Aggressive Cache');
@@ -166,7 +152,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing aggressive cache:', error);
     }
 
-    // 11. Clear file system caches (video, media, etc.)
+    // 10. Clear file system caches (video, media, etc.)
     try {
       const cacheDir = FileSystem.cacheDirectory;
       if (cacheDir) {
@@ -186,7 +172,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing file system:', error);
     }
 
-    // 12. Clear any remaining AsyncStorage cache keys (safety net)
+    // 11. Clear any remaining AsyncStorage cache keys (safety net)
     try {
       const allKeys = await AsyncStorage.getAllKeys();
       const cacheKeys = allKeys.filter(key => 
@@ -208,7 +194,7 @@ export const clearAllUserCache = async (userId?: string): Promise<{
       error('[ClearCache] ❌ Error clearing additional cache keys:', error);
     }
 
-    // 13. Clear trusted device tokens (will require TOTP on next login)
+    // 12. Clear trusted device tokens (will require TOTP on next login)
     if (userId) {
       try {
         const SecureStore = await import('expo-secure-store');
