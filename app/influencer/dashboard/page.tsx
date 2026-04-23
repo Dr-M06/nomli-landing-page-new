@@ -7,7 +7,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import { getAuthInstance } from "@/lib/firebase/config"
-import { ArrowLeft, CheckCircle2, Users, Gift, Link2, Copy, TrendingUp, Clock, Award, BarChart3, Loader2, Sparkles, Info, X, LogOut } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Users, Gift, Copy, TrendingUp, Clock, Award, BarChart3, Loader2, Sparkles, Info, X, LogOut } from "lucide-react"
 
 // Mock data - Fallback if API fails
 const mockStats = {
@@ -62,7 +62,6 @@ export default function InfluencerDashboard() {
   const [stats, setStats] = useState(mockStats)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [showActiveModal, setShowActiveModal] = useState(false)
@@ -128,16 +127,6 @@ export default function InfluencerDashboard() {
       fetchDashboardData()
     }
   }, [userId])
-
-  const copyToClipboard = () => {
-    // Ensure the link is properly formatted and trimmed
-    const link = stats.referralLink?.trim() || ""
-    // Ensure it has the protocol if missing
-    const formattedLink = link.startsWith("http") ? link : `https://${link}`
-    navigator.clipboard.writeText(formattedLink.trim())
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const copyCodeToClipboard = () => {
     navigator.clipboard.writeText(stats.referralCode)
@@ -329,7 +318,7 @@ export default function InfluencerDashboard() {
                   transition={{ type: "spring", delay: 0.2 }}
                   className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-3"
                 >
-                  <Link2 className="w-6 h-6 text-white" />
+                  <Sparkles className="w-6 h-6 text-white" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-white mb-1">Your Referral Code</h2>
                 <p className="text-white/60 text-sm">Share this code to start earning rewards</p>
@@ -355,24 +344,6 @@ export default function InfluencerDashboard() {
                   </div>
                 </div>
 
-                {/* Referral Link */}
-                <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                  <p className="text-xs text-white/50 mb-2">Your Referral Link</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <code className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 text-xs flex-1 min-w-[150px] break-all font-mono">
-                      {stats.referralLink?.trim() || "Loading..."}
-                    </code>
-                    <motion.button
-                      onClick={copyToClipboard}
-                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs whitespace-nowrap"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Copy className="w-3 h-3" />
-                      {copied ? "Copied!" : "Copy"}
-                    </motion.button>
-                  </div>
-                </div>
               </div>
 
               {/* Info Box - Compact */}
@@ -386,7 +357,7 @@ export default function InfluencerDashboard() {
                     <ul className="space-y-1.5 text-white/70 text-xs">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">•</span>
-                        <span>Share your referral link or code with your audience</span>
+                        <span>Share your code with your audience</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">•</span>

@@ -69,12 +69,6 @@ export function Footer() {
                 {link.name}
               </Link>
             ))}
-            <Link
-              href="/influencer/auth"
-              className="text-sm text-primary font-medium hover:underline"
-            >
-              Influencer
-            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
