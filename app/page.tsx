@@ -11,7 +11,7 @@ import WebWalletPopup from "@/components/web-wallet-popup"
 
 export default function Home() {
   return (
-    <main id="main-content" className="relative">
+    <main id="main-content" className="relative overflow-x-clip">
       <LoadingScreen />
       <WebWalletPopup />
       <Header />

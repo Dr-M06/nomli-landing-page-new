@@ -142,7 +142,7 @@ export function NomliMusicSection() {
   }
 
   return (
-    <section id="music" ref={ref} className="relative py-16 sm:py-24 bg-[#f6f4fb] overflow-hidden">
+    <section id="music" ref={ref} className="relative py-12 sm:py-24 bg-[#f6f4fb] overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(139,92,246,0.14),transparent_38%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_85%,rgba(6,182,212,0.14),transparent_34%)]" />
 
@@ -157,10 +157,10 @@ export function NomliMusicSection() {
               <Music2 className="w-3.5 h-3.5" />
               Nomli Music
             </span>
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] leading-tight mb-4">
+            <h2 className="text-[1.8rem] sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] leading-tight mb-4">
               Share your sound with the Nomli community.
             </h2>
-            <p className="text-base sm:text-lg text-[#666] leading-relaxed mb-6">
+            <p className="text-[15px] sm:text-lg text-[#666] leading-relaxed mb-6">
               Upload your music for review. Once approved, your track is featured inside Nomli Mingle so people can use
               it across content and community moments.
             </p>
@@ -194,9 +194,9 @@ export function NomliMusicSection() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="relative"
           >
-            <div className="relative rounded-[2rem] border border-[#d9d3f8] bg-[#c7c4ef] p-3 sm:p-4 shadow-[0_26px_60px_rgba(17,24,39,0.2)]">
-              <div className="grid grid-cols-1 md:grid-cols-[0.78fr_1.22fr] gap-3">
-                <div className="rounded-[1.4rem] bg-gradient-to-b from-[#1f1c45] to-[#13152f] p-4 sm:p-5 text-white min-h-[300px]">
+            <div className="relative rounded-[1.5rem] sm:rounded-[2rem] border border-[#d9d3f8] bg-[#c7c4ef] p-2.5 sm:p-4 shadow-[0_22px_45px_rgba(17,24,39,0.16)] sm:shadow-[0_26px_60px_rgba(17,24,39,0.2)]">
+              <div className="grid grid-cols-1 sm:grid-cols-[0.78fr_1.22fr] gap-3">
+                <div className="rounded-[1.2rem] sm:rounded-[1.4rem] bg-gradient-to-b from-[#1f1c45] to-[#13152f] p-3.5 sm:p-5 text-white min-h-[280px] sm:min-h-[300px]">
                   <p className="text-xs text-white/75 mb-3">Now playing</p>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <div className="h-28 rounded-xl bg-gradient-to-br from-[#2f2c62] to-[#1c1d43] flex items-center justify-center">
@@ -256,8 +256,8 @@ export function NomliMusicSection() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.4rem] bg-[#f7f8ff] p-4 sm:p-5 min-h-[300px]">
-                  <div className="rounded-xl bg-gradient-to-r from-[#60b4e8] to-[#2f6698] h-28 sm:h-32 p-4 text-white mb-4 flex flex-col justify-end">
+                <div className="rounded-[1.2rem] sm:rounded-[1.4rem] bg-[#f7f8ff] p-3.5 sm:p-5 min-h-[280px] sm:min-h-[300px]">
+                  <div className="rounded-xl bg-gradient-to-r from-[#60b4e8] to-[#2f6698] h-24 sm:h-32 p-3.5 sm:p-4 text-white mb-3 sm:mb-4 flex flex-col justify-end">
                     <p className="text-xl sm:text-2xl font-bold leading-none">R&B NOW</p>
                     <p className="text-xs text-white/80 mt-1">Nomli Music Discover</p>
                   </div>

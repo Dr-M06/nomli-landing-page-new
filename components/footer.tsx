@@ -38,8 +38,8 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-white border-t border-gray-100 py-12">
-      <div className="container mx-auto px-6">
+    <footer className="bg-white border-t border-gray-100 py-10 sm:py-12">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="text-center sm:text-left">
             <Link href="/" className="flex items-center gap-2 justify-center sm:justify-start mb-1">
@@ -58,7 +58,7 @@ export function Footer() {
             <p className="text-sm text-[#666]">Beyond Borders. Beyond Limits.</p>
           </div>
 
-          <nav className="flex flex-wrap items-center justify-center gap-6">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
             {footerLinks.map((link) => (
               <Link
                 key={link.name}

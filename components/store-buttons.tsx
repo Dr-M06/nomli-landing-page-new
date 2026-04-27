@@ -58,19 +58,19 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
 
   return (
     <>
-      <div className={`flex flex-col sm:flex-row gap-3 ${className}`}>
+      <div className={`flex flex-col sm:flex-row gap-2.5 sm:gap-3 ${className}`}>
         {/* Google Play Button */}
         <motion.button
           onClick={handlePlayStoreClick}
           disabled={isRedirecting}
-          className={`inline-flex items-center gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all disabled:opacity-80 ${
-            isLarge ? "px-6 py-4" : "px-5 py-3"
+          className={`inline-flex items-center gap-2.5 sm:gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all disabled:opacity-80 ${
+            isLarge ? "px-4 sm:px-6 py-3 sm:py-4" : "px-4 sm:px-5 py-2.5 sm:py-3"
           }`}
           whileHover={{ scale: isRedirecting ? 1 : 1.02, y: isRedirecting ? 0 : -2 }}
           whileTap={{ scale: isRedirecting ? 1 : 0.98 }}
         >
           {/* Play Store Icon */}
-          <svg viewBox="0 0 24 24" className={isLarge ? "w-8 h-8" : "w-7 h-7"}>
+          <svg viewBox="0 0 24 24" className={isLarge ? "w-6 h-6 sm:w-8 sm:h-8" : "w-5 h-5 sm:w-7 sm:h-7"}>
             <defs>
               <linearGradient id="playstore-blue" x1="60.55%" y1="4.95%" x2="20.77%" y2="71.87%">
                 <stop offset="0%" stopColor="#00A0FF" />
@@ -116,10 +116,10 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
             />
           </svg>
           <div className="text-left">
-            <span className={`block uppercase tracking-wider text-white/70 ${isLarge ? "text-xs" : "text-[10px]"}`}>
+            <span className={`block uppercase tracking-wider text-white/70 ${isLarge ? "text-[10px] sm:text-xs" : "text-[9px] sm:text-[10px]"}`}>
               GET IT ON
             </span>
-            <span className={`font-semibold ${isLarge ? "text-xl" : "text-lg"}`}>Google Play</span>
+            <span className={`font-semibold ${isLarge ? "text-base sm:text-xl" : "text-sm sm:text-lg"}`}>Google Play</span>
           </div>
         </motion.button>
 
@@ -127,21 +127,21 @@ export function StoreButtons({ className = "", size = "default" }: StoreButtonsP
         <motion.button
           onClick={handleAppStoreClick}
           disabled={isRedirectingIOS}
-          className={`inline-flex items-center gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all disabled:opacity-80 ${
-            isLarge ? "px-6 py-4" : "px-5 py-3"
+          className={`inline-flex items-center gap-2.5 sm:gap-3 bg-black hover:bg-black/90 text-white rounded-xl transition-all disabled:opacity-80 ${
+            isLarge ? "px-4 sm:px-6 py-3 sm:py-4" : "px-4 sm:px-5 py-2.5 sm:py-3"
           }`}
           whileHover={{ scale: isRedirectingIOS ? 1 : 1.02, y: isRedirectingIOS ? 0 : -2 }}
           whileTap={{ scale: isRedirectingIOS ? 1 : 0.98 }}
         >
           {/* Apple Icon */}
-          <svg viewBox="0 0 24 24" className={isLarge ? "w-8 h-8" : "w-7 h-7"} fill="currentColor">
+          <svg viewBox="0 0 24 24" className={isLarge ? "w-6 h-6 sm:w-8 sm:h-8" : "w-5 h-5 sm:w-7 sm:h-7"} fill="currentColor">
             <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
           </svg>
           <div className="text-left">
-            <span className={`block uppercase tracking-wider text-white/70 ${isLarge ? "text-xs" : "text-[10px]"}`}>
+            <span className={`block uppercase tracking-wider text-white/70 ${isLarge ? "text-[10px] sm:text-xs" : "text-[9px] sm:text-[10px]"}`}>
               GET IT ON
             </span>
-            <span className={`font-semibold ${isLarge ? "text-xl" : "text-lg"}`}>App Store</span>
+            <span className={`font-semibold ${isLarge ? "text-base sm:text-xl" : "text-sm sm:text-lg"}`}>App Store</span>
           </div>
         </motion.button>
       </div>

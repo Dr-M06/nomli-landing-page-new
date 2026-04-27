@@ -12,19 +12,19 @@ export function DownloadCta() {
     <section
       id="download"
       ref={ref}
-      className="relative py-24 sm:py-32 bg-white overflow-hidden"
+      className="relative py-14 sm:py-32 bg-white overflow-hidden"
     >
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto"
+          className="text-center max-w-2xl mx-auto rounded-[1.6rem] sm:rounded-none border border-[#ece8ff] sm:border-none bg-[#fcfbff] sm:bg-transparent px-4 py-8 sm:p-0"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-3">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-3">
             Get Nomli Mingle.
           </h2>
-          <p className="text-lg text-[#666] mb-10">
+          <p className="text-base sm:text-lg text-[#666] mb-7 sm:mb-10">
             Download free on the App Store and Google Play.
           </p>
           <StoreButtons size="large" className="justify-center" />

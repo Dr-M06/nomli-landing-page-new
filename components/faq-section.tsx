@@ -56,14 +56,14 @@ export function FaqSection() {
     <section
       id="faq"
       ref={ref}
-      className="relative py-20 sm:py-24 bg-[#fafafa] overflow-hidden"
+      className="relative py-14 sm:py-24 bg-[#fafafa] overflow-hidden"
     >
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          className="text-center mb-9 sm:mb-12"
         >
           <h2 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-2">
             FAQ

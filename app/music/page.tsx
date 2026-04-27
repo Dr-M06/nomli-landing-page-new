@@ -11,6 +11,12 @@ type Song = {
   artist: string
   genre: string | null
   url: string
+  cover_url?: string | null
+  artist_bio?: string | null
+  artist_username?: string | null
+  artist_avatar_url?: string | null
+  artist_youtube_url?: string | null
+  artist_spotify_url?: string | null
   duration_sec?: number | null
   play_count?: number | null
 }
@@ -21,6 +27,12 @@ type Submission = {
   artist: string
   genre: string | null
   url: string
+  cover_url?: string | null
+  artist_bio?: string | null
+  artist_username?: string | null
+  artist_avatar_url?: string | null
+  artist_youtube_url?: string | null
+  artist_spotify_url?: string | null
   duration_sec: number | null
   status: "pending" | "approved" | "rejected"
   submitted_by: string | null
@@ -69,10 +81,24 @@ function fmt(seconds: number) {
   return `${m}:${String(s).padStart(2, "0")}`
 }
 
+function slugifyArtist(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 function isAudioFile(file: File) {
   if (file.type?.startsWith("audio/")) return true
   const name = file.name.toLowerCase()
   return [".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac"].some((ext) => name.endsWith(ext))
+}
+
+function isImageFile(file: File) {
+  if (file.type?.startsWith("image/")) return true
+  const name = file.name.toLowerCase()
+  return [".jpg", ".jpeg", ".png", ".webp", ".gif"].some((ext) => name.endsWith(ext))
 }
 
 function audioBufferToWavBlob(buffer: AudioBuffer) {
@@ -186,12 +212,18 @@ export default function MusicPage() {
   const [discoverError, setDiscoverError] = useState("")
 
   const [profileName, setProfileName] = useState("")
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState("")
   const [userId, setUserId] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
 
   const [submitTitle, setSubmitTitle] = useState("")
   const [submitArtist, setSubmitArtist] = useState("Nomli Mingle User")
+  const [submitArtistBio, setSubmitArtistBio] = useState("")
+  const [submitArtistUsername, setSubmitArtistUsername] = useState("")
+  const [submitArtistAvatarUrl, setSubmitArtistAvatarUrl] = useState("")
+  const [submitArtistYoutubeUrl, setSubmitArtistYoutubeUrl] = useState("")
+  const [submitArtistSpotifyUrl, setSubmitArtistSpotifyUrl] = useState("")
   const [submitGenre, setSubmitGenre] = useState("Afrobeats")
   const [submitDurationSec, setSubmitDurationSec] = useState(String(MIN_SUBMISSION_CLIP_SECONDS))
   const [submitStartSec, setSubmitStartSec] = useState("0")
@@ -199,9 +231,15 @@ export default function MusicPage() {
   const [submitFile, setSubmitFile] = useState<File | null>(null)
   const [submitFilePreviewUrl, setSubmitFilePreviewUrl] = useState<string | null>(null)
   const [submitFileError, setSubmitFileError] = useState("")
+  const [submitCoverFile, setSubmitCoverFile] = useState<File | null>(null)
+  const [submitCoverPreviewUrl, setSubmitCoverPreviewUrl] = useState<string | null>(null)
+  const [submitCoverError, setSubmitCoverError] = useState("")
+  const [submitArtistAvatarUploading, setSubmitArtistAvatarUploading] = useState(false)
   const [splitBeforeUpload, setSplitBeforeUpload] = useState(true)
   const [submitRightsConfirmed, setSubmitRightsConfirmed] = useState(false)
   const [submitBusy, setSubmitBusy] = useState(false)
+  const [submitStep, setSubmitStep] = useState<1 | 2>(1)
+  const [hasSavedMusicProfile, setHasSavedMusicProfile] = useState(false)
 
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([])
   const [myLoading, setMyLoading] = useState(false)
@@ -244,7 +282,9 @@ export default function MusicPage() {
     setDiscoverLoading(true)
     setDiscoverError("")
     try {
-      const data = await authedFetch("/rest/v1/app_songs?select=id,title,artist,url")
+      const data = await authedFetch(
+        "/rest/v1/app_songs?select=id,title,artist,url,cover_url,artist_bio,artist_username,artist_avatar_url,artist_youtube_url,artist_spotify_url,genre,duration_sec,play_count"
+      )
       const normalized: Song[] = Array.isArray(data)
         ? data
             .filter((row) => row?.id && row?.title && row?.artist && row?.url)
@@ -253,6 +293,12 @@ export default function MusicPage() {
               title: String(row.title),
               artist: String(row.artist),
               url: String(row.url),
+              cover_url: typeof row.cover_url === "string" ? row.cover_url : null,
+              artist_bio: typeof row.artist_bio === "string" ? row.artist_bio : null,
+              artist_username: typeof row.artist_username === "string" ? row.artist_username : null,
+              artist_avatar_url: typeof row.artist_avatar_url === "string" ? row.artist_avatar_url : null,
+              artist_youtube_url: typeof row.artist_youtube_url === "string" ? row.artist_youtube_url : null,
+              artist_spotify_url: typeof row.artist_spotify_url === "string" ? row.artist_spotify_url : null,
               genre: typeof row.genre === "string" ? row.genre : null,
               duration_sec: typeof row.duration_sec === "number" ? row.duration_sec : 15,
               play_count: typeof row.play_count === "number" ? row.play_count : 0,
@@ -286,13 +332,52 @@ export default function MusicPage() {
       }
       setUserId(String(me.id))
       const name = String(me?.user_metadata?.full_name || me?.user_metadata?.name || me?.email || "Nomli User")
+      const avatar = String(me?.user_metadata?.avatar_url || me?.user_metadata?.picture || "")
       setProfileName(name)
+      setProfileAvatarUrl(avatar)
       if (!submitArtist || submitArtist === "Nomli Mingle User") setSubmitArtist(name)
+      if (!submitArtistUsername) setSubmitArtistUsername(name.toLowerCase().replace(/\s+/g, ""))
+      if (!submitArtistAvatarUrl && avatar) setSubmitArtistAvatarUrl(avatar)
 
-      const profileRows = await authedFetch(`/rest/v1/profiles?id=eq.${encodeURIComponent(String(me.id))}&select=id,is_admin,role`, {}, true)
+      const profileRows = await authedFetch(
+        `/rest/v1/profiles?id=eq.${encodeURIComponent(
+          String(me.id)
+        )}&select=*`,
+        {},
+        true
+      )
       const profile = Array.isArray(profileRows) && profileRows[0] ? profileRows[0] : null
       const admin = Boolean(profile?.is_admin || String(profile?.role || "").toLowerCase() === "admin")
       setIsAdmin(admin)
+      const profileAvatar = String(
+        profile?.avatar_url || profile?.photo_url || profile?.profile_image_url || profile?.image_url || ""
+      )
+      if (profileAvatar) {
+        setProfileAvatarUrl(profileAvatar)
+        if (!submitArtistAvatarUrl) setSubmitArtistAvatarUrl(profileAvatar)
+      }
+      const profileDisplayName = String(profile?.display_name || profile?.full_name || "")
+      if (profileDisplayName && (!submitArtist || submitArtist === "Nomli Mingle User")) {
+        setSubmitArtist(profileDisplayName)
+      }
+      const profileUsername = String(profile?.username || "")
+      if (profileUsername && !submitArtistUsername) {
+        setSubmitArtistUsername(profileUsername.replace(/^@/, ""))
+      }
+      const profileMusicBio = String(profile?.music_bio || profile?.bio || "")
+      const profileMusicYoutube = String(profile?.music_youtube_url || profile?.youtube_url || "")
+      const profileMusicSpotify = String(profile?.music_spotify_url || profile?.spotify_url || "")
+      if (profileMusicBio && !submitArtistBio) setSubmitArtistBio(profileMusicBio)
+      if (profileMusicYoutube && !submitArtistYoutubeUrl) setSubmitArtistYoutubeUrl(profileMusicYoutube)
+      if (profileMusicSpotify && !submitArtistSpotifyUrl) setSubmitArtistSpotifyUrl(profileMusicSpotify)
+      const savedProfileReady = Boolean(
+        profileUsername ||
+          profileAvatar ||
+          profileMusicBio ||
+          profileMusicYoutube ||
+          profileMusicSpotify
+      )
+      setHasSavedMusicProfile(savedProfileReady)
     } catch {
       // Keep unauthenticated fallback experience.
     } finally {
@@ -305,7 +390,9 @@ export default function MusicPage() {
     setMyLoading(true)
     try {
       const rows = await authedFetch(
-        `/rest/v1/app_song_submissions?submitted_by=eq.${encodeURIComponent(userId)}&select=id,title,artist,genre,url,duration_sec,status,submitted_by,created_at`,
+        `/rest/v1/app_song_submissions?submitted_by=eq.${encodeURIComponent(
+          userId
+        )}&select=id,title,artist,artist_bio,artist_username,artist_avatar_url,artist_youtube_url,artist_spotify_url,cover_url,genre,url,duration_sec,status,submitted_by,created_at`,
         {},
         true
       )
@@ -322,7 +409,7 @@ export default function MusicPage() {
     setQueueLoading(true)
     try {
       const rows = await authedFetch(
-        "/rest/v1/app_song_submissions?status=eq.pending&select=id,title,artist,genre,url,duration_sec,status,submitted_by,created_at",
+        "/rest/v1/app_song_submissions?status=eq.pending&select=id,title,artist,artist_bio,artist_username,artist_avatar_url,artist_youtube_url,artist_spotify_url,cover_url,genre,url,duration_sec,status,submitted_by,created_at",
         {},
         true
       )
@@ -400,12 +487,17 @@ export default function MusicPage() {
   const totalSec = Math.max(1, Math.round((durationMs || (activeSong?.duration_sec ?? 15) * 1000) / 1000))
   const activeGenre = activeSong ? deriveGenre(activeSong).toUpperCase() : ""
   const heroLabel = activeSong ? (activeGenre === "OTHER" ? "TRENDING NOW" : `${activeGenre} NOW`) : "NOMLI MUSIC"
-  const heroSubLabel = activeSong ? `${activeSong.artist} · Live Discover` : "Live Discover"
+  const heroSubLabel = activeSong
+    ? `${activeSong.artist_username ? `@${activeSong.artist_username}` : activeSong.artist} · Live Discover`
+    : "Live Discover"
 
   const playSong = async (song: Song, options?: { fromHistory?: boolean; triedIds?: Set<string> }) => {
     const audio = audioRef.current
     if (!audio) return
-    if (activeSongId === song.id) {
+    const loadedSrc = audio.src || ""
+    const songUrl = song.url || ""
+    const sameSongLoaded = loadedSrc.length > 0 && loadedSrc.includes(songUrl)
+    if (activeSongId === song.id && sameSongLoaded) {
       if (isPlaying) {
         audio.pause()
         setIsPlaying(false)
@@ -528,6 +620,12 @@ export default function MusicPage() {
     artist: item.artist,
     genre: item.genre,
     url: item.url,
+    cover_url: item.cover_url ?? null,
+    artist_bio: item.artist_bio ?? null,
+    artist_username: item.artist_username ?? null,
+    artist_avatar_url: item.artist_avatar_url ?? null,
+    artist_youtube_url: item.artist_youtube_url ?? null,
+    artist_spotify_url: item.artist_spotify_url ?? null,
     duration_sec: item.duration_sec ?? 15,
     play_count: 0,
   })
@@ -583,8 +681,9 @@ export default function MusicPage() {
   useEffect(() => {
     return () => {
       if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
+      if (submitCoverPreviewUrl) URL.revokeObjectURL(submitCoverPreviewUrl)
     }
-  }, [submitFilePreviewUrl])
+  }, [submitFilePreviewUrl, submitCoverPreviewUrl])
 
   useEffect(() => {
     if (!songs.length || activeSongId) return
@@ -600,8 +699,8 @@ export default function MusicPage() {
       alert("Add title, artist, and audio file.")
       return
     }
-    if (submitFileError) {
-      alert(submitFileError)
+    if (submitFileError || submitCoverError) {
+      alert(submitFileError || submitCoverError)
       return
     }
     if (!submitRightsConfirmed) {
@@ -641,28 +740,91 @@ export default function MusicPage() {
 
       if (!PUBLIC_SUPABASE_URL) throw new Error("Upload service unavailable")
       const publicUrl = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/app-music/${filePath}`
-      await authedFetch("/rest/v1/app_song_submissions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          title: submitTitle.trim(),
-          artist: submitArtist.trim(),
-          genre: submitGenre,
-          url: publicUrl,
-          duration_sec: clipSeconds,
-          status: "pending",
-          submitted_by: userId,
-        }),
-      }, true)
+      let coverPublicUrl: string | null = null
+      if (submitCoverFile) {
+        const coverForm = new FormData()
+        coverForm.append("file", submitCoverFile)
+        coverForm.append("folder", "music/covers")
+        coverForm.append("baseName", safeTitle || "track-cover")
+        const coverUploadRes = await fetch("/api/upload/bunny-image", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: coverForm,
+        })
+        const coverUploadBody = await coverUploadRes.json().catch(() => null)
+        if (!coverUploadRes.ok || !coverUploadBody?.url) {
+          throw new Error(coverUploadBody?.error || "Cover upload failed")
+        }
+        coverPublicUrl = String(coverUploadBody.url)
+      }
+      const submissionPayload = {
+        title: submitTitle.trim(),
+        artist: submitArtist.trim(),
+        genre: submitGenre,
+        artist_bio: submitArtistBio.trim() || null,
+        artist_username: submitArtistUsername.trim().replace(/^@/, "") || null,
+        artist_avatar_url: submitArtistAvatarUrl.trim() || null,
+        artist_youtube_url: submitArtistYoutubeUrl.trim() || null,
+        artist_spotify_url: submitArtistSpotifyUrl.trim() || null,
+        cover_url: coverPublicUrl,
+        url: publicUrl,
+        duration_sec: clipSeconds,
+        status: "pending",
+        submitted_by: userId,
+      }
+      try {
+        await authedFetch("/rest/v1/app_song_submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify(submissionPayload),
+        }, true)
+      } catch (err: any) {
+        const message = String(err?.message || "")
+        if (!message.toLowerCase().includes("artist_bio")) throw err
+        await authedFetch("/rest/v1/app_song_submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            title: submissionPayload.title,
+            artist: submissionPayload.artist,
+            genre: submissionPayload.genre,
+            artist_username: submissionPayload.artist_username,
+            artist_avatar_url: submissionPayload.artist_avatar_url,
+            artist_youtube_url: submissionPayload.artist_youtube_url,
+            artist_spotify_url: submissionPayload.artist_spotify_url,
+            cover_url: submissionPayload.cover_url,
+            url: submissionPayload.url,
+            duration_sec: submissionPayload.duration_sec,
+            status: submissionPayload.status,
+            submitted_by: submissionPayload.submitted_by,
+          }),
+        }, true)
+      }
 
       setSubmitTitle("")
+      if (!hasSavedMusicProfile) {
+        setSubmitArtistBio("")
+        setSubmitArtistUsername("")
+        setSubmitArtistAvatarUrl(profileAvatarUrl || "")
+        setSubmitArtistYoutubeUrl("")
+        setSubmitArtistSpotifyUrl("")
+      }
       setSubmitFile(null)
       if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
       setSubmitFilePreviewUrl(null)
       setSubmitFileError("")
+      setSubmitCoverFile(null)
+      if (submitCoverPreviewUrl) URL.revokeObjectURL(submitCoverPreviewUrl)
+      setSubmitCoverPreviewUrl(null)
+      setSubmitCoverError("")
       setSubmitStartSec("0")
       setSelectedAudioDurationSec(null)
       setSubmitDurationSec(String(MIN_SUBMISSION_CLIP_SECONDS))
@@ -677,23 +839,102 @@ export default function MusicPage() {
     }
   }
 
+  const goToSubmitStepTwo = () => {
+    if (!submitTitle.trim()) {
+      alert("Add track title first.")
+      return
+    }
+    if (!submitArtist.trim()) {
+      alert("Add artist name first.")
+      return
+    }
+    setSubmitStep(2)
+  }
+
+  const handleSubmitArtistAvatarUpload = async (file: File | null) => {
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose a valid image file.")
+      return
+    }
+    const token = getAccessToken()
+    if (!token) {
+      alert("Please login first.")
+      return
+    }
+    setSubmitArtistAvatarUploading(true)
+    try {
+      const form = new FormData()
+      form.append("file", file)
+      form.append("folder", "avatars")
+      form.append("baseName", submitArtistUsername || submitArtist || "artist-avatar")
+      const response = await fetch("/api/upload/bunny-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || "Artist avatar upload failed")
+      }
+      setSubmitArtistAvatarUrl(String(payload.url))
+    } catch (err: any) {
+      alert(err?.message || "Artist avatar upload failed.")
+    } finally {
+      setSubmitArtistAvatarUploading(false)
+    }
+  }
+
   const adminApprove = async (item: Submission) => {
     setAdminActionBusyId(item.id)
     try {
-      await authedFetch("/rest/v1/app_songs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          title: item.title,
-          artist: item.artist,
-          url: item.url,
-          genre: item.genre,
-          duration_sec: item.duration_sec ?? 15,
-        }),
-      }, true)
+      const approvedPayload = {
+        title: item.title,
+        artist: item.artist,
+        url: item.url,
+        cover_url: item.cover_url || null,
+        artist_bio: item.artist_bio || null,
+        artist_username: item.artist_username || null,
+        artist_avatar_url: item.artist_avatar_url || null,
+        artist_youtube_url: item.artist_youtube_url || null,
+        artist_spotify_url: item.artist_spotify_url || null,
+        genre: item.genre,
+        duration_sec: item.duration_sec ?? 15,
+      }
+      try {
+        await authedFetch("/rest/v1/app_songs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify(approvedPayload),
+        }, true)
+      } catch (err: any) {
+        const message = String(err?.message || "")
+        if (!message.toLowerCase().includes("artist_bio")) throw err
+        await authedFetch("/rest/v1/app_songs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            title: approvedPayload.title,
+            artist: approvedPayload.artist,
+            url: approvedPayload.url,
+            cover_url: approvedPayload.cover_url,
+            artist_username: approvedPayload.artist_username,
+            artist_avatar_url: approvedPayload.artist_avatar_url,
+            artist_youtube_url: approvedPayload.artist_youtube_url,
+            artist_spotify_url: approvedPayload.artist_spotify_url,
+            genre: approvedPayload.genre,
+            duration_sec: approvedPayload.duration_sec,
+          }),
+        }, true)
+      }
       await authedFetch(`/rest/v1/app_song_submissions?id=eq.${encodeURIComponent(item.id)}`, {
         method: "PATCH",
         headers: {
@@ -765,6 +1006,8 @@ export default function MusicPage() {
     const nextArtist = window.prompt("Edit artist name", song.artist)?.trim()
     if (!nextArtist) return
     const nextGenre = window.prompt("Edit genre", song.genre || "Other")?.trim() || "Other"
+    const nextCoverRaw = window.prompt("Edit cover URL (leave blank to clear)", song.cover_url || "") ?? ""
+    const nextCoverUrl = nextCoverRaw.trim()
     const nextDurationRaw = window.prompt("Edit duration (seconds)", String(song.duration_sec || 15))?.trim()
     const nextDuration = Number(nextDurationRaw)
     if (!Number.isFinite(nextDuration) || nextDuration <= 0) {
@@ -784,6 +1027,7 @@ export default function MusicPage() {
           title: nextTitle,
           artist: nextArtist,
           genre: nextGenre,
+          cover_url: nextCoverUrl || null,
           duration_sec: Math.round(nextDuration),
         }),
       }, true)
@@ -823,8 +1067,29 @@ export default function MusicPage() {
               <div className="rounded-[1.3rem] bg-gradient-to-b from-[#1f1c45] to-[#13152f] p-4 text-white min-h-[295px]">
                 <p className="text-xs text-white/75 mb-3">Now playing</p>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <div className="h-24 rounded-xl bg-gradient-to-br from-[#2f2c62] to-[#1c1d43] flex items-center justify-center">
-                    <Music4 className="h-8 w-8 text-white/80" />
+                  <div className="relative h-24 rounded-xl bg-gradient-to-br from-[#2f2c62] via-[#2a3f74] to-[#1c1d43] flex items-center justify-center overflow-hidden">
+                    {activeSong?.cover_url ? (
+                      <img src={activeSong.cover_url} alt={activeSong.title} className="absolute inset-0 h-full w-full object-cover" />
+                    ) : null}
+                    <div className="absolute inset-0 bg-black/25" />
+                    <div className="absolute -top-8 -left-8 h-20 w-20 rounded-full bg-violet-300/25 blur-2xl animate-pulse" />
+                    <div className="absolute -bottom-8 -right-6 h-20 w-20 rounded-full bg-cyan-300/20 blur-2xl animate-pulse" />
+                    <div className={`absolute h-[3.6rem] w-[3.6rem] rounded-full ${isPlaying ? "animate-[spin_2.2s_linear_infinite]" : ""}`}>
+                      <div className="h-full w-full rounded-full bg-[conic-gradient(from_0deg,#67e8f9,#a78bfa,#f472b6,#67e8f9)] opacity-90" />
+                    </div>
+                    <div className={`absolute h-[3.1rem] w-[3.1rem] rounded-full border border-white/20 ${isPlaying ? "animate-pulse" : ""}`} />
+                    <div
+                      className={`relative h-12 w-12 rounded-full flex items-center justify-center border border-white/25 ${
+                        isPlaying ? "animate-[spin_4.6s_linear_infinite]" : ""
+                      }`}
+                      style={{
+                        background:
+                          "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), rgba(255,255,255,0.06) 38%, rgba(255,255,255,0.14) 62%, rgba(255,255,255,0.05) 100%)",
+                      }}
+                    >
+                      <span className="absolute h-3 w-3 rounded-full bg-[#1f1c45] border border-white/35 z-10" />
+                      <img src="/icon.png" alt="Nomli Mingle" className="h-7 w-7 object-contain opacity-95" />
+                    </div>
                   </div>
                   <p className="mt-3 text-sm font-semibold truncate">{activeSong?.title || "Select a track"}</p>
                   <p className="text-xs text-white/65 truncate">{activeSong?.artist || "Nomli Music"}</p>
@@ -910,6 +1175,16 @@ export default function MusicPage() {
                   <div className="absolute -bottom-8 left-8 w-24 h-24 rounded-full bg-cyan-300/15 blur-2xl animate-[hero-orb_7s_ease-in-out_infinite_0.5s]" />
                   <p className="relative text-xl sm:text-2xl font-bold leading-none animate-[hero-text_700ms_ease-out]">{heroLabel}</p>
                   <p className="relative text-xs text-white/80 mt-1 animate-[hero-text_900ms_ease-out]">{heroSubLabel}</p>
+                  {activeSong ? (
+                    <Link
+                      href={`/music/artist/${encodeURIComponent(
+                        slugifyArtist(activeSong.artist_username || activeSong.artist || "artist")
+                      )}?name=${encodeURIComponent(activeSong.artist)}`}
+                      className="relative mt-1 inline-flex w-fit rounded-full border border-white/30 bg-white/10 px-1.5 py-0.5 text-[9px] font-medium text-white hover:bg-white/15"
+                    >
+                      View profile
+                    </Link>
+                  ) : null}
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-sm sm:text-base font-semibold text-white">Trending right now</h2>
@@ -937,6 +1212,9 @@ export default function MusicPage() {
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-semibold text-white/45 w-5">{String(index + 1).padStart(2, "0")}</span>
+                          {song.cover_url ? (
+                            <img src={song.cover_url} alt={song.title} className="h-8 w-8 rounded object-cover border border-white/15" />
+                          ) : null}
                           <div className="min-w-0 flex-1">
                             <p className="text-xs sm:text-sm font-semibold text-white truncate">{song.title}</p>
                             <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
@@ -999,141 +1277,301 @@ export default function MusicPage() {
         ) : null}
         {userId ? (
           <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSubmitStep(1)}
+                className={`rounded-full px-3 py-1 text-[11px] font-semibold border ${
+                  submitStep === 1 ? "bg-[#D6526A] border-[#D6526A] text-white" : "border-white/15 text-white/65"
+                }`}
+              >
+                1. Track Info
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubmitStep(2)}
+                className={`rounded-full px-3 py-1 text-[11px] font-semibold border ${
+                  submitStep === 2 ? "bg-[#D6526A] border-[#D6526A] text-white" : "border-white/15 text-white/65"
+                }`}
+              >
+                2. Upload & Submit
+              </button>
+            </div>
+            <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2.5">
+              <p className="text-[11px] text-white/55 mb-2">Auto-fetched from your Nomli account</p>
+              <div className="flex items-center gap-2.5">
+                {profileAvatarUrl ? (
+                  <img
+                    src={profileAvatarUrl}
+                    alt="Profile avatar"
+                    className="h-9 w-9 rounded-full object-cover border border-white/15"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full border border-white/15 bg-white/10 flex items-center justify-center text-xs font-semibold text-white/80">
+                    {(profileName || "N").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{profileName || "Nomli User"}</p>
+                  <p className="text-[11px] text-white/60 truncate">{submitArtist || "Nomli Mingle User"}</p>
+                </div>
+              </div>
+            </div>
             <input
               value={submitTitle}
               onChange={(e) => setSubmitTitle(e.target.value)}
               placeholder="Track title"
               className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
             />
-            <input
-              value={submitArtist}
-              onChange={(e) => setSubmitArtist(e.target.value)}
-              placeholder="Artist name"
-              className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={submitGenre}
-                onChange={(e) => setSubmitGenre(e.target.value)}
-                className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
-              >
-                {DISCOVER_GENRES.filter((x) => x !== "All").map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={submitDurationSec}
-                onChange={(e) => setSubmitDurationSec(e.target.value)}
-                type="number"
-                min={MIN_SUBMISSION_CLIP_SECONDS}
-                step={1}
-                placeholder={`Clip seconds (min ${MIN_SUBMISSION_CLIP_SECONDS})`}
-                className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
-              />
-            </div>
-            <AudioSlicer
-              startSec={Math.max(0, Number(submitStartSec) || 0)}
-              durationSec={Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}
-              totalDurationSec={selectedAudioDurationSec}
-              previewUrl={submitFilePreviewUrl}
-              minDurationSec={MIN_SUBMISSION_CLIP_SECONDS}
-              onChangeStartSec={(value) => setSubmitStartSec(String(value))}
-              onChangeDurationSec={(value) => setSubmitDurationSec(String(value))}
-              disabled={!splitBeforeUpload}
-            />
-            <label className="flex items-center gap-2 rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-xs text-white/75">
-              <input
-                type="checkbox"
-                checked={splitBeforeUpload}
-                onChange={(e) => setSplitBeforeUpload(e.target.checked)}
-                className="h-4 w-4 rounded border-white/30 bg-transparent"
-              />
-              <span>
-                Auto-split before upload (uploads at least {Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}s clip)
-              </span>
-            </label>
-            <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2">
-              <p className="mb-2 text-xs text-white/65">Audio file (required): MP3, M4A, AAC, WAV, OGG, FLAC</p>
-              <input
-                type="file"
-                accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null
-                  if (!file) {
-                    setSubmitFile(null)
-                    setSubmitFileError("")
-                    setSelectedAudioDurationSec(null)
-                    if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
-                    setSubmitFilePreviewUrl(null)
-                    return
-                  }
-                  if (!isAudioFile(file)) {
-                    setSubmitFile(null)
-                    setSubmitFileError("Please choose a valid audio file.")
-                    setSelectedAudioDurationSec(null)
-                    if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
-                    setSubmitFilePreviewUrl(null)
-                    e.currentTarget.value = ""
-                    return
-                  }
-                  setSubmitFile(file)
-                  setSubmitFileError("")
-
-                  const objectUrl = URL.createObjectURL(file)
-                  if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
-                  setSubmitFilePreviewUrl(objectUrl)
-                  const probe = document.createElement("audio")
-                  probe.preload = "metadata"
-                  probe.onloadedmetadata = () => {
-                    const duration = Number.isFinite(probe.duration) ? Math.floor(probe.duration) : null
-                    setSelectedAudioDurationSec(duration)
-                    if (duration !== null) {
-                      const currentStart = Number(submitStartSec) || 0
-                      if (currentStart >= duration) {
-                        setSubmitStartSec("0")
+            {submitStep === 1 ? (
+              <>
+                <input
+                  value={submitArtist}
+                  onChange={(e) => setSubmitArtist(e.target.value)}
+                  placeholder="Artist name"
+                  className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                />
+                {hasSavedMusicProfile ? (
+                  <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2.5">
+                    <p className="text-xs text-white/80">Using your saved music profile.</p>
+                    <p className="mt-1 text-[11px] text-white/60">
+                      Username, avatar, bio, and social links are auto-applied to new uploads.
+                    </p>
+                    <Link
+                      href="/profile"
+                      className="inline-flex mt-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-medium text-white"
+                    >
+                      Manage profile
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <textarea
+                      value={submitArtistBio}
+                      onChange={(e) => setSubmitArtistBio(e.target.value)}
+                      placeholder="Artist bio (optional, like Spotify/YouTube Music)"
+                      rows={3}
+                      className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A] resize-none"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        value={submitArtistUsername}
+                        onChange={(e) => setSubmitArtistUsername(e.target.value)}
+                        placeholder="Artist username (e.g. @nomliartist)"
+                        className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                      />
+                      <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm">
+                        <p className="text-[11px] text-white/60 mb-1">Artist avatar image</p>
+                        <input
+                          type="file"
+                          accept="image/*,.jpg,.jpeg,.png,.webp,.gif"
+                          onChange={(e) => void handleSubmitArtistAvatarUpload(e.target.files?.[0] || null)}
+                          className="w-full text-sm"
+                        />
+                        <p className="mt-1 text-[11px] text-white/60">
+                          {submitArtistAvatarUploading
+                            ? "Uploading avatar..."
+                            : submitArtistAvatarUrl
+                              ? "Avatar uploaded."
+                              : "No avatar uploaded yet."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        value={submitArtistYoutubeUrl}
+                        onChange={(e) => setSubmitArtistYoutubeUrl(e.target.value)}
+                        placeholder="YouTube profile URL"
+                        className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                      />
+                      <input
+                        value={submitArtistSpotifyUrl}
+                        onChange={(e) => setSubmitArtistSpotifyUrl(e.target.value)}
+                        placeholder="Spotify profile URL"
+                        className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={submitGenre}
+                    onChange={(e) => setSubmitGenre(e.target.value)}
+                    className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                  >
+                    {DISCOVER_GENRES.filter((x) => x !== "All").map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={submitDurationSec}
+                    onChange={(e) => setSubmitDurationSec(e.target.value)}
+                    type="number"
+                    min={MIN_SUBMISSION_CLIP_SECONDS}
+                    step={1}
+                    placeholder={`Clip seconds (min ${MIN_SUBMISSION_CLIP_SECONDS})`}
+                    className="w-full rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-sm outline-none focus:border-[#D6526A]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={goToSubmitStepTwo}
+                  className="w-full rounded-md bg-[#D6526A] px-3 py-2.5 text-sm font-semibold"
+                >
+                  Continue to Upload
+                </button>
+              </>
+            ) : (
+              <>
+                <AudioSlicer
+                  startSec={Math.max(0, Number(submitStartSec) || 0)}
+                  durationSec={Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}
+                  totalDurationSec={selectedAudioDurationSec}
+                  previewUrl={submitFilePreviewUrl}
+                  minDurationSec={MIN_SUBMISSION_CLIP_SECONDS}
+                  onChangeStartSec={(value) => setSubmitStartSec(String(value))}
+                  onChangeDurationSec={(value) => setSubmitDurationSec(String(value))}
+                  disabled={!splitBeforeUpload}
+                />
+                <label className="flex items-center gap-2 rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-xs text-white/75">
+                  <input
+                    type="checkbox"
+                    checked={splitBeforeUpload}
+                    onChange={(e) => setSplitBeforeUpload(e.target.checked)}
+                    className="h-4 w-4 rounded border-white/30 bg-transparent"
+                  />
+                  <span>
+                    Auto-split before upload (uploads at least {Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}s clip)
+                  </span>
+                </label>
+                <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2">
+                  <p className="mb-2 text-xs text-white/65">Audio file (required): MP3, M4A, AAC, WAV, OGG, FLAC</p>
+                  <input
+                    type="file"
+                    accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      if (!file) {
+                        setSubmitFile(null)
+                        setSubmitFileError("")
+                        setSelectedAudioDurationSec(null)
+                        if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
+                        setSubmitFilePreviewUrl(null)
+                        return
                       }
-                    }
-                  }
-                  probe.onerror = () => {
-                    setSelectedAudioDurationSec(null)
-                  }
-                  probe.src = objectUrl
-                }}
-                className="w-full text-sm"
-              />
-              {submitFile ? <p className="mt-2 text-[11px] text-emerald-300">Selected: {submitFile.name}</p> : null}
-              {selectedAudioDurationSec !== null ? (
-                <p className="mt-1 text-[11px] text-white/60">Audio length: {selectedAudioDurationSec}s</p>
-              ) : null}
-              {splitBeforeUpload ? (
-                <p className="mt-1 text-[11px] text-white/60">
-                  Clip preview: {Math.max(0, Number(submitStartSec) || 0)}s to{" "}
-                  {Math.max(0, Number(submitStartSec) || 0) + Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}s
-                </p>
-              ) : null}
-              {submitFileError ? <p className="mt-2 text-[11px] text-red-300">{submitFileError}</p> : null}
-            </div>
-            <label className="flex items-start gap-2 rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-xs text-white/75">
-              <input
-                type="checkbox"
-                checked={submitRightsConfirmed}
-                onChange={(e) => setSubmitRightsConfirmed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-white/30 bg-transparent"
-              />
-              <span>
-                I confirm this is my original track, or I have full legal rights and permission to upload and distribute this audio on Nomli Mingle.
-              </span>
-            </label>
-            <button
-              type="button"
-              disabled={submitBusy || !submitRightsConfirmed}
-              onClick={() => void handleSubmitTrack()}
-              className="w-full rounded-md bg-[#D6526A] px-3 py-2.5 text-sm font-semibold disabled:opacity-60"
-            >
-              {submitBusy ? "Submitting..." : "Submit for Review"}
-            </button>
+                      if (!isAudioFile(file)) {
+                        setSubmitFile(null)
+                        setSubmitFileError("Please choose a valid audio file.")
+                        setSelectedAudioDurationSec(null)
+                        if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
+                        setSubmitFilePreviewUrl(null)
+                        e.currentTarget.value = ""
+                        return
+                      }
+                      setSubmitFile(file)
+                      setSubmitFileError("")
+
+                      const objectUrl = URL.createObjectURL(file)
+                      if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
+                      setSubmitFilePreviewUrl(objectUrl)
+                      const probe = document.createElement("audio")
+                      probe.preload = "metadata"
+                      probe.onloadedmetadata = () => {
+                        const duration = Number.isFinite(probe.duration) ? Math.floor(probe.duration) : null
+                        setSelectedAudioDurationSec(duration)
+                        if (duration !== null) {
+                          const currentStart = Number(submitStartSec) || 0
+                          if (currentStart >= duration) {
+                            setSubmitStartSec("0")
+                          }
+                        }
+                      }
+                      probe.onerror = () => {
+                        setSelectedAudioDurationSec(null)
+                      }
+                      probe.src = objectUrl
+                    }}
+                    className="w-full text-sm"
+                  />
+                  {submitFile ? <p className="mt-2 text-[11px] text-emerald-300">Selected: {submitFile.name}</p> : null}
+                  {selectedAudioDurationSec !== null ? (
+                    <p className="mt-1 text-[11px] text-white/60">Audio length: {selectedAudioDurationSec}s</p>
+                  ) : null}
+                  {splitBeforeUpload ? (
+                    <p className="mt-1 text-[11px] text-white/60">
+                      Clip preview: {Math.max(0, Number(submitStartSec) || 0)}s to{" "}
+                      {Math.max(0, Number(submitStartSec) || 0) + Math.max(MIN_SUBMISSION_CLIP_SECONDS, Number(submitDurationSec) || MIN_SUBMISSION_CLIP_SECONDS)}s
+                    </p>
+                  ) : null}
+                  {submitFileError ? <p className="mt-2 text-[11px] text-red-300">{submitFileError}</p> : null}
+                </div>
+                <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2">
+                  <p className="mb-2 text-xs text-white/65">Song cover avatar (optional): JPG, PNG, WEBP</p>
+                  <input
+                    type="file"
+                    accept="image/*,.jpg,.jpeg,.png,.webp,.gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      if (!file) {
+                        setSubmitCoverFile(null)
+                        setSubmitCoverError("")
+                        if (submitCoverPreviewUrl) URL.revokeObjectURL(submitCoverPreviewUrl)
+                        setSubmitCoverPreviewUrl(null)
+                        return
+                      }
+                      if (!isImageFile(file)) {
+                        setSubmitCoverFile(null)
+                        setSubmitCoverError("Please choose a valid image file.")
+                        if (submitCoverPreviewUrl) URL.revokeObjectURL(submitCoverPreviewUrl)
+                        setSubmitCoverPreviewUrl(null)
+                        e.currentTarget.value = ""
+                        return
+                      }
+                      setSubmitCoverFile(file)
+                      setSubmitCoverError("")
+                      const objectUrl = URL.createObjectURL(file)
+                      if (submitCoverPreviewUrl) URL.revokeObjectURL(submitCoverPreviewUrl)
+                      setSubmitCoverPreviewUrl(objectUrl)
+                    }}
+                    className="w-full text-sm"
+                  />
+                  {submitCoverPreviewUrl ? (
+                    <img src={submitCoverPreviewUrl} alt="Cover preview" className="mt-2 h-16 w-16 rounded object-cover border border-white/15" />
+                  ) : null}
+                  {submitCoverError ? <p className="mt-2 text-[11px] text-red-300">{submitCoverError}</p> : null}
+                </div>
+                <label className="flex items-start gap-2 rounded-md border border-white/10 bg-[#141014] px-3 py-2.5 text-xs text-white/75">
+                  <input
+                    type="checkbox"
+                    checked={submitRightsConfirmed}
+                    onChange={(e) => setSubmitRightsConfirmed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-white/30 bg-transparent"
+                  />
+                  <span>
+                    I confirm this is my original track, or I have full legal rights and permission to upload and distribute this audio on Nomli Mingle.
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSubmitStep(1)}
+                    className="w-full rounded-md border border-white/20 px-3 py-2.5 text-sm font-semibold text-white/80"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={submitBusy || !submitRightsConfirmed}
+                    onClick={() => void handleSubmitTrack()}
+                    className="w-full rounded-md bg-[#D6526A] px-3 py-2.5 text-sm font-semibold disabled:opacity-60"
+                  >
+                    {submitBusy ? "Submitting..." : "Submit for Review"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : null}
       </div>
@@ -1146,6 +1584,14 @@ export default function MusicPage() {
         <div className="flex items-center gap-2">
           <UserCircle2 className="h-4 w-4 text-[#E07A8F]" />
           <h2 className="text-sm font-semibold">My Uploads</h2>
+        </div>
+        <div className="mt-3">
+          <Link
+            href="/profile"
+            className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15"
+          >
+            Open User Profile
+          </Link>
         </div>
         <p className="mt-2 text-xs text-white/60">{profileName ? `Signed in as ${profileName}` : "Login to see your uploads."}</p>
         {myLoading ? <p className="mt-4 text-sm text-white/50">Loading your submissions...</p> : null}
@@ -1320,25 +1766,27 @@ export default function MusicPage() {
         </Link>
       </header>
 
-      <div className="px-3 pt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[
-          { key: "discover", label: "Discover" },
-          { key: "submit", label: "Submit" },
-          { key: "dashboard", label: "Dashboard" },
-          { key: "admin", label: "Admin" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key as TabKey)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full border text-[11px] font-semibold ${
-              activeTab === tab.key ? "bg-[#D6526A] border-[#D6526A] text-white" : "border-white/10 text-white/65"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {userId ? (
+        <div className="px-3 pt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {[
+            { key: "discover", label: "Discover" },
+            { key: "submit", label: "Submit" },
+            { key: "dashboard", label: "Dashboard" },
+            ...(isAdmin ? [{ key: "admin", label: "Admin" }] : []),
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key as TabKey)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full border text-[11px] font-semibold ${
+                activeTab === tab.key ? "bg-[#D6526A] border-[#D6526A] text-white" : "border-white/10 text-white/65"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {activeTab === "discover" ? renderDiscover() : null}
       {activeTab === "submit" ? renderSubmit() : null}

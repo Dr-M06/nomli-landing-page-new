@@ -11,7 +11,7 @@ export function PhoneMockup() {
 
       {/* Main Phone */}
       <motion.div className="relative z-10 animate-float" whileHover={{ scale: 1.02 }} transition={{ duration: 0.3 }}>
-        <div className="relative w-[280px] sm:w-[320px] h-[560px] sm:h-[640px]">
+        <div className="relative w-[240px] sm:w-[320px] h-[500px] sm:h-[640px]">
           {/* Phone Frame */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-[3px]">
             <div className="w-full h-full bg-gray-950 rounded-[2.8rem] overflow-hidden relative">
@@ -104,7 +104,7 @@ export function PhoneMockup() {
 
       {/* Floating UI Elements */}
       <motion.div
-        className="absolute -top-4 -right-4 glass rounded-2xl p-3 z-20"
+        className="absolute -top-4 -right-4 glass rounded-2xl p-3 z-20 hidden sm:block"
         animate={{ y: [0, -10, 0] }}
         transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
       >
@@ -117,7 +117,7 @@ export function PhoneMockup() {
       </motion.div>
 
       <motion.div
-        className="absolute bottom-20 -left-8 glass rounded-2xl p-3 z-20"
+        className="absolute bottom-20 -left-8 glass rounded-2xl p-3 z-20 hidden sm:block"
         animate={{ y: [0, 10, 0] }}
         transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: 1 }}
       >

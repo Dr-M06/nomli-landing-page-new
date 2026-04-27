@@ -54,10 +54,10 @@ export function Header() {
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "glass py-3" : "bg-transparent py-5"
+          isScrolled ? "glass py-2.5 sm:py-3" : "bg-transparent py-3.5 sm:py-5"
         }`}
       >
-        <div className="container mx-auto px-6 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between">
           <motion.a
             href="/"
             className="flex items-center gap-2"
@@ -75,7 +75,7 @@ export function Header() {
                 unoptimized
               />
             </div>
-            <span className="text-base font-bold text-foreground">Nomli Mingle</span>
+            <span className="text-sm sm:text-base font-bold text-foreground">Nomli Mingle</span>
           </motion.a>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -130,9 +130,10 @@ export function Header() {
           </nav>
 
           <motion.button
-            className="md:hidden text-foreground p-2"
+            className="md:hidden text-foreground p-2 -mr-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             whileTap={{ scale: 0.95 }}
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </motion.button>
@@ -145,9 +146,13 @@ export function Header() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 glass pt-24 px-6 md:hidden"
+            className="fixed inset-0 z-40 bg-[#0b0c16]/95 backdrop-blur-xl pt-20 px-5 md:hidden"
           >
-            <nav className="flex flex-col gap-6">
+            <nav className="flex flex-col gap-5">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 mb-1">
+                <p className="text-xs text-white/70">Nomli Mingle</p>
+                <p className="text-sm text-white font-medium">Choose where to go</p>
+              </div>
               <Link
                 href="/about"
                 className="text-xl font-medium text-foreground"
@@ -161,6 +166,20 @@ export function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 FAQ
+              </Link>
+              <Link
+                href="/terms"
+                className="text-xl font-medium text-foreground"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-xl font-medium text-foreground"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Privacy
               </Link>
               <a
                 href="https://wallet.nomlimingle.com"
