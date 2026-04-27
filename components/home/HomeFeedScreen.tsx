@@ -12,7 +12,10 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   DeviceEventEmitter,
+  Animated,
+  PanResponder,
 } from 'react-native';
+import { Radio } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -90,7 +93,7 @@ function discoveryOrderKey(postId: string, salt: number): number {
 type HomeFeedRow = Post;
 
 export default function HomeFeedScreen() {
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const router = useRouter();
   const { postId: postIdParam } = useLocalSearchParams<{ postId?: string }>();
   const insets = useSafeAreaInsets();
@@ -1077,6 +1080,71 @@ export default function HomeFeedScreen() {
 
   const showFullscreenFeed = displayedPosts.length > 0;
   const showInitialSkeleton = loading && posts.length === 0;
+  const FAB_SIZE = 46;
+  const FAB_MARGIN = 10;
+  const fabMinX = FAB_MARGIN;
+  const fabMaxX = Math.max(FAB_MARGIN, windowWidth - FAB_SIZE - FAB_MARGIN);
+  const fabMinY = insets.top + FAB_MARGIN;
+  const fabMaxY = Math.max(fabMinY, windowHeight - FAB_SIZE - (tabReserve + FAB_MARGIN));
+  const fabPosRef = useRef({
+    x: fabMaxX,
+    y: fabMaxY,
+  });
+  const fabPan = useRef(new Animated.ValueXY(fabPosRef.current)).current;
+  const dragStartRef = useRef({ x: fabPosRef.current.x, y: fabPosRef.current.y });
+
+  const clampFabPosition = useCallback(
+    (x: number, y: number) => ({
+      x: Math.min(fabMaxX, Math.max(fabMinX, x)),
+      y: Math.min(fabMaxY, Math.max(fabMinY, y)),
+    }),
+    [fabMaxX, fabMinX, fabMaxY, fabMinY]
+  );
+
+  useEffect(() => {
+    const clamped = clampFabPosition(fabPosRef.current.x, fabPosRef.current.y);
+    fabPosRef.current = clamped;
+    fabPan.setValue(clamped);
+  }, [clampFabPosition, fabPan]);
+
+  const liveFabResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2,
+      onPanResponderGrant: () => {
+        dragStartRef.current = { ...fabPosRef.current };
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const next = clampFabPosition(
+          dragStartRef.current.x + gestureState.dx,
+          dragStartRef.current.y + gestureState.dy
+        );
+        fabPan.setValue(next);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const next = clampFabPosition(
+          dragStartRef.current.x + gestureState.dx,
+          dragStartRef.current.y + gestureState.dy
+        );
+        fabPosRef.current = next;
+        fabPan.setValue(next);
+
+        const dragDistance = Math.abs(gestureState.dx) + Math.abs(gestureState.dy);
+        if (dragDistance < 8) {
+          router.push('/(tabs)/live' as any);
+        }
+      },
+      onPanResponderTerminate: (_, gestureState) => {
+        const next = clampFabPosition(
+          dragStartRef.current.x + gestureState.dx,
+          dragStartRef.current.y + gestureState.dy
+        );
+        fabPosRef.current = next;
+        fabPan.setValue(next);
+      },
+    })
+  ).current;
 
   return (
     <LinearGradient
@@ -1197,6 +1265,21 @@ export default function HomeFeedScreen() {
           initialStoryId={storyViewerStoryId}
         />
       )}
+
+      <Animated.View
+        style={[
+          styles.liveFab,
+          {
+            backgroundColor: '#FF4D7D',
+            transform: [{ translateX: fabPan.x }, { translateY: fabPan.y }],
+          },
+        ]}
+        {...liveFabResponder.panHandlers}
+        accessibilityRole="button"
+        accessibilityLabel="Open live rooms"
+      >
+        <Radio size={18} color="#FFFFFF" strokeWidth={2.4} />
+      </Animated.View>
     </LinearGradient>
   );
 }
@@ -1255,5 +1338,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 10,
+  },
+  liveFab: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

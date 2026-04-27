@@ -98,7 +98,7 @@ const CompactTypingIndicator = ({ isDarkMode }: { isDarkMode: boolean }) => {
   );
 };
 
-export default function ChatRoomsList() {
+export default function ChatRoomsList({ compactTop = false }: { compactTop?: boolean }) {
   const [conversations, setConversations] = useState<PrivateConversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<PrivateConversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +108,7 @@ export default function ChatRoomsList() {
   const [typingUsers, setTypingUsers] = useState<Map<string, boolean>>(new Map()); // conversationId -> isTyping
   const typingChannelsRef = useRef<Map<string, any>>(new Map()); // conversationId -> channel
   const typingTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map()); // conversationId -> timeout
+  const conversationsChannelRef = useRef<any | null>(null);
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
@@ -290,6 +291,17 @@ export default function ChatRoomsList() {
     if (!user?.id) return;
 
     if (__DEV__) log('[ChatRoomsList] 🔔 Setting up real-time subscription for conversation updates');
+
+    // Defensive cleanup in case a previous effect left a subscribed channel alive.
+    if (conversationsChannelRef.current) {
+      try {
+        supabase.removeChannel(conversationsChannelRef.current);
+      } catch (cleanupErr) {
+        warn('[ChatRoomsList] Failed to remove previous conversations channel:', cleanupErr);
+      } finally {
+        conversationsChannelRef.current = null;
+      }
+    }
     
     const handleInsertedMessage = async (message: any) => {
       if (!message?.id) return;
@@ -447,7 +459,8 @@ export default function ChatRoomsList() {
     };
 
     const channel = supabase
-      .channel(`conversations:${user.id}`)
+      // Use a unique topic per mount so callbacks are always attached before subscribe.
+      .channel(`conversations:${user.id}:${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -613,10 +626,18 @@ export default function ChatRoomsList() {
           if (__DEV__) log('[ChatRoomsList] ✅ Successfully subscribed to conversation updates');
         }
       });
+    conversationsChannelRef.current = channel;
 
     return () => {
       if (__DEV__) log('[ChatRoomsList] Cleaning up conversation subscription');
-      channel.unsubscribe();
+      try {
+        supabase.removeChannel(channel);
+      } catch (cleanupErr) {
+        warn('[ChatRoomsList] Error removing conversation channel:', cleanupErr);
+      }
+      if (conversationsChannelRef.current === channel) {
+        conversationsChannelRef.current = null;
+      }
     };
   }, [user?.id, hiddenConversations, loadConversations]);
 
@@ -1018,10 +1039,10 @@ export default function ChatRoomsList() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Header */}
-                   <View style={[styles.header, { 
-               backgroundColor: themeColors.background,
-               paddingTop: insets.top + 24,
-             }]}>
+             <View style={[styles.header, {
+              backgroundColor: themeColors.background,
+              paddingTop: compactTop ? 8 : insets.top + 24,
+            }]}>
                <View style={styles.headerTopRow}>
                  <Text style={[styles.headerTitle, { color: themeColors.text }]}>Messages</Text>
                  <View style={styles.headerButtons}>

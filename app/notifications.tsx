@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, StatusBar, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../utils/supabase';
 import useAuth from '../hooks/useAuth';
@@ -16,6 +17,7 @@ import { customNotifications } from '../utils/customNotifications';
 import Header from '../components/Header';
 import SimpleAvatar from '../components/SimpleAvatar';
 import { getPendingRequests, acceptFriendRequest, rejectFriendRequest } from '../utils/friendRequestService';
+import { getProEntitlement } from '../utils/proEntitlement';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { log, warn, error } from '../utils/productionLogger';
 
@@ -112,6 +114,20 @@ export default function NotificationsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNotifications, setSelectedNotifications] = useState<Set<string>>(new Set());
+  const [canViewProfileViewers, setCanViewProfileViewers] = useState(false);
+
+  const refreshProfileViewEntitlement = useCallback(async () => {
+    if (!user?.id) {
+      setCanViewProfileViewers(false);
+      return;
+    }
+    try {
+      const ent = await getProEntitlement(user.id);
+      setCanViewProfileViewers(ent.anyActive);
+    } catch {
+      setCanViewProfileViewers(false);
+    }
+  }, [user?.id]);
   
   const requestPermissions = async () => {
     try {
@@ -1381,6 +1397,24 @@ export default function NotificationsScreen() {
 
     // Handle profile view notifications - navigate to viewer's profile
     if (notification.type === 'profile_view') {
+      if (!canViewProfileViewers) {
+        Alert.alert(
+          'Dating Pro required',
+          'Upgrade to Dating Pro to see who viewed your profile.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            {
+              text: 'Upgrade',
+              onPress: () =>
+                router.push({
+                  pathname: '/(tabs)/discovery',
+                  params: { openPaywall: '1', paywallTitle: 'See who viewed your profile' },
+                }),
+            },
+          ]
+        );
+        return;
+      }
       const viewerId = notification.data?.viewer_id || notification.sender_id;
       if (viewerId) {
         router.push(`/profile/${viewerId}`);
@@ -1455,15 +1489,38 @@ export default function NotificationsScreen() {
     if (action === 'view') {
       if (notification.type === 'discover_like') {
         router.push('/(tabs)/community');
-      } else if (notification.type === 'like' || notification.type === 'comment' || notification.type === 'new_post' || notification.type === 'profile_view') {
+      } else if (notification.type === 'profile_view') {
+        if (!canViewProfileViewers) {
+          Alert.alert(
+            'Dating Pro required',
+            'Upgrade to Dating Pro to see who viewed your profile.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              {
+                text: 'Upgrade',
+                onPress: () =>
+                  router.push({
+                    pathname: '/(tabs)/discovery',
+                    params: { openPaywall: '1', paywallTitle: 'See who viewed your profile' },
+                  }),
+              },
+            ]
+          );
+          return;
+        }
+        const senderId = notification.data?.sender_id || notification.data?.viewer_id;
+        if (senderId) {
+          router.push(`/profile/${senderId}`);
+        }
+      } else if (notification.type === 'like' || notification.type === 'comment' || notification.type === 'new_post') {
         // Navigate to the post
         const postId = notification.data?.post_id;
         if (postId) {
           router.push(`/(tabs)/community?postId=${postId}`);
         }
-      } else if (notification.type === 'follow' || notification.type === 'profile_view') {
+      } else if (notification.type === 'follow') {
         // Navigate to the user's profile
-        const senderId = notification.data?.sender_id || notification.data?.follower_id || notification.data?.viewer_id;
+        const senderId = notification.data?.sender_id || notification.data?.follower_id;
       if (senderId) {
           router.push(`/profile/${senderId}`);
       }
@@ -1505,6 +1562,13 @@ export default function NotificationsScreen() {
       initializeNotifications();
     }
   }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileViewEntitlement();
+      return () => {};
+    }, [refreshProfileViewEntitlement])
+  );
 
   const getIcon = (type: string, read: boolean) => {
     const iconColor = read ? themeColors.neutral.subtext : themeColors.primary.main;

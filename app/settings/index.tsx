@@ -26,15 +26,17 @@ import SafeAreaWrapper from '../../components/SafeAreaWrapper';
 import { deleteUserAccount } from '../../utils/accountDeletion';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
-import { Linking, Platform, TextInput } from 'react-native';
+import { DeviceEventEmitter, Linking, Platform, TextInput } from 'react-native';
 import { SUPPORT_EMAIL, OFFICIAL_ACCOUNT_ID } from '../../constants/ContactEmails';
 import { clearAllUserCache } from '../../utils/clearAllCache';
 import { getVibeMode, setVibeMode } from '../../utils/vibePrefs';
 import { setupVibeModeField } from '../../utils/setupVibeModeField';
 import type { VibeMode } from '../../utils/setupVibeModeField';
+import { getProfileVisibilityDirect } from '../../utils/setupProfileVisibilityDatabase';
 import { Music } from 'lucide-react-native';
 import { log, warn, error } from '../../utils/productionLogger';
 import { isUserAdmin } from '../../utils/adminCheck';
+import { setDiscoverDatingOptedIn } from '../../utils/discoverDatingPrefs';
 
 
 
@@ -90,6 +92,8 @@ export default function SettingsScreen() {
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [vibeMode, setVibeModeState] = useState<VibeMode | null>(null);
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [profileVisibilitySaving, setProfileVisibilitySaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Get theme-based colors
@@ -115,10 +119,21 @@ export default function SettingsScreen() {
     }
   };
 
+  const loadProfileVisibility = async () => {
+    try {
+      if (!user?.id) return;
+      const visible = await getProfileVisibilityDirect();
+      setProfileVisible(visible);
+    } catch {
+      setProfileVisible(true);
+    }
+  };
+
   // Load preferences on component mount
   useEffect(() => {
     if (user) {
       loadVibeMode();
+      loadProfileVisibility();
     }
   }, [user]);
   
@@ -129,6 +144,7 @@ export default function SettingsScreen() {
       loadAdminStatus();
       if (user) {
         loadVibeMode();
+        loadProfileVisibility();
       }
       return () => {};
     }, [user])
@@ -369,6 +385,34 @@ export default function SettingsScreen() {
     // In a real app, you would implement actual notification settings here
   };
 
+  const toggleProfileVisibility = async (value: boolean) => {
+    if (!user?.id || profileVisibilitySaving) return;
+    const previous = profileVisible;
+    setProfileVisible(value);
+    setProfileVisibilitySaving(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          profile_visible: value,
+          hide_from_discover: !value,
+        })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      // Keep dating opt-in aligned with the visibility toggle.
+      await setDiscoverDatingOptedIn(value);
+      DeviceEventEmitter.emit('datingVisibilityChanged', value);
+      if (!value) {
+        router.replace('/(tabs)/community');
+      }
+    } catch (e) {
+      setProfileVisible(previous);
+      Alert.alert('Error', 'Could not update profile discovery visibility.');
+    } finally {
+      setProfileVisibilitySaving(false);
+    }
+  };
+
   const renderSettingItem = (
     icon: React.ReactNode, 
     title: string, 
@@ -442,27 +486,6 @@ export default function SettingsScreen() {
     );
   };
 
-  const openNomliVibeStore = async () => {
-    try {
-      const iosStoreUrl = 'https://apps.apple.com/us/search?term=Nomli%20Vibe';
-      const androidStoreUrl = 'https://play.google.com/store/search?q=Nomli%20Vibe&c=apps';
-      const targetUrl = Platform.OS === 'ios' ? iosStoreUrl : androidStoreUrl;
-      await Linking.openURL(targetUrl);
-    } catch (e) {
-      Alert.alert('Store unavailable', 'Unable to open the app store right now. Please try again.');
-    }
-  };
-
-  
-
-  
-
-
-
-
-
-
-
   return (
     <SafeAreaWrapper>
       <StatusBar style="light" />
@@ -510,31 +533,6 @@ export default function SettingsScreen() {
               "Support",
               () => router.push(`/chat/${OFFICIAL_ACCOUNT_ID}`)
             )}
-          </View>
-
-          {/* Pivot notice: Nomli Vibe */}
-          <View
-            style={[
-              styles.pivotCard,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255,111,174,0.10)' : 'rgba(255,111,174,0.08)',
-                borderColor: isDarkMode ? 'rgba(255,111,174,0.35)' : 'rgba(226,85,149,0.28)',
-              },
-            ]}
-          >
-            <Text style={[styles.pivotTitle, { color: themeColors.neutral.text }]}>
-              Nomli Mingle has evolved
-            </Text>
-            <Text style={[styles.pivotBody, { color: themeColors.neutral.subtext }]}>
-              We have pivoted into two separate apps. Nomli Vibe is our official dating app.
-            </Text>
-            <TouchableOpacity
-              style={[styles.pivotButton, { backgroundColor: Colors.primary.main }]}
-              onPress={openNomliVibeStore}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.pivotButtonText}>Get Nomli Vibe</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Compact Settings Cards */}
@@ -674,6 +672,27 @@ export default function SettingsScreen() {
                 </View>
               </View>
             )}
+
+            <View style={styles.compactSettingRow}>
+              <View style={styles.settingLeft}>
+                <Globe size={18} color={themeColors.neutral.text} />
+                <View style={styles.settingLeftTextWrap}>
+                  <Text style={[styles.settingLabel, themeStyles.text]}>Show profile on Dating</Text>
+                  <Text style={[styles.settingSublabel, themeStyles.subtext]}>
+                    Turn off to hide your profile from dating suggestions.
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.switchWrapper}>
+                <Switch
+                  value={profileVisible}
+                  onValueChange={toggleProfileVisibility}
+                  disabled={profileVisibilitySaving}
+                  trackColor={{ false: themeColors.neutral.border, true: Colors.primary.light }}
+                  thumbColor={profileVisible ? Colors.primary.main : themeColors.neutral.card}
+                />
+              </View>
+            </View>
           </View>
 
 
@@ -948,36 +967,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semibold,
     textAlign: 'left',
     letterSpacing: -0.2,
-  },
-  pivotCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 14,
-  },
-  pivotTitle: {
-    fontSize: 14,
-    fontFamily: FontFamily.bold,
-    letterSpacing: -0.2,
-    marginBottom: 4,
-  },
-  pivotBody: {
-    fontSize: 12,
-    fontFamily: FontFamily.regular,
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  pivotButton: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  pivotButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: FontFamily.semibold,
-    letterSpacing: 0.2,
   },
   // Settings Cards - Premium Apple-style
   settingsCard: {

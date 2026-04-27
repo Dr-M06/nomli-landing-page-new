@@ -52,6 +52,7 @@ import { isVerifiedEntity } from '../../utils/verification';
 import { InlineVerifiedBadge } from '../InlineVerifiedBadge';
 import { fetchPromoBanners, type PromoBanner as PromoBannerData } from '../../utils/promoBannerUtils';
 import ReactionPicker, { type ReactionType } from '../ReactionPicker';
+import CreatorProAuthorBadge from '../CreatorProAuthorBadge';
 
 type HomeFeedRow = Post & {
   __isHomeAd?: boolean;
@@ -748,6 +749,7 @@ const HomeFullscreenFeed = forwardRef<HomeFullscreenFeedHandle, Props>(function 
                       userId={item.user_id}
                       username={username}
                       isVerified={authorVerified}
+                      creatorProUntil={item.profile?.creator_pro_until}
                       avatarUrl={resolvedAvatarUrl}
                       content={contentText}
                       createdAt={item.created_at}
@@ -868,6 +870,10 @@ const HomeFullscreenFeed = forwardRef<HomeFullscreenFeedHandle, Props>(function 
                         {authorVerified ? (
                           <InlineVerifiedBadge size={15} style={styles.verifiedIcon} />
                         ) : null}
+                        <CreatorProAuthorBadge
+                          creatorProUntil={item.profile?.creator_pro_until}
+                          isDark
+                        />
                       </View>
                       <Text style={styles.timeAgoText} numberOfLines={1}>
                         {formatTimeAgo(item.created_at)}
@@ -1030,6 +1036,8 @@ const HomeFullscreenFeed = forwardRef<HomeFullscreenFeedHandle, Props>(function 
                 </ActionGlassBubble>
                 <Text style={styles.actionText}>{formatCount(item.comments_count ?? 0)}</Text>
               </Pressable>
+
+              {/* Share hidden temporarily */}
 
               <Pressable
                 onPress={(e: any) => {

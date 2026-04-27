@@ -43,6 +43,7 @@ import { loadShielding, LoadPriority, deferUntilAfterCritical, deferLowPriority 
 import { setupNotificationReplyHandler, setupIOSNotificationCategories } from '../utils/notificationReplyService';
 import { log, warn, error } from '../utils/productionLogger';
 import AndroidShareIntentBridge from '../components/AndroidShareIntentBridge';
+import GlobalCallManager from '../components/GlobalCallManager';
 
 
 // Optional services - imported statically to avoid Metro bundler issues
@@ -306,6 +307,7 @@ function AppLayoutWithTheme() {
         />
 
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="music" options={{ headerShown: false }} />
         <Stack.Screen name="creator" options={{ headerShown: false }} />
         <Stack.Screen name="businesses" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
@@ -313,6 +315,7 @@ function AppLayoutWithTheme() {
       
       {/* Message notification popups */}
       <MessageNotificationManager />
+      <GlobalCallManager />
       
       <Toast config={toastConfig} />
 
@@ -357,6 +360,12 @@ export default function RootLayout() {
         if (__DEV__) warn('Google Play Billing init at root:', e);
       });
     }
+
+    import('../utils/revenueCatService').then(({ initRevenueCatAtRoot }) => {
+      initRevenueCatAtRoot();
+    }).catch((e) => {
+      if (__DEV__) warn('RevenueCat init at root:', e);
+    });
 
     void (async function runBackgroundInit() {
       try {
@@ -420,6 +429,11 @@ export default function RootLayout() {
               .getSession()
               .then(({ data: { session } }) => {
                 if (session?.user?.id) initializeOnlineStatusManager(session.user.id).catch(() => {});
+                if (session?.user?.id) {
+                  import('../utils/revenueCatService')
+                    .then(({ maybeSyncRevenueCatSubscriptionsBackendThrottled }) => maybeSyncRevenueCatSubscriptionsBackendThrottled())
+                    .catch(() => {});
+                }
               })
               .catch(() => {});
           }, 800);
@@ -507,6 +521,9 @@ export default function RootLayout() {
       appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
         if (nextAppState === 'active') {
           flushViewCounts();
+          import('../utils/revenueCatService')
+            .then(({ maybeSyncRevenueCatSubscriptionsBackendThrottled }) => maybeSyncRevenueCatSubscriptionsBackendThrottled())
+            .catch(() => {});
         }
       });
     } catch (error) {

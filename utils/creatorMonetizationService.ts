@@ -1,7 +1,8 @@
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
-import { createStripeCheckout, type PaymentPlan } from './stripeService';
+import { createStripeCheckout, getUserSubscriptions, type PaymentPlan } from './stripeService';
 import { error as logError, warn as logWarn } from './productionLogger';
 
 export type CreatorBreakdownRow = { label: string; points: number };
@@ -63,6 +64,52 @@ export type CreatorMonetizationSnapshot = {
   payouts: CreatorPayoutRow[];
   breakdown_month: CreatorBreakdownRow[];
 };
+
+const CREATOR_PRO_CACHE_KEY = 'creator_pro_until_cache_v1';
+
+type CreatorProCacheRecord = {
+  userId: string;
+  creatorProUntil: string;
+  cachedAt: number;
+};
+
+async function readCachedCreatorProUntil(userId: string): Promise<string | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CREATOR_PRO_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CreatorProCacheRecord>;
+    if (!parsed || parsed.userId !== userId || typeof parsed.creatorProUntil !== 'string') return null;
+    return parsed.creatorProUntil;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedCreatorProUntil(userId: string, creatorProUntil: string): Promise<void> {
+  try {
+    const payload: CreatorProCacheRecord = {
+      userId,
+      creatorProUntil,
+      cachedAt: Date.now(),
+    };
+    await AsyncStorage.setItem(CREATOR_PRO_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Non-critical cache write.
+  }
+}
+
+async function clearCachedCreatorProUntil(userId: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(CREATOR_PRO_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Partial<CreatorProCacheRecord>;
+    if (parsed?.userId === userId) {
+      await AsyncStorage.removeItem(CREATOR_PRO_CACHE_KEY);
+    }
+  } catch {
+    // Non-critical cache cleanup.
+  }
+}
 
 function parseSnapshot(raw: unknown): CreatorMonetizationSnapshot | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -137,6 +184,78 @@ function parseSnapshot(raw: unknown): CreatorMonetizationSnapshot | null {
   };
 }
 
+/** When the snapshot RPC fails or returns null, still represent active Pro from `profiles.creator_pro_until`. */
+function emptyCreatorSnapshotWithPro(creatorProUntil: string): CreatorMonetizationSnapshot {
+  return {
+    creator_pro_active: true,
+    creator_pro_until: creatorProUntil,
+    founding_credit_amount_usd: 1,
+    founding_credit_state: 'awaiting_pro',
+    founding_credit_vest_at: null,
+    founding_credit_paywall_usd: 1,
+    token_usd_rate: 0.01,
+    engagement_score_month: 0,
+    engagement_score_last_month: 0,
+    estimated_content_usd_month: 0,
+    estimated_content_usd_last_month: 0,
+    views_month: 0,
+    likes_month: 0,
+    comments_month: 0,
+    views_last_month: 0,
+    likes_last_month: 0,
+    comments_last_month: 0,
+    gift_tokens_all_time: 0,
+    gift_tokens_this_month: 0,
+    gift_tokens_last_month: 0,
+    estimated_gift_usd_month: 0,
+    estimated_gift_usd_last_month: 0,
+    wallet_token_balance: 0,
+    wallet_earned_token_balance: 0,
+    total_paid_out_usd: 0,
+    next_payout_label: '—',
+    top_posts: [],
+    recent_gifts: [],
+    payouts: [],
+    breakdown_month: [],
+  };
+}
+
+const CREATOR_PLAN_MATCHERS = ['creator', 'pro'];
+
+function isCreatorPlanFromSubscription(subscription: any): boolean {
+  const plan = subscription?.payment_plans;
+  const category = String(plan?.plan_category || '').toLowerCase().trim();
+  if (category === 'creator') return true;
+  const haystack = `${plan?.name || ''} ${plan?.description || ''} ${plan?.iap_product_id_apple || ''} ${plan?.iap_product_id_google || ''}`
+    .toLowerCase()
+    .trim();
+  return CREATOR_PLAN_MATCHERS.some((token) => haystack.includes(token));
+}
+
+function subscriptionPeriodEndMs(subscription: any): number {
+  const raw =
+    subscription?.current_period_end ??
+    subscription?.expires_at ??
+    subscription?.period_end ??
+    subscription?.ends_at;
+  if (!raw) return 0;
+  const ms = new Date(raw).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+async function fallbackCreatorProUntilFromSubscriptions(userId: string): Promise<string | null> {
+  const subs = await getUserSubscriptions(userId);
+  const now = Date.now();
+  let bestMs = 0;
+  for (const sub of subs) {
+    if (!isCreatorPlanFromSubscription(sub)) continue;
+    const endMs = subscriptionPeriodEndMs(sub);
+    if (endMs > now) bestMs = Math.max(bestMs, endMs);
+  }
+  if (bestMs <= now) return null;
+  return new Date(bestMs).toISOString();
+}
+
 export async function fetchCreatorMonetizationSnapshot(): Promise<CreatorMonetizationSnapshot | null> {
   try {
     const { data, error } = await supabase.rpc('get_creator_monetization_snapshot');
@@ -144,7 +263,16 @@ export async function fetchCreatorMonetizationSnapshot(): Promise<CreatorMonetiz
       logError('[CreatorMonetization] snapshot RPC error:', error);
       return null;
     }
-    return parseSnapshot(data);
+    const parsed = parseSnapshot(data);
+    if (parsed?.creator_pro_until) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.id) {
+        await writeCachedCreatorProUntil(user.id, parsed.creator_pro_until);
+      }
+    }
+    return parsed;
   } catch (e) {
     logError('[CreatorMonetization] snapshot exception:', e);
     return null;
@@ -159,18 +287,99 @@ export function isCreatorProActive(until: string | null | undefined): boolean {
 
 export async function fetchProfileCreatorProUntil(): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user?.id) return null;
     const { data, error } = await supabase
       .from('profiles')
       .select('creator_pro_until')
       .eq('id', user.id)
       .maybeSingle();
-    if (error || !data) return null;
-    return data.creator_pro_until ?? null;
+    if (error || !data) {
+      const cachedUntil = await readCachedCreatorProUntil(user.id);
+      if (isCreatorProActive(cachedUntil)) return cachedUntil;
+      const fallbackUntil = await fallbackCreatorProUntilFromSubscriptions(user.id);
+      if (isCreatorProActive(fallbackUntil)) {
+        await writeCachedCreatorProUntil(user.id, fallbackUntil!);
+        return fallbackUntil;
+      }
+      return null;
+    }
+
+    const until = data.creator_pro_until ?? null;
+    if (until) {
+      await writeCachedCreatorProUntil(user.id, until);
+      return until;
+    }
+
+    // Avoid dropping active Pro during transient backend lag right after login/sync.
+    // If we already have an active cached expiry for this same user, keep using it.
+    const cachedUntil = await readCachedCreatorProUntil(user.id);
+    if (isCreatorProActive(cachedUntil)) {
+      return cachedUntil;
+    }
+
+    // Last fallback: user_subscriptions can still be correct while profile window is lagging.
+    const fallbackUntil = await fallbackCreatorProUntilFromSubscriptions(user.id);
+    if (isCreatorProActive(fallbackUntil)) {
+      await writeCachedCreatorProUntil(user.id, fallbackUntil!);
+      return fallbackUntil;
+    }
+
+    // No active backend value and no active cached value -> clear stale cache.
+    await clearCachedCreatorProUntil(user.id);
+    return null;
   } catch {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.id) return null;
+      const cachedUntil = await readCachedCreatorProUntil(user.id);
+      if (isCreatorProActive(cachedUntil)) return cachedUntil;
+    } catch {
+      // Ignore nested fallback failures.
+    }
     return null;
   }
+}
+
+/**
+ * Use the latest of RPC snapshot vs profiles row — Play/Apple verification updates `profiles` first;
+ * `get_creator_monetization_snapshot` can lag briefly after purchase.
+ */
+export function mergeCreatorSnapshotWithProfile(
+  s: CreatorMonetizationSnapshot | null,
+  profileUntil: string | null
+): CreatorMonetizationSnapshot | null {
+  if (!profileUntil) return s;
+
+  const msProf = new Date(profileUntil).getTime();
+  if (Number.isNaN(msProf)) return s;
+
+  if (!s) {
+    return isCreatorProActive(profileUntil) ? emptyCreatorSnapshotWithPro(profileUntil) : null;
+  }
+
+  const msSnap = s.creator_pro_until ? new Date(s.creator_pro_until).getTime() : 0;
+  const best = Math.max(msSnap, msProf);
+  const bestIso = new Date(best).toISOString();
+  return {
+    ...s,
+    creator_pro_until: bestIso,
+    creator_pro_active: s.creator_pro_active || isCreatorProActive(bestIso),
+  };
+}
+
+/** True if Creator Pro should unlock in UI (snapshot RPC and/or profiles row). */
+export function hasCreatorProAccess(
+  snapshot: CreatorMonetizationSnapshot | null,
+  profileUntilDirect: string | null
+): boolean {
+  if (isCreatorProActive(profileUntilDirect)) return true;
+  if (!snapshot) return false;
+  return snapshot.creator_pro_active || isCreatorProActive(snapshot.creator_pro_until);
 }
 
 type FetchPlansResult = { plans: PaymentPlan[]; error: string | null };
@@ -262,6 +471,17 @@ export function tokensToUsd(tokens: number, rate: number): number {
 }
 
 /**
+ * Nominal USD value of gift tokens credited to the wallet (face rate) → amount the creator can withdraw
+ * after Nomli’s share. Matches creator dashboard / withdrawal copy (“You keep 70%”).
+ */
+export const CREATOR_GIFT_PAYOUT_SHARE = 0.7;
+
+export function giftNominalUsdToCreatorPayoutUsd(nominalUsd: number): number {
+  if (!Number.isFinite(nominalUsd) || nominalUsd <= 0) return 0;
+  return Math.round(nominalUsd * CREATOR_GIFT_PAYOUT_SHARE * 10000) / 10000;
+}
+
+/**
  * iOS / Android: in-app subscription (Apple / Google). Web: hosted checkout session.
  * @param period `monthly` | `yearly` — must match a `payment_plans` row with the right IAP / web price ids.
  */
@@ -321,6 +541,10 @@ export async function startCreatorProCheckout(
     if (!plan.iap_product_id_apple) {
       return { ok: false, error: 'Add iap_product_id_apple on your Creator Pro payment_plans row.' };
     }
+    const { isRevenueCatEnabled, purchaseCreatorProWithRevenueCat } = await import('./revenueCatService');
+    if (isRevenueCatEnabled()) {
+      return purchaseCreatorProWithRevenueCat(plan.iap_product_id_apple);
+    }
     const { initializeStoreKit, purchaseCreatorProWithStoreKit } = await import('./storeKitService');
     await initializeStoreKit();
     return purchaseCreatorProWithStoreKit(plan.iap_product_id_apple);
@@ -329,6 +553,10 @@ export async function startCreatorProCheckout(
   if (Platform.OS === 'android') {
     if (!plan.iap_product_id_google) {
       return { ok: false, error: 'Add iap_product_id_google on your Creator Pro payment_plans row.' };
+    }
+    const { isRevenueCatEnabled, purchaseCreatorProWithRevenueCat } = await import('./revenueCatService');
+    if (isRevenueCatEnabled()) {
+      return purchaseCreatorProWithRevenueCat(plan.iap_product_id_google);
     }
     const { purchaseCreatorProWithGooglePlay } = await import('./googlePlayBillingService');
     const r = await purchaseCreatorProWithGooglePlay(plan.iap_product_id_google);

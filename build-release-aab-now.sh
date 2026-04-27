@@ -32,6 +32,22 @@ read_android_versions() {
 }
 read_android_versions
 
+# Fast path (default): keep android/.gradle + Metro/Expo caches; parallel Gradle + build cache.
+# Deep clean (old behavior): NOMLI_AAB_DEEP_CLEAN=1 — fixes rare duplicate-classes / stale-path issues; slower.
+if [ "${NOMLI_AAB_DEEP_CLEAN:-0}" = "1" ] || [ "${RELEASE_AAB_DEEP_CLEAN:-0}" = "1" ]; then
+  _aab_deep_clean=1
+else
+  _aab_deep_clean=0
+fi
+
+_nomli_nproc() {
+  local n
+  n="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
+  if [ "$n" -gt 8 ] 2>/dev/null; then n=8; fi
+  if [ "$n" -lt 1 ] 2>/dev/null; then n=4; fi
+  printf '%s' "$n"
+}
+
 echo "🔨 Building Release AAB..."
 if [ -n "$ANDROID_VERSION_CODE" ] && [ -n "$ANDROID_VERSION_NAME" ]; then
     echo "   (Play versionCode $ANDROID_VERSION_CODE, versionName $ANDROID_VERSION_NAME — from android/app/build.gradle)"
@@ -162,6 +178,12 @@ echo ""
 export EXPO_NO_DOTENV="${EXPO_NO_DOTENV:-1}"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=16384}"
 export CI="${CI:-true}"
+# Metro: use several workers when unset (large apps benefit; override anytime).
+if [ -z "${EXPO_METRO_MAX_WORKERS:-}" ]; then
+  _mw="$(_nomli_nproc)"
+  if [ "$_mw" -gt 6 ] 2>/dev/null; then _mw=6; fi
+  export EXPO_METRO_MAX_WORKERS="$_mw"
+fi
 
 # Export with standard names for Gradle
 export MYAPP_RELEASE_KEY_ALIAS="${MYAPP_RELEASE_KEY_ALIAS:-nomli-mingle-key-alias}"
@@ -169,17 +191,20 @@ export MYAPP_RELEASE_KEY_ALIAS="${MYAPP_RELEASE_KEY_ALIAS:-nomli-mingle-key-alia
 # Use absolute path to keystore to avoid path resolution issues
 export MYAPP_RELEASE_STORE_FILE="$KEYSTORE_ABSOLUTE_PATH"
 
-echo "🧹 Preparing clean build (stop daemons → remove outputs + Gradle project cache)..."
-./gradlew --stop 2>/dev/null || true
-sleep 2
 cd "$REPO_ROOT"
-# android/.gradle holds execution history; stale paths (e.g. deleted oldrepo_ref/**) break :createBundleReleaseJsAndAssets.
-rm -rf android/app/build android/build android/.gradle node_modules/.cache .expo 2>/dev/null || true
+if [ "$_aab_deep_clean" = "1" ]; then
+  echo "🧹 Deep clean (NOMLI_AAB_DEEP_CLEAN=1): stop daemons → remove Android + iOS outputs, project .gradle, Metro/Expo caches…"
+  (cd android && ./gradlew --stop) 2>/dev/null || true
+  sleep 2
+  # android/.gradle holds execution history; stale paths (e.g. deleted oldrepo_ref/**) break :createBundleReleaseJsAndAssets.
+  rm -rf android/app/build android/build android/.gradle ios/build ios/DerivedData node_modules/.cache .expo 2>/dev/null || true
+else
+  echo "⚡ Fast prep: remove Android/iOS output dirs only (keeps android/.gradle, Metro & .expo caches). Deep clean: NOMLI_AAB_DEEP_CLEAN=1"
+  rm -rf android/app/build android/build ios/build ios/DerivedData 2>/dev/null || true
+fi
 cd android
 
-# Gradle 8 + AGP can fail :app:checkReleaseDuplicateClasses with "Cannot access output property
-# dummyOutputDirectory" / NoSuchFileException if the global build cache + parallel workers race a
-# freshly deleted app/build. Pre-create the output leaf and disable build-cache for this invocation.
+# Gradle 8 + AGP: cheap guard against duplicate-classes task racing on empty output dirs after a wipe.
 mkdir -p "app/build/intermediates/duplicate_classes_check/release/checkReleaseDuplicateClasses" 2>/dev/null || true
 
 echo ""
@@ -194,13 +219,20 @@ echo "   Gradle often stays around ~40–50% for a long time with little new out
 echo "   That is normal on large apps (commonly 20–60+ minutes). If a \"node\" process"
 echo "   is using CPU, the bundle step is still working — not necessarily stuck."
 echo "   More embed logs:  EXPO_DEBUG=1 ./build-release-aab-now.sh …"
-echo "   Metro parallelism: EXPO_METRO_MAX_WORKERS=6 ./build-release-aab-now.sh …"
+echo "   Metro workers: EXPO_METRO_MAX_WORKERS (default min(6, CPUs) if unset)."
+echo "   Gradle workers: GRADLE_MAX_WORKERS (default CPUs, max 8 if unset)."
 echo ""
 
-# Build the AAB with explicit Gradle properties (--no-build-cache / --max-workers=1: see mkdir note above)
-./gradlew bundleRelease \
-    --no-build-cache \
-    --max-workers=1 \
+_gradle_bundle_flags=(bundleRelease)
+if [ "$_aab_deep_clean" = "1" ]; then
+  # Serial + no remote cache: avoids rare AGP duplicate-classes / output-dir races after a full wipe.
+  _gradle_bundle_flags+=(--no-build-cache --max-workers=1)
+else
+  _gw="${GRADLE_MAX_WORKERS:-$(_nomli_nproc)}"
+  _gradle_bundle_flags+=(--max-workers="$_gw")
+fi
+
+./gradlew "${_gradle_bundle_flags[@]}" \
     -PMYAPP_RELEASE_STORE_FILE="$MYAPP_RELEASE_STORE_FILE" \
     -PMYAPP_RELEASE_STORE_PASSWORD="$MYAPP_RELEASE_STORE_PASSWORD" \
     -PMYAPP_RELEASE_KEY_ALIAS="$MYAPP_RELEASE_KEY_ALIAS" \

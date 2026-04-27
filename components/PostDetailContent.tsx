@@ -33,6 +33,7 @@ import { log, warn, error } from '../utils/productionLogger';
 import { getAgeGateFlags } from '../utils/ageGate';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReactionIcon } from './reactions/ReactionIcon';
+import CreatorProAuthorBadge from './CreatorProAuthorBadge';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -217,6 +218,8 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
   };
   
   const totalReactions = reactionCounts.likes + reactionCounts.loves + reactionCounts.laughs;
+  const hasMedia = !!(post.video_url || (post.image_urls?.length || 0) > 0 || post.image_url);
+  const isTextOnly = !hasMedia;
   
   // Get image URLs
   const imageUrls = useMemo(() => {
@@ -235,7 +238,13 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
       showsVerticalScrollIndicator={false}
     >
       {/* Post Header - Premium Design */}
-      <View style={[styles.postHeader, { backgroundColor: themeColors.neutral.card }]}>
+      <View
+        style={[
+          styles.postHeader,
+          { backgroundColor: themeColors.neutral.card, borderColor: themeColors.neutral.border },
+          isTextOnly && styles.postHeaderTextOnly,
+        ]}
+      >
         <View style={styles.authorRow}>
           <TouchableOpacity
             onPress={() => router.push(`/profile/${post.user_id}`)}
@@ -252,21 +261,30 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
               email={post.user_email}
             />
             <View style={styles.authorDetails}>
-              <Text style={[styles.authorName, { color: themeColors.neutral.text }]}>
-                @{(() => {
-                  // Check all possible sources for username before showing fallback
-                  const username = post.username || 
-                                  post.profile?.username ||
-                                  post.display_name ||
-                                  post.profile?.display_name ||
-                                  post.profile?.full_name ||
-                                  post.user_email?.split('@')[0] ||
-                                  (post.user_id ? `user_${post.user_id.substring(0, 8)}` : 'user');
-                  
-                  const cleaned = stripAtSymbol(username);
-                  return cleaned || 'user';
-                })()}
-              </Text>
+              <View style={styles.authorNameRow}>
+                <Text
+                  style={[styles.authorName, { color: themeColors.neutral.text }]}
+                  numberOfLines={1}
+                >
+                  @{(() => {
+                    // Check all possible sources for username before showing fallback
+                    const username = post.username || 
+                                    post.profile?.username ||
+                                    post.display_name ||
+                                    post.profile?.display_name ||
+                                    post.profile?.full_name ||
+                                    post.user_email?.split('@')[0] ||
+                                    (post.user_id ? `user_${post.user_id.substring(0, 8)}` : 'user');
+                    
+                    const cleaned = stripAtSymbol(username);
+                    return cleaned || 'user';
+                  })()}
+                </Text>
+                <CreatorProAuthorBadge
+                  creatorProUntil={post.profile?.creator_pro_until}
+                  isDark={isDarkMode}
+                />
+              </View>
               {post.location && (
                 <Text style={[styles.location, { color: themeColors.neutral.textSecondary }]}>
                   {post.location}
@@ -287,7 +305,13 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
         
         {/* Post Content */}
         {post.content && (
-          <Text style={[styles.postContent, { color: themeColors.neutral.text }]}>
+          <Text
+            style={[
+              styles.postContent,
+              { color: themeColors.neutral.text },
+              isTextOnly && styles.postContentTextOnly,
+            ]}
+          >
             {post.content}
           </Text>
         )}
@@ -433,7 +457,13 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
       </View>
       
       {/* Comments Section */}
-      <View style={[styles.commentsSection, { backgroundColor: themeColors.neutral.card }]}>
+      <View
+        style={[
+          styles.commentsSection,
+          { backgroundColor: themeColors.neutral.card, borderColor: themeColors.neutral.border },
+          isTextOnly && styles.commentsSectionTextOnly,
+        ]}
+      >
         <Text style={[styles.commentsTitle, { color: themeColors.neutral.text }]}>
           Comments ({comments.length || 0})
         </Text>
@@ -443,7 +473,7 @@ const PostDetailContent: React.FC<PostDetailContentProps> = ({
             <ActivityIndicator size="small" color={themeColors.primary.main} />
           </View>
         ) : threadedComments.length === 0 ? (
-          <View style={styles.emptyComments}>
+          <View style={[styles.emptyComments, isTextOnly && styles.emptyCommentsTextOnly]}>
             <Text style={[styles.emptyText, { color: themeColors.neutral.textSecondary }]}>
               No comments yet. Be the first to comment!
             </Text>
@@ -473,7 +503,15 @@ const styles = StyleSheet.create({
   },
   postHeader: {
     padding: Spacing.lg,
+    marginHorizontal: Spacing.sm,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  postHeaderTextOnly: {
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   authorRow: {
     flexDirection: 'row',
@@ -489,12 +527,21 @@ const styles = StyleSheet.create({
   authorDetails: {
     marginLeft: Spacing.md,
     flex: 1,
+    minWidth: 0,
+  },
+  authorNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+    minWidth: 0,
   },
   authorName: {
     fontSize: FontSizes.md,
     fontFamily: FontFamily.bold,
     fontWeight: '700',
-    marginBottom: 2,
+    flex: 1,
+    minWidth: 0,
   },
   location: {
     fontSize: FontSizes.sm,
@@ -507,6 +554,13 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     fontFamily: FontFamily.regular,
     lineHeight: 22,
+    marginBottom: Spacing.sm,
+  },
+  postContentTextOnly: {
+    fontSize: 28,
+    lineHeight: 36,
+    fontFamily: FontFamily.semibold,
+    marginTop: 2,
     marginBottom: Spacing.md,
   },
   mediaContainer: {
@@ -573,7 +627,14 @@ const styles = StyleSheet.create({
   },
   commentsSection: {
     padding: Spacing.lg,
-    minHeight: 200,
+    marginHorizontal: Spacing.sm,
+    marginBottom: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  commentsSectionTextOnly: {
+    paddingTop: Spacing.md,
+    minHeight: 140,
   },
   commentsTitle: {
     fontSize: FontSizes.xl,
@@ -588,6 +649,9 @@ const styles = StyleSheet.create({
   emptyComments: {
     padding: Spacing.xl,
     alignItems: 'center',
+  },
+  emptyCommentsTextOnly: {
+    paddingVertical: Spacing.lg,
   },
   emptyText: {
     fontSize: FontSizes.body,

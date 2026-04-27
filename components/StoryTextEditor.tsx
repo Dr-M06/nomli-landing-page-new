@@ -11,22 +11,18 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
-  ScrollView,
-  ActivityIndicator,
-  Linking,
   Animated,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   X, Palette, Sparkles, Heart, Zap, Star, Music2,
-  Snowflake, Gift, TreePine, ChevronDown, Play, Pause
+  Snowflake, Gift, TreePine, ChevronDown
 } from 'lucide-react-native';
-import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontFamily, FontSizes, Spacing } from '../constants/Theme';
-import { getSelectableTracks, type MusicTrack } from '../constants/musicLibrary';
-import { SUPPORT_EMAIL } from '../constants/ContactEmails';
+import { type MusicTrack } from '../constants/musicLibrary';
+import MusicHubModal from './music/MusicHubModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,6 +34,7 @@ interface StoryTextEditorProps {
   visible: boolean;
   onClose: () => void;
   onPublish: (text: string, templateId: string, isPublic: boolean, fontSize: number, textAlign: 'left' | 'center' | 'right', music?: unknown) => void;
+  initialMusic?: MusicTrack | null;
 }
 
 // Premium Templates - Curated Selection (TikTok-style minimal)
@@ -239,7 +236,7 @@ const StoryTextEditorBody = memo(function StoryTextEditorBody({
   );
 });
 
-export default function StoryTextEditor({ visible, onClose, onPublish }: StoryTextEditorProps) {
+export default function StoryTextEditor({ visible, onClose, onPublish, initialMusic = null }: StoryTextEditorProps) {
   const insets = useSafeAreaInsets();
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [fontSize, setFontSize] = useState(18); // Snapchat/Instagram-style compact text
@@ -248,74 +245,13 @@ export default function StoryTextEditor({ visible, onClose, onPublish }: StoryTe
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
-  const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
-  const [musicLoading, setMusicLoading] = useState(false);
-  const [previewPlayingId, setPreviewPlayingId] = useState<string | null>(null);
-  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
-  const previewSoundRef = useRef<Audio.Sound | null>(null);
-  const previewLimitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inputRef = useRef<TextInput>(null);
-
-  const stopPreview = useCallback(async () => {
-    if (previewLimitTimerRef.current) {
-      clearTimeout(previewLimitTimerRef.current);
-      previewLimitTimerRef.current = null;
-    }
-    if (previewSoundRef.current) {
-      try {
-        await previewSoundRef.current.stopAsync();
-        await previewSoundRef.current.unloadAsync();
-      } catch (_) {}
-      previewSoundRef.current = null;
-    }
-    setPreviewPlayingId(null);
-    setPreviewLoadingId(null);
-  }, []);
-
-  const playPreview = useCallback(async (track: MusicTrack) => {
-    if (!track?.url?.trim()) return;
-    const isCurrentlyPlaying = previewPlayingId === track.id;
-    if (isCurrentlyPlaying) {
-      try {
-        if (previewSoundRef.current) {
-          await previewSoundRef.current.stopAsync();
-          await previewSoundRef.current.unloadAsync();
-        }
-      } catch (_) {}
-      previewSoundRef.current = null;
-      setPreviewPlayingId(null);
-      return;
-    }
-    await stopPreview();
-    setPreviewLoadingId(track.id);
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: track.url },
-        { shouldPlay: true }
-      );
-      previewSoundRef.current = sound;
-      setPreviewPlayingId(track.id);
-      setPreviewLoadingId(null);
-      previewLimitTimerRef.current = setTimeout(() => {
-        previewLimitTimerRef.current = null;
-        stopPreview();
-      }, 15000);
-    } catch (_) {
-      setPreviewLoadingId(null);
-    }
-  }, [previewPlayingId, stopPreview]);
 
   useEffect(() => {
     if (visible) {
       setTimeout(() => inputRef.current?.focus(), 300);
+      setSelectedMusic(initialMusic ?? null);
     } else {
       setSelectedTemplate(TEMPLATES[0]);
       setFontSize(18);
@@ -324,19 +260,11 @@ export default function StoryTextEditor({ visible, onClose, onPublish }: StoryTe
       setShowTemplatePicker(false);
       setSelectedMusic(null);
       setShowMusicPicker(false);
-      stopPreview();
     }
-  }, [visible, stopPreview]);
+  }, [visible, initialMusic]);
 
   const openMusicPicker = async () => {
     setShowMusicPicker(true);
-    setMusicLoading(true);
-    try {
-      const tracks = await getSelectableTracks();
-      setMusicTracks(tracks.filter((t) => t.url?.trim()));
-    } finally {
-      setMusicLoading(false);
-    }
   };
 
   const handlePublish = useCallback<StoryTextEditorProps['onPublish']>((text, templateId, isPublic, fontSize, textAlign, music, style) => {
@@ -476,82 +404,14 @@ export default function StoryTextEditor({ visible, onClose, onPublish }: StoryTe
             </View>
           )}
 
-          {/* Music picker modal */}
-          {showMusicPicker && (
-            <View style={styles.templatePickerOverlay}>
-              <TouchableOpacity
-                style={StyleSheet.absoluteFill}
-                activeOpacity={1}
-                onPress={() => {
-                  stopPreview();
-                  setShowMusicPicker(false);
-                }}
-              />
-              <View style={styles.musicPickerCard} pointerEvents="box-none">
-                <View style={styles.musicPickerHeader}>
-                  <Text style={styles.templatePickerTitle}>Add Music</Text>
-                  <Text style={styles.musicPickerSubtitle}>Tap play to preview · 15 sec</Text>
-                </View>
-                {musicLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 24 }} />
-                ) : (
-                  <ScrollView style={styles.musicPickerList} showsVerticalScrollIndicator={false}>
-                    {musicTracks.map((track) => {
-                      const isPlaying = previewPlayingId === track.id;
-                      const isLoading = previewLoadingId === track.id;
-                      return (
-                        <View key={track.id} style={styles.musicPickerItem}>
-                          <TouchableOpacity
-                            onPress={(e) => { e.stopPropagation(); playPreview(track); }}
-                            style={styles.musicPickerPlayButton}
-                            disabled={isLoading}
-                            hitSlop={8}
-                          >
-                            {isLoading ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : isPlaying ? (
-                              <Pause size={20} color="#FFFFFF" strokeWidth={2.5} />
-                            ) : (
-                              <Play size={20} color="#FFFFFF" strokeWidth={2.5} />
-                            )}
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              stopPreview();
-                              setSelectedMusic(track);
-                              setShowMusicPicker(false);
-                            }}
-                            style={styles.musicPickerItemText}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.musicPickerItemTitle} numberOfLines={1}>{track.title}</Text>
-                            <Text style={styles.musicPickerItemArtist} numberOfLines={1}>{track.artist}</Text>
-                          </TouchableOpacity>
-                          <Music2 size={18} color="rgba(255,255,255,0.5)" strokeWidth={2} style={{ marginLeft: 8 }} />
-                        </View>
-                      );
-                    })}
-                    {musicTracks.length === 0 && (
-                      <Text style={styles.musicPickerEmpty}>No music available</Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.musicPickerContactSupport}
-                      onPress={() => {
-                        Linking.openURL(
-                          `mailto:${SUPPORT_EMAIL}?subject=Add my music to in-app library&body=Hi, I'd like to add my own music to the in-app music library for stories.`
-                        ).catch(() => {});
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.musicPickerContactSupportText}>
-                        Want your own music as in-app music? Contact support
-                      </Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                )}
-              </View>
-            </View>
-          )}
+          <MusicHubModal
+            visible={showMusicPicker}
+            onClose={() => setShowMusicPicker(false)}
+            onSelectTrack={(track) => setSelectedMusic(track)}
+            title="Nomli Music"
+            subtitle="Pick a track for your text story"
+            ctaLabel="Use sound"
+          />
 
             </LinearGradient>
           </View>

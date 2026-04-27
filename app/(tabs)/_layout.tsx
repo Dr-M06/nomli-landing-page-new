@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { AppState, View, Text } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, DeviceEventEmitter, View, Text } from 'react-native';
 import { Tabs, useRouter, useSegments } from 'expo-router';
-import { House, CircleUserRound, Plus, Inbox, Compass, Radio } from 'lucide-react-native';
+import { House, CircleUserRound, Plus, Inbox, Heart, Users } from 'lucide-react-native';
 import { Colors, getThemeColors } from '../../constants/Colors';
 import { SocialSizes, BorderRadius, Shadow } from '../../constants/Theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,8 +62,63 @@ export default function TabLayout() {
   const segments = useSegments();
   const { isDarkMode } = useTheme();
   const themeColors = getThemeColors(isDarkMode);
+  const [datingTabVisible, setDatingTabVisible] = useState(true);
   
   const suspensionCheckRef = useRef<{ lastCheck: number; userId?: string }>({ lastCheck: 0 });
+
+  const refreshDatingTabVisibility = React.useCallback(async () => {
+    if (!user?.id) {
+      setDatingTabVisible(true);
+      return;
+    }
+    try {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('profile_visible, hide_from_discover, discover_dating_opted_in')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError || !data) {
+        // Strict fallback for authenticated users: if we cannot confirm visibility, keep Dating tab hidden.
+        setDatingTabVisible(false);
+        return;
+      }
+
+      const profileVisible = data.profile_visible !== false;
+      const hiddenFromDiscover = data.hide_from_discover === true;
+      const optedIn = data.discover_dating_opted_in === true;
+      setDatingTabVisible(profileVisible && !hiddenFromDiscover && optedIn);
+    } catch {
+      // Strict fallback for authenticated users: avoid exposing the tab on stale/read failures.
+      setDatingTabVisible(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    refreshDatingTabVisibility();
+  }, [refreshDatingTabVisibility]);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('datingVisibilityChanged', (next: boolean) => {
+      setDatingTabVisible(!!next);
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refreshDatingTabVisibility();
+      }
+    });
+    return () => appStateSub.remove();
+  }, [refreshDatingTabVisibility]);
+
+  useEffect(() => {
+    if (!datingTabVisible && segments[1] === 'discovery') {
+      router.replace('/(tabs)/community');
+    }
+  }, [datingTabVisible, router, segments]);
   
   // Check suspension status when user is loaded
   useEffect(() => {
@@ -191,11 +246,12 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="community"
+        name="discovery"
         options={{
-          title: 'Home',
+          title: 'Connect',
+          href: datingTabVisible ? undefined : null,
           tabBarIcon: ({ color, size, focused }) => (
-            <House
+            <Heart
               size={18} 
               color={color} 
               strokeWidth={focused ? 2.5 : 2.1}
@@ -204,11 +260,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="discovery"
+        name="community"
         options={{
-          title: 'Discovery',
+          title: 'Social',
           tabBarIcon: ({ color, focused }) => (
-            <Compass
+            <Users
               size={18}
               color={color}
               strokeWidth={focused ? 2.5 : 2.1}
@@ -217,7 +273,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="videos"
+        name="connect"
         options={{
           href: null,
         }}
@@ -225,14 +281,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="live"
         options={{
-          title: 'Live',
-          tabBarIcon: ({ color, focused }) => (
-            <Radio
-              size={18}
-              color={color}
-              strokeWidth={focused ? 2.5 : 2.1}
-            />
-          ),
+          href: null,
         }}
       />
       {/* Center Add Button */}
@@ -283,7 +332,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-  ), [isDarkMode]); // Only recreate when theme changes, not on every auth state change
+  ), [datingTabVisible, isDarkMode]); // Only recreate when relevant tab state/theme changes
   
   // Do not block tab UI on auth: show shell immediately; each screen handles guest/loading.
   // (Full-screen shimmer here added a second gate after root layout.)

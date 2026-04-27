@@ -336,7 +336,7 @@ export default function VerifyTOTPScreen() {
             text2: 'Welcome back!',
           });
           
-          router.replace('/(tabs)/community');
+          router.replace('/(tabs)/discovery');
         } else {
           setError('Failed to complete sign in. Please try again.');
         }

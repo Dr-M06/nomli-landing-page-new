@@ -42,6 +42,6 @@ export default function Index() {
   }
   
   // Current logic: open app → home (guests can browse). Create-account path uses old logic: signup-success → signin → app.
-  const redirectHref = hasCompletedOnboarding ? "/(tabs)/community" : "/onboarding";
+  const redirectHref = hasCompletedOnboarding ? "/(tabs)/discovery" : "/onboarding";
   return <Redirect href={redirectHref} />;
 } 

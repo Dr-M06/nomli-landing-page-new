@@ -27,7 +27,7 @@ export function getLivestreamCommentsBottomOffset(insetsBottom: number): number 
   return Math.max(tabPlusInput, legacyLift);
 }
 
-/** Short overlay column so chat doesn’t cover the camera (broadcaster + viewer). */
-export const LIVESTREAM_OVERLAY_COMMENTS_HEIGHT = 96;
+/** Larger overlay column so viewers can read more comments without cramped scrolling. */
+export const LIVESTREAM_OVERLAY_COMMENTS_HEIGHT = 170;
 /** Right inset so the list clears the reaction / action rail. */
 export const LIVESTREAM_OVERLAY_COMMENTS_RIGHT_INSET = 86;

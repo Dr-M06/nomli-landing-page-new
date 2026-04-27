@@ -8,12 +8,15 @@ import { getThemeColors } from '../../constants/Colors';
 import { BorderRadius, FontFamily, FontSizes, Spacing } from '../../constants/Theme';
 import { formatTimeAgo } from '../../utils/formatters';
 import { stripAtSymbol } from '../../utils/contentFilter';
+import CreatorProAuthorBadge from '../CreatorProAuthorBadge';
 
 export type StoryStyleTextPostCardProps = {
   userId: string;
   username: string;
   /** Matches profile / post author verification (home feed). */
   isVerified?: boolean;
+  /** Author Creator Pro expiry (from `profiles.creator_pro_until`) for small Pro pill. */
+  creatorProUntil?: string | null;
   avatarUrl?: string | null;
   content: string;
   createdAt: string;
@@ -49,6 +52,7 @@ export default function StoryStyleTextPostCard({
   userId,
   username,
   isVerified = false,
+  creatorProUntil,
   avatarUrl,
   content,
   createdAt,
@@ -129,9 +133,12 @@ export default function StoryStyleTextPostCard({
           enableZoom={false}
         />
         <View style={styles.headerText}>
-          <Text style={[styles.name, { color: c.neutral.text }]} numberOfLines={1}>
-            {displayName}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, { color: c.neutral.text }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <CreatorProAuthorBadge creatorProUntil={creatorProUntil} isDark={isDark} />
+          </View>
           <Text style={[styles.time, { color: c.neutral.textTertiary }]}>{formatTimeAgo(createdAt)}</Text>
         </View>
         {showMoreButton && (
@@ -264,9 +271,17 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
   name: {
     fontFamily: FontFamily.semibold,
     fontSize: FontSizes.sm,
+    flex: 1,
+    minWidth: 0,
   },
   time: {
     fontFamily: FontFamily.regular,

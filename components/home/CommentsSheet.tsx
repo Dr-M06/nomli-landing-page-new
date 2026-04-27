@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native';
-import { X, Send } from 'lucide-react-native';
+import { X, Send, Zap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -33,6 +33,8 @@ import {
 } from '../../utils/commentUtils';
 import { formatTimeAgo } from '../../utils/formatters';
 import Toast from 'react-native-toast-message';
+import ReactionPicker, { type ReactionType } from '../ReactionPicker';
+import { ReactionIcon } from '../reactions/ReactionIcon';
 
 const COMMENT_AVATAR_SIZE = 26;
 const COMMENT_AVATAR_GAP = 10;
@@ -63,8 +65,12 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
   const [likersVisible, setLikersVisible] = useState(false);
   const [likersLoading, setLikersLoading] = useState(false);
   const [likersTitle, setLikersTitle] = useState('Liked by');
+  const [likersCommentId, setLikersCommentId] = useState<string | null>(null);
   const [commentLikers, setCommentLikers] = useState<CommentLiker[]>([]);
   const [liveLaughCommentId, setLiveLaughCommentId] = useState<string | null>(null);
+  const [reactionPickerForCommentId, setReactionPickerForCommentId] = useState<string | null>(null);
+  const [reactionPickerVisible, setReactionPickerVisible] = useState(false);
+  const [selectedReactionByComment, setSelectedReactionByComment] = useState<Record<string, string>>({});
   const laughScale = React.useRef(new Animated.Value(1)).current;
 
   const load = useCallback(async () => {
@@ -89,7 +95,12 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
     if (!userId || !text.trim() || submitting) return;
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const toSend = text.trim();
+    let toSend = text.trim();
+    if (replyTo?.username) {
+      // Avoid saving duplicated "@username" when UI already renders reply target prefix.
+      const escaped = replyTo.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      toSend = toSend.replace(new RegExp(`^@${escaped}\\s+`, 'i'), '').trim();
+    }
     setText('');
     try {
       const saved = replyTo
@@ -119,13 +130,24 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
   }, [postId, userId, text, submitting, onCommentPosted, replyTo, load]);
 
   const onToggleLike = useCallback(
-    async (comment: Comment) => {
+    async (comment: Comment, reactionType: ReactionType = 'laugh', fromPicker = false) => {
       if (!userId) {
         Toast.show({ type: 'info', text1: 'Sign in to react to comments', position: 'bottom' });
         return;
       }
       const current = comments.find((c) => c.id === comment.id);
       const previousLiked = !!(current?.liked ?? comment.liked);
+      const previousEmoji = selectedReactionByComment[comment.id];
+      setReactionPickerVisible(false);
+      setReactionPickerForCommentId(null);
+      const reactionEmoji = reactionType === 'like' ? '⚡' : '😂';
+
+      // Picker should switch reaction style without stacking or toggling off existing reaction.
+      if (fromPicker && previousLiked) {
+        setSelectedReactionByComment((prev) => ({ ...prev, [comment.id]: reactionEmoji }));
+        return;
+      }
+
       setComments((prev) =>
         prev.map((c) =>
           c.id === comment.id
@@ -143,6 +165,7 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
         const ok = await toggleCommentLike(comment.id, userId);
         if (!ok) throw new Error('toggle failed');
         if (!previousLiked) {
+          setSelectedReactionByComment((prev) => ({ ...prev, [comment.id]: reactionEmoji }));
           // Lightweight "alive" laugh feedback (no network/media cost).
           setLiveLaughCommentId(comment.id);
           laughScale.setValue(0.9);
@@ -162,6 +185,11 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
             setTimeout(() => setLiveLaughCommentId((id) => (id === comment.id ? null : id)), 260);
           });
         } else {
+          setSelectedReactionByComment((prev) => {
+            const next = { ...prev };
+            delete next[comment.id];
+            return next;
+          });
           // Clear active laugh marker immediately when reaction is removed.
           setLiveLaughCommentId((id) => (id === comment.id ? null : id));
           Toast.show({
@@ -185,10 +213,13 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
               : c
           )
         );
+        if (previousEmoji) {
+          setSelectedReactionByComment((prev) => ({ ...prev, [comment.id]: previousEmoji }));
+        }
         Toast.show({ type: 'error', text1: 'Failed to react to comment', position: 'bottom' });
       }
     },
-    [userId, comments, laughScale]
+    [userId, comments, laughScale, selectedReactionByComment]
   );
 
   const openCommenterProfile = useCallback(
@@ -202,10 +233,10 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
   );
 
   const openCommentLikers = useCallback(async (comment: Comment) => {
-    if ((comment.likes_count ?? 0) <= 0) return;
+    setLikersCommentId(comment.id);
     setLikersVisible(true);
     setLikersLoading(true);
-    setLikersTitle(`Liked by (${comment.likes_count ?? 0})`);
+    setLikersTitle(`Reactions (${Math.max(comment.likes_count ?? 0, comment.liked ? 1 : 0)})`);
     try {
       const users = await fetchCommentLikers(comment.id);
       setCommentLikers(users);
@@ -303,7 +334,10 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
                           },
                         ]}
                       >
-                        {item.reply_to_username ? `@${item.reply_to_username} ` : ''}
+                        {item.reply_to_username &&
+                        !(item.content || '').trim().toLowerCase().startsWith(`@${String(item.reply_to_username).toLowerCase()}`)
+                          ? `@${item.reply_to_username} `
+                          : ''}
                         {item.content ?? ''}
                       </Text>
                       <View
@@ -312,31 +346,40 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
                           { marginLeft: COMMENT_AVATAR_SIZE + COMMENT_AVATAR_GAP },
                         ]}
                       >
-                        <TouchableOpacity style={styles.actionChip} activeOpacity={0.75} onPress={() => onToggleLike(item)}>
-                          {item.liked ? (
-                            <Animated.Text
-                              style={[
-                                styles.reactionChipEmoji,
-                                { transform: [{ scale: liveLaughCommentId === item.id ? laughScale : 1 }] },
-                              ]}
-                            >
-                              😂
-                            </Animated.Text>
-                          ) : (
-                            <Text style={[styles.actionText, { color: c.neutral.textTertiary }]}>⚡</Text>
-                          )}
-                        </TouchableOpacity>
-                        {(item.likes_count ?? 0) > 0 && (
-                          <TouchableOpacity
-                            style={styles.actionChip}
-                            onPress={() => openCommentLikers(item)}
-                            activeOpacity={0.75}
+                        <TouchableOpacity
+                          style={styles.actionChip}
+                          onPress={() => {
+                            // Quick tap: toggle default reaction (like) without opening picker.
+                            onToggleLike(item, 'like', false);
+                          }}
+                          onLongPress={() => {
+                            // Hold: open shared reaction picker on the same counter chip.
+                            setReactionPickerForCommentId(item.id);
+                            setReactionPickerVisible(true);
+                          }}
+                          delayLongPress={280}
+                          activeOpacity={0.75}
+                        >
+                          <Animated.View
+                            style={[
+                              { transform: [{ scale: liveLaughCommentId === item.id ? laughScale : 1 }] },
+                            ]}
                           >
-                            <Text style={[styles.actionCount, { color: c.neutral.textTertiary }]}>
-                              {item.likes_count}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
+                            <ReactionIcon
+                              reaction={
+                                item.liked
+                                  ? (selectedReactionByComment[item.id] === '⚡' ? 'like' : 'laugh')
+                                  : null
+                              }
+                              size={14}
+                              activeColor="#FACC15"
+                              inactiveColor={c.neutral.textTertiary}
+                            />
+                          </Animated.View>
+                          <Text style={[styles.actionCount, { color: c.neutral.textTertiary }]}>
+                            {Math.max(item.likes_count ?? 0, item.liked ? 1 : 0)}
+                          </Text>
+                        </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.actionChip}
                           activeOpacity={0.75}
@@ -420,24 +463,53 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
         </KeyboardAvoidingView>
       </View>
     </Modal>
+    <ReactionPicker
+      visible={reactionPickerVisible && !!reactionPickerForCommentId}
+      onClose={() => {
+        setReactionPickerVisible(false);
+        setReactionPickerForCommentId(null);
+      }}
+      currentReaction={
+        reactionPickerForCommentId && selectedReactionByComment[reactionPickerForCommentId] === '⚡'
+          ? 'like'
+          : reactionPickerForCommentId && selectedReactionByComment[reactionPickerForCommentId] === '😂'
+            ? 'laugh'
+            : null
+      }
+      onReactionSelect={(reaction) => {
+        if (!reactionPickerForCommentId) return;
+        const target = comments.find((c) => c.id === reactionPickerForCommentId);
+        if (!target) return;
+        onToggleLike(target, reaction, true);
+      }}
+    />
     
     <Modal
       visible={likersVisible}
       transparent
       animationType="slide"
-      onRequestClose={() => setLikersVisible(false)}
+      onRequestClose={() => {
+        setLikersVisible(false);
+        setLikersCommentId(null);
+      }}
     >
       <View style={styles.overlay}>
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
-          onPress={() => setLikersVisible(false)}
+          onPress={() => {
+            setLikersVisible(false);
+            setLikersCommentId(null);
+          }}
         />
         <View style={[styles.likersSheet, { backgroundColor: c.neutral.card }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: c.neutral.text }]}>{likersTitle}</Text>
             <TouchableOpacity
-              onPress={() => setLikersVisible(false)}
+              onPress={() => {
+                setLikersVisible(false);
+                setLikersCommentId(null);
+              }}
               style={[styles.closeBtn, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
             >
               <X size={18} color={c.neutral.text} />
@@ -476,6 +548,11 @@ export default function CommentsSheet({ visible, onClose, postId, userId, onComm
                   />
                   <Text style={[styles.likerName, { color: c.neutral.text }]}>
                     {item.username || item.full_name || 'User'}
+                  </Text>
+                  <Text style={styles.likerReactionEmoji}>
+                    {item.user_id === userId
+                      ? selectedReactionByComment[likersCommentId || ''] || item.reaction_emoji || '😂'
+                      : item.reaction_emoji || '😂'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -589,12 +666,17 @@ const styles = StyleSheet.create({
     marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
   },
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
+  },
+  reactIconOnlyWrap: {
+    width: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionText: {
     fontFamily: FontFamily.medium,
@@ -665,6 +747,11 @@ const styles = StyleSheet.create({
   likerName: {
     fontFamily: FontFamily.medium,
     fontSize: 14,
+    flex: 1,
+  },
+  likerReactionEmoji: {
+    fontSize: 18,
+    lineHeight: 22,
   },
 });
 

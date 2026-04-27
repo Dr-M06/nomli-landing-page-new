@@ -1470,7 +1470,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                       style={[
                         styles.getTokensGridCard,
                         {
-                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                           borderColor: isBestValue
                             ? (isDarkMode ? 'rgba(107, 201, 176, 0.5)' : 'rgba(61, 147, 122, 0.45)')
                             : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
@@ -1490,17 +1490,17 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ onClose, onRedeem }) => {
                         <>
                           {isBestValue && (
                             <View style={styles.getTokensGridBestPill}>
-                              <Text style={styles.getTokensGridBestPillText}>Best value</Text>
+                              <Text style={[styles.getTokensGridBestPillText, { color: isDarkMode ? '#B8FFE9' : '#145A4D' }]}>Best value</Text>
                             </View>
                           )}
-                          <Text style={[styles.getTokensGridAmount, { color: colors.text }]}>
+                          <Text style={[styles.getTokensGridAmount, { color: isDarkMode ? '#FFFFFF' : colors.text }]}>
                             {pkg.token_amount.toLocaleString()}
                           </Text>
-                          <Text style={[styles.getTokensGridLabel, { color: colors.textSecondary }]}>tokens</Text>
+                          <Text style={[styles.getTokensGridLabel, { color: isDarkMode ? 'rgba(234, 244, 255, 0.85)' : colors.textSecondary }]}>tokens</Text>
                           <View style={[styles.getTokensGridPriceWrap, {
-                            backgroundColor: isDarkMode ? 'rgba(107, 201, 176, 0.14)' : 'rgba(228, 235, 138, 0.2)',
+                            backgroundColor: isDarkMode ? 'rgba(107, 201, 176, 0.32)' : 'rgba(228, 235, 138, 0.2)',
                           }]}>
-                            <Text style={styles.getTokensGridPrice}>${pkg.price_usd.toFixed(2)}</Text>
+                            <Text style={[styles.getTokensGridPrice, { color: isDarkMode ? '#EFFFF7' : WALLET_ON_LEMON }]}>${pkg.price_usd.toFixed(2)}</Text>
                           </View>
                         </>
                       )}

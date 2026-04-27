@@ -111,6 +111,7 @@ export interface CommentLiker {
   full_name?: string;
   avatar_url?: string | null;
   is_verified?: boolean;
+  reaction_emoji?: string;
 }
 
 /**
@@ -574,6 +575,9 @@ export const fetchCommentLikers = async (commentId: string): Promise<CommentLike
         full_name: p?.full_name,
         avatar_url: p?.avatar_url,
         is_verified: !!p?.is_verified,
+        // Current post comment reaction model is single-tap reaction.
+        // Keep emoji explicit in UI so users can see "who reacted and with what".
+        reaction_emoji: '😂',
       };
     });
   } catch (e) {

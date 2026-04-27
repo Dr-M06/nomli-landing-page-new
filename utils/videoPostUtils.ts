@@ -351,7 +351,7 @@ export const fetchAllVideoPosts = async (
       const { data: profiles, error: profilesError } = await withTimeout(
         supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, is_verified')
+          .select('id, username, full_name, avatar_url, is_verified, creator_pro_until')
           .in('id', userIds),
         PROFILES_TIMEOUT_MS,
         'Profiles enrich'

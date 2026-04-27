@@ -6,6 +6,7 @@ import { formatTimeAgo } from '../../utils/formatters';
 import { getSafeDisplayName, stripAtSymbol } from '../../utils/contentFilter';
 import { BorderRadius, FontFamily } from '../../constants/Theme';
 import { error } from '../../utils/productionLogger';
+import CreatorProAuthorBadge from '../CreatorProAuthorBadge';
 
 interface PostHeaderProps {
   item: any;
@@ -76,7 +77,11 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
         <View style={styles.userTextContainer}>
           <View style={styles.topRow}>
             <View style={styles.nameBlock}>
-              <TouchableOpacity onPress={() => navigateToUserProfile(item.user_id)} activeOpacity={0.75}>
+              <TouchableOpacity
+                onPress={() => navigateToUserProfile(item.user_id)}
+                activeOpacity={0.75}
+                style={styles.nameTap}
+              >
                 <Text
                   style={[styles.userName, { color: themeColors.neutral.text }]}
                   numberOfLines={1}
@@ -91,6 +96,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                   <Text style={[styles.businessBadgeText, { color: themeColors.primary.main }]}>biz</Text>
                 </View>
               )}
+              <CreatorProAuthorBadge creatorProUntil={item.profile?.creator_pro_until} isDark={isDark} />
             </View>
             {!!item.created_at && (
               <View style={[styles.timePill, { backgroundColor: pillBg }]}>
@@ -157,6 +163,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
+    minWidth: 0,
+  },
+  nameTap: {
     flex: 1,
     minWidth: 0,
   },

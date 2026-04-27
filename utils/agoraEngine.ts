@@ -119,8 +119,8 @@ export const joinStream = async ({
     ClientRoleType.ClientRoleBroadcaster
   );
 
-  // Join channel
-  await engine.joinChannel(token, channelName, null, uid);
+  // Agora RN SDK v4 join signature is: joinChannel(token, channelId, uid, options).
+  await engine.joinChannel(token, channelName, uid, {});
   
   log(`✅ [AGORA_ENGINE] Joined channel as ${isHost ? 'HOST' : 'GUEST'}:`, {
     channelName,

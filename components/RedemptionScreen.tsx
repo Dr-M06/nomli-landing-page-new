@@ -462,6 +462,15 @@ const RedemptionScreen: React.FC<RedemptionScreenProps> = ({ onClose, redemption
     }
   };
 
+  const parsedRedemptionAmount = Number.parseInt(redemptionAmount, 10) || 0;
+  const minimumRedemptionAmount = redemptionMode === 'earned_tokens' ? 500 : 100;
+  const availableBalance =
+    redemptionMode === 'earned_tokens'
+      ? (wallet?.earned_tokens_balance || 0)
+      : (wallet?.token_balance || 0);
+  const hasValidAmount =
+    parsedRedemptionAmount >= minimumRedemptionAmount && parsedRedemptionAmount <= availableBalance;
+
   if (loading) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -980,11 +989,7 @@ const RedemptionScreen: React.FC<RedemptionScreenProps> = ({ onClose, redemption
               style={styles.redeemButton}
               onPress={handleRedemption}
               disabled={
-                redeeming || 
-                !redemptionAmount || 
-                (redemptionMode === 'earned_tokens' 
-                  ? (!phoneNumber.trim() || !selectedNetwork || (redemptionType === 'data' && !selectedBundle))
-                  : (!selectedBankCode || !accountNumber.trim() || !accountName.trim()))
+                redeeming || !hasValidAmount
               }
               activeOpacity={0.8}
             >

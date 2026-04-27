@@ -14,7 +14,6 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  Share as RNShare,
   useColorScheme,
   Dimensions,
   Animated as RNAnimated,
@@ -43,7 +42,6 @@ import {
   Trash2,
   Pencil,
   X,
-  Share2,
   Send,
   ZoomIn,
   Plus,
@@ -66,7 +64,6 @@ import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import { useTheme } from '../../contexts/ThemeContext';
-import { downloadImageForSharing } from '../../utils/fileCache';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import PostReactionsCounter from '../../components/PostReactionsCounter';
 import { resizePostImage } from '../../utils/imageResizer';
@@ -589,16 +586,7 @@ const PostItemDisplay: React.FC<PostItemDisplayProps> = ({
           <Reply size={18} color={themeColors.neutral.subtext} />
         </TouchableOpacity>
 
-        {/* Share button - DISABLED */}
-        {/* <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation(); // Prevent navigation to post details
-            handleShare(item);
-          }}
-        >
-          <Share2 size={18} color={themeColors.neutral.subtext} />
-        </TouchableOpacity> */}
+        {/* Share hidden temporarily */}
       </View>
 
       {/* Expandable Comments Section */}
@@ -1411,98 +1399,6 @@ export default function CommunityScreen() {
     }
     return getSortedPosts();
   }, [loading, posts, searchQuery, selectedFilter]);
-  
-  // Add this function to handle sharing
-  const handleShare = async (post: Post) => {
-    try {
-      // Create a proper deep link to the post with the app's URL scheme
-      const postLink = `mingleapp://community/post/${post.id}`;
-      
-      // Create a fallback web URL
-      const webUrl = `https://mingle.app/community/post/${post.id}`;
-      
-      // Get the best image URL for sharing if available
-      const shareImageUrl = await prepareImageForSharing(post);
-      
-      // Format the text content for better presentation
-      const shareTitle = post.username 
-        ? `Post from ${post.username} on Mingle` 
-        : 'Check out this Mingle post';
-      
-      // Create a well-formatted message with emojis and structure for better card display
-      const shareMessage = `${post.content 
-        ? post.content.substring(0, 100) + ((post.content.length > 100) ? '...' : '') 
-        : 'Check out this post on Mingle!'}\n\n📱 Download Mingle: https://mingle.app/download\n\n#MingleApp #SocialMedia`;
-      
-      // Prepare share options
-      const shareOptions = {
-        title: shareTitle,
-        message: shareMessage,
-        url: shareImageUrl || webUrl, // Prioritize image URL for card display
-      };
-      
-      log('Sharing with options:', shareOptions);
-      
-      // Share the content
-      const result = await RNShare.share(shareOptions);
-      
-      if (result.action === RNShare.sharedAction) {
-        if (result.activityType) {
-          log('Shared with activity type:', result.activityType);
-        } else {
-          log('Shared post');
-        }
-      } else if (result.action === RNShare.dismissedAction) {
-        log('Share dismissed');
-      }
-    } catch (error: any) {
-      error('Error sharing post:', error);
-      Alert.alert('Error sharing post', error.message);
-    }
-  };
-  
-  // Prepare image for sharing - this downloads remote images to local cache when needed
-  const prepareImageForSharing = async (post: Post): Promise<string> => {
-    const imageUrl = getBestImageUrlForSharing(post);
-    if (!imageUrl) return '';
-    
-    // For HTTP/HTTPS URLs, we need to download them for some platforms
-    // This ensures the image appears in the share card
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      try {
-        const localUrl = await downloadImageForSharing(imageUrl);
-        if (localUrl) {
-          log('Downloaded image for sharing:', localUrl);
-          return localUrl;
-        }
-      } catch (error) {
-        error('Error downloading image for sharing:', error);
-      }
-    }
-    
-    return imageUrl;
-  };
-  
-  // Helper function to get the best image URL for sharing
-  const getBestImageUrlForSharing = (post: Post): string => {
-    // We need a valid HTTP/HTTPS URL for social media cards
-    // Check if post has image URLs array and use the first valid one
-    if (post.image_urls && (post.image_urls.length > 0)) {
-      for (const url of post.image_urls) {
-        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-          return url;
-        }
-      }
-    }
-    
-    // Fallback to single image URL if available and valid
-    if (post.image_url && (post.image_url.startsWith('http://') || post.image_url.startsWith('https://'))) {
-      return post.image_url;
-    }
-    
-    // Return empty string if no valid image URLs found
-    return '';
-  };
   
   const togglePostContentExpansion = (postId: string) => {
     setExpandedPostContent(prev => {

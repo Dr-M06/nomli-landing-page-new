@@ -86,6 +86,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   // CRITICAL: Track if we're exiting to prevent re-joining
   const isExitingRef = useRef(false);
   const hasLeftRef = useRef(false);
+  const hasClosedRef = useRef(false);
 
   
   const {
@@ -151,6 +152,12 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
   const [videoSubscriptionFailed, setVideoSubscriptionFailed] = useState(false);
   const [videoFirstFrameReceived, setVideoFirstFrameReceived] = useState(false);
   const videoFailureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const closeViewerOnce = useCallback(() => {
+    if (hasClosedRef.current) return;
+    hasClosedRef.current = true;
+    onClose();
+  }, [onClose]);
   
   // Reset join request state when stream changes (only when stream ID actually changes)
   // Initialize to null so first mount always triggers reset check
@@ -1514,12 +1521,17 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
 
     startAnimations();
 
-    // CRITICAL: Reset exit flags when component mounts (fresh start)
-    if (!isExitingRef.current && !hasLeftRef.current) {
-      log('🔄 [VIEWER] Component mounted, resetting exit flags');
+    // Fresh join guard: when opening/re-opening viewer for this stream, clear stale exit flags.
+    // Without this, leaving then returning to the same stream can get stuck on loading because
+    // join is blocked by old `isExiting/hasLeft` values.
+    const preparingFreshJoin =
+      !isJoinedAsViewer && (!currentStream || currentStream.id !== streamId);
+    if (preparingFreshJoin) {
+      isExitingRef.current = false;
+      hasLeftRef.current = false;
+      hasClosedRef.current = false;
+      log('🔄 [VIEWER] Reset exit flags for fresh join attempt');
     }
-    // Only reset if we're not already in an exiting state (preserve exit state if user is leaving)
-    // This allows fresh mounts to join, but prevents re-joins after exit
 
     // Join stream when component mounts
     const joinStream = async () => {
@@ -1568,9 +1580,31 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
           return;
         }
       }
+
+      // Avoid join/retry loop if stream already ended or deleted.
+      try {
+        const { data: streamState } = await supabase
+          .from('live_streams')
+          .select('is_live, ended_at')
+          .eq('id', streamId)
+          .maybeSingle();
+        if (!streamState || streamState.is_live === false || !!streamState.ended_at) {
+          setStreamEnded(true);
+          setIsCheckingKick(false);
+          setTimeout(() => closeViewerOnce(), 350);
+          return;
+        }
+      } catch {
+        // Non-blocking: continue to join path if status check fails transiently.
+      }
       
       setIsCheckingKick(false);
-      const success = await joinStreamAsViewer(streamId);
+      let success = await joinStreamAsViewer(streamId);
+      if (!success && !isExitingRef.current && !hasLeftRef.current) {
+        // One quick retry for transient network/Agora race on initial join.
+        await new Promise((resolve) => setTimeout(resolve, 900));
+        success = await joinStreamAsViewer(streamId);
+      }
       if (!success) {
         error('❌ Failed to join stream');
         // Note: joinStreamAsViewer already shows appropriate alerts for different error cases
@@ -1578,7 +1612,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
         // Small delay to allow any alerts to be dismissed first
         setTimeout(() => {
           log('🔄 [VIEWER] Join failed, navigating back to home screen');
-          onClose();
+          closeViewerOnce();
         }, 500);
       } else {
         log('✅ Successfully joined stream, waiting for video...');
@@ -1643,7 +1677,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streamId]); // Only re-run when streamId changes - early exit checks prevent unnecessary joins
+  }, [streamId]); // Re-run only when stream target changes
 
   // Monitor stream status - disconnect viewers when stream ends
   useEffect(() => {
@@ -1654,7 +1688,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
       return;
     }
     
-    if (!isJoinedAsViewer || !streamId) return;
+    if (!streamId) return;
 
     log('👁️ [VIEWER] Setting up stream end monitoring for stream:', streamId);
 
@@ -1705,12 +1739,12 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
                 // Small delay to ensure cleanup completes
                 await new Promise(resolve => setTimeout(resolve, 200));
                 // Close the modal and navigate back to home screen cleanly
-                onClose();
+                closeViewerOnce();
                 log('✅ [VIEWER] Modal auto-closed after stream ended');
               } catch (error) {
                 error('❌ [VIEWER] Error leaving stream (non-critical):', error);
                 // Still close modal even if leave fails
-                onClose();
+                closeViewerOnce();
               }
             }, 1800); // Keep notice visible long enough for viewers to read
             timeoutIds.push(timeoutId);
@@ -1732,7 +1766,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
         return;
       }
       
-      if (!isJoinedAsViewer || !streamId) {
+      if (!streamId) {
         if (statusCheckIntervalId) {
           clearInterval(statusCheckIntervalId);
           statusCheckIntervalId = null;
@@ -1778,12 +1812,12 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
                 // Small delay to ensure cleanup completes
                 await new Promise(resolve => setTimeout(resolve, 200));
                 // Close the modal and navigate back to home screen cleanly
-                onClose();
+                closeViewerOnce();
                 log('✅ [VIEWER] Modal auto-closed after stream deleted');
               } catch (error) {
                 error('❌ [VIEWER] Error leaving stream (non-critical):', error);
                 // Still close modal even if leave fails
-                onClose();
+                closeViewerOnce();
               }
             }, 1800); // Keep notice visible long enough for viewers to read
             timeoutIds.push(timeoutId);
@@ -1823,12 +1857,12 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
               // Small delay to ensure cleanup completes
               await new Promise(resolve => setTimeout(resolve, 200));
               // Close the modal and navigate back to home screen cleanly
-              onClose();
+              closeViewerOnce();
               log('✅ [VIEWER] Modal auto-closed after stream ended (periodic check)');
             } catch (error) {
               error('❌ [VIEWER] Error leaving stream (non-critical):', error);
               // Still close modal even if leave fails
-              onClose();
+              closeViewerOnce();
             }
           }, 1800); // Keep notice visible long enough for viewers to read
           timeoutIds.push(timeoutId);
@@ -1855,7 +1889,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
       // MEMORY LEAK FIX: Clear all tracked timeouts
       timeoutIds.forEach(timeoutId => clearTimeout(timeoutId));
     };
-  }, [isJoinedAsViewer, streamId, leaveStreamAsViewer, onClose]);
+  }, [isJoinedAsViewer, streamId, leaveStreamAsViewer, closeViewerOnce]);
 
   // Cleanup sounds and reset join request state when component unmounts
   useEffect(() => {
@@ -2313,7 +2347,7 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
     InteractionManager.runAfterInteractions(() => {
       // Use requestAnimationFrame to ensure state updates happen on next frame
       requestAnimationFrame(() => {
-        onClose();
+        closeViewerOnce();
       });
     });
   };
@@ -2654,9 +2688,22 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
     );
   }
 
+  const hostEndedStream = streamEnded || !!currentStream?.ended_at || currentStream?.is_live === false;
+
   // Show loading screen only if not kicked and not checking kick status
   // IMPORTANT: Always check if currentStream exists before rendering content that uses it
   if ((!currentStream || !isJoinedAsViewer) && !isKicked && !isCheckingKick) {
+    if (hostEndedStream) {
+      return (
+        <View style={[styles.container, styles.loadingContainer]}>
+          <StatusBar hidden />
+          <View style={styles.loadingContent}>
+            <Text style={styles.loadingTitle}>Livestream ended</Text>
+            <Text style={styles.loadingSubtitle}>The host has ended this stream.</Text>
+          </View>
+        </View>
+      );
+    }
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <StatusBar hidden />
@@ -2813,9 +2860,9 @@ export default function LiveStreamViewer({ streamId, onClose, isAdmin = false, o
                 audioPlaying={isJoinedAsViewer}
                 streamerAvatarUrl={currentStream?.streamer?.avatar_url}
                 streamerUsername={currentStream?.streamer?.username}
-                streamEnded={connectionState === 'DISCONNECTED' || connectionState === 'FAILED'}
+                streamEnded={hostEndedStream}
                 message={
-                  connectionState === 'DISCONNECTED' || connectionState === 'FAILED'
+                  hostEndedStream
                     ? 'Stream ended\nThe host has ended the livestream.'
                     : videoSubscriptionFailed
                     ? 'Video unavailable due to poor connection\nAudio is still playing'

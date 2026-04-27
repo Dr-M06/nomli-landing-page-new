@@ -20,6 +20,7 @@ export interface PushNotificationData {
 class CustomNotificationService {
   private expoPushToken: string | null = null;
   private isInitialized = false;
+  private lastNullTokenLogAtMs = 0;
 
   /**
    * Initialize the notification service without FCM
@@ -131,16 +132,23 @@ class CustomNotificationService {
   async saveTokenToProfile(userId: string): Promise<boolean> {
     try {
       if (!this.expoPushToken) {
-        error('[CustomNotifications] ❌ No push token available to save');
-        error('[CustomNotifications] Token is NULL - initialization may have failed');
-        error('[CustomNotifications] Attempting to reinitialize...');
-        
-        // Try to reinitialize if token is missing
-        const reinitSuccess = await this.initialize();
-        if (reinitSuccess && this.expoPushToken) {
-          log('[CustomNotifications] ✅ Token obtained after reinitialization');
+        const now = Date.now();
+        // Avoid noisy loops when token is intentionally unavailable (permission denied, emulator, FCM-disabled path).
+        if (now - this.lastNullTokenLogAtMs > 30000) {
+          warn('[CustomNotifications] No push token available to save (skipping save for now)');
+          this.lastNullTokenLogAtMs = now;
+        }
+
+        // Only attempt initialization if it has never been initialized yet.
+        // If already initialized and token is still null, repeated reinit calls are just log spam.
+        if (!this.isInitialized) {
+          const reinitSuccess = await this.initialize();
+          if (reinitSuccess && this.expoPushToken) {
+            log('[CustomNotifications] ✅ Token obtained after initialization');
+          } else {
+            return false;
+          }
         } else {
-          error('[CustomNotifications] ❌ Reinitialization failed - token still NULL');
           return false;
         }
       }

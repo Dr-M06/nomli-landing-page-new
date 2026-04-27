@@ -14,8 +14,6 @@ import {
   Animated,
   Keyboard,
   TouchableWithoutFeedback,
-  ScrollView,
-  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
@@ -26,8 +24,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../constants/Colors';
 import { FontFamily, FontSizes, Spacing, BorderRadius } from '../constants/Theme';
 import { log, warn, error } from '../utils/productionLogger';
-import { getSelectableTracks, type MusicTrack } from '../constants/musicLibrary';
-import { SUPPORT_EMAIL } from '../constants/ContactEmails';
+import { type MusicTrack } from '../constants/musicLibrary';
+import MusicHubModal from './music/MusicHubModal';
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -40,6 +38,7 @@ interface StoryEditorProps {
   mediaUri: string;
   mediaType: 'photo' | 'video';
   onPublish: (mediaUri: string, mediaType: 'photo' | 'video', caption?: string, isPublic?: boolean, music?: StoryEditorMusicPayload | null) => void;
+  initialMusic?: MusicTrack | null;
   uploadProgress?: number;
   isUploading?: boolean;
   uploadError?: string | null;
@@ -51,6 +50,7 @@ export default function StoryEditor({
   mediaUri,
   mediaType,
   onPublish,
+  initialMusic = null,
   uploadProgress = 0,
   isUploading = false,
   uploadError = null,
@@ -65,8 +65,6 @@ export default function StoryEditor({
   const [videoError, setVideoError] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<MusicTrack | null>(null);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
-  const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
-  const [musicLoading, setMusicLoading] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -89,6 +87,7 @@ export default function StoryEditor({
           useNativeDriver: true,
         }),
       ]).start();
+      setSelectedMusic(initialMusic ?? null);
     } else {
       // Reset animations and error state
       fadeAnim.setValue(0);
@@ -98,7 +97,7 @@ export default function StoryEditor({
       setSelectedMusic(null);
       setShowMusicPicker(false);
     }
-  }, [visible]);
+  }, [visible, initialMusic]);
 
   useEffect(() => {
     if (isPublishing) {
@@ -159,13 +158,6 @@ export default function StoryEditor({
 
   const openMusicPicker = async () => {
     setShowMusicPicker(true);
-    setMusicLoading(true);
-    try {
-      const tracks = await getSelectableTracks();
-      setMusicTracks(tracks.filter((t) => t.url?.trim()));
-    } finally {
-      setMusicLoading(false);
-    }
   };
 
   const handleClose = () => {
@@ -358,7 +350,7 @@ export default function StoryEditor({
                 <View style={styles.glassCaptionBox}>
                   <TextInput
                     style={styles.captionInput}
-                    placeholder="Add a caption..."
+                    placeholder="Add your vibe..."
                     placeholderTextColor="rgba(255, 255, 255, 0.5)"
                     value={caption}
                     onChangeText={setCaption}
@@ -391,57 +383,14 @@ export default function StoryEditor({
               </View>
             )}
 
-            {/* Music picker modal */}
-            {showMusicPicker && (
-              <View style={styles.musicPickerOverlay}>
-                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowMusicPicker(false)} />
-                <View style={styles.musicPickerCard} pointerEvents="box-none">
-                  <View style={styles.musicPickerHeader}>
-                    <Text style={styles.musicPickerTitle}>Add Music</Text>
-                    <Text style={styles.musicPickerSubtitle}>15 sec · Plays when story opens</Text>
-                  </View>
-                  {musicLoading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 24 }} />
-                  ) : (
-                    <ScrollView style={styles.musicPickerList} showsVerticalScrollIndicator={false}>
-                      {musicTracks.map((track) => (
-                        <TouchableOpacity
-                          key={track.id}
-                          onPress={() => {
-                            setSelectedMusic(track);
-                            setShowMusicPicker(false);
-                          }}
-                          style={styles.musicPickerItem}
-                          activeOpacity={0.7}
-                        >
-                          <Music2 size={18} color="rgba(255,255,255,0.8)" strokeWidth={2} />
-                          <View style={styles.musicPickerItemText}>
-                            <Text style={styles.musicPickerItemTitle} numberOfLines={1}>{track.title}</Text>
-                            <Text style={styles.musicPickerItemArtist} numberOfLines={1}>{track.artist}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                      {musicTracks.length === 0 && (
-                        <Text style={styles.musicPickerEmpty}>No music available</Text>
-                      )}
-                      <TouchableOpacity
-                        style={styles.musicPickerContactSupport}
-                        onPress={() => {
-                          Linking.openURL(
-                            `mailto:${SUPPORT_EMAIL}?subject=Add my music to in-app library&body=Hi, I'd like to add my own music to the in-app music library for stories.`
-                          ).catch(() => {});
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.musicPickerContactSupportText}>
-                          Want your own music as in-app music? Contact support
-                        </Text>
-                      </TouchableOpacity>
-                    </ScrollView>
-                  )}
-                </View>
-              </View>
-            )}
+            <MusicHubModal
+              visible={showMusicPicker}
+              onClose={() => setShowMusicPicker(false)}
+              onSelectTrack={(track) => setSelectedMusic(track)}
+              title="Nomli Music"
+              subtitle="Pick a track for your story"
+              ctaLabel="Use sound"
+            />
 
             {/* Text + Music stacked on the right (same UI for photo and video, iOS and Android) */}
             {!isPublishing && (

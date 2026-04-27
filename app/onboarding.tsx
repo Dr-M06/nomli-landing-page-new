@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,70 +6,54 @@ import {
   Dimensions,
   TouchableOpacity,
   StatusBar,
-  TextInput,
-  Alert,
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView,
-  Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image as ExpoImage } from 'expo-image';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
-import { Colors, getThemeColors } from '../constants/Colors';
 import { BorderRadius, FontFamily, FontSizes, Spacing } from '../constants/Theme';
-import { Globe, MessageCircle, Shield, KeyboardOff } from 'lucide-react-native';
-import { computeAge } from '../utils/ageGate';
+import { Heart, MessageCircle, Shield } from 'lucide-react-native';
 
 const { height } = Dimensions.get('window');
 
 // App onboarding: post-pivot social experience
 const STEPS = [
   {
-    id: 'express',
-    Icon: Globe,
+    id: 'social',
+    Icon: Heart,
     title: 'Share what is real',
-    description: 'Create text, photo, and video posts to express what is on your mind. Nomli is content-first and low-pressure.',
-    iconColor: Colors.primary.main,
-    iconBg: Colors.primary[50],
+    description: 'Post text, photos, and videos in Social to express your vibe without pressure.',
+    iconColor: '#FF6FAE',
+    iconBg: 'rgba(255,111,174,0.16)',
   },
   {
-    id: 'chat',
+    id: 'connect',
     Icon: MessageCircle,
-    title: 'Chat with context',
-    description: 'Start conversations through post interactions and reply privately with context so chats begin naturally.',
-    iconColor: Colors.primary.main,
-    iconBg: Colors.primary[50],
+    title: 'Match and connect',
+    description: 'In Connect, like profiles around you. Mutual likes become matches and open chat.',
+    iconColor: '#FF6FAE',
+    iconBg: 'rgba(255,111,174,0.16)',
   },
   {
-    id: 'stories',
+    id: 'inbox',
     Icon: Shield,
-    title: 'Stories and authentic profile',
-    description: 'Share stories, react to posts, and build a profile around your voice, not dating preferences or swipe behavior.',
-    iconColor: Colors.primary.main,
-    iconBg: Colors.primary[50],
-  },
-  {
-    id: 'age',
-    Icon: Shield,
-    title: 'Your birthday',
-    description: 'This helps keep Nomli safe and age-appropriate.',
-    iconColor: Colors.primary.main,
-    iconBg: Colors.primary[50],
+    title: 'One inbox for both worlds',
+    description: 'Keep social conversations and dating matches in one Inbox with your full control.',
+    iconColor: '#FF6FAE',
+    iconBg: 'rgba(255,111,174,0.16)',
   },
 ];
+
+const HERO_IMAGE_LEFT = 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1000&q=80';
+const HERO_IMAGE_RIGHT = 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1000&q=80';
+const BG_DOODLES = ['💕', '🦩', '💘', '💞', '💌', '🫶'];
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
-  const themeColors = getThemeColors(isDarkMode);
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobDay, setDobDay] = useState('');
-  const [dobYear, setDobYear] = useState('');
-  const [dobError, setDobError] = useState<string | null>(null);
 
   const completeOnboarding = async () => {
     try {
@@ -81,53 +65,6 @@ export default function OnboardingScreen() {
   };
 
   const onPrimary = () => {
-    const step = STEPS[currentStep];
-    if (step.id === 'age') {
-      const mm = Number(dobMonth);
-      const dd = Number(dobDay);
-      const yyyy = Number(dobYear);
-      if (!mm || !dd || !yyyy) {
-        setDobError('Enter your full date of birth.');
-        return;
-      }
-      if (yyyy < 1900 || yyyy > new Date().getFullYear()) {
-        setDobError('Enter a valid year.');
-        return;
-      }
-      if (mm < 1 || mm > 12) {
-        setDobError('Month must be 1–12.');
-        return;
-      }
-      if (dd < 1 || dd > 31) {
-        setDobError('Day must be 1–31.');
-        return;
-      }
-
-      const dob = new Date(Date.UTC(yyyy, mm - 1, dd));
-      // Validate round-trip (reject invalid dates like Feb 30)
-      if (
-        dob.getUTCFullYear() !== yyyy ||
-        dob.getUTCMonth() !== mm - 1 ||
-        dob.getUTCDate() !== dd
-      ) {
-        setDobError('Enter a real date.');
-        return;
-      }
-
-      const age = computeAge(new Date(yyyy, mm - 1, dd));
-      if (age < 13) {
-        setDobError('You must be 13 or older to use Nomli.');
-        Alert.alert('Not eligible', 'You must be 13 or older to use Nomli.');
-        return;
-      }
-
-      const iso = `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-      AsyncStorage.setItem('pending_date_of_birth', iso).catch(() => {});
-      setDobError(null);
-      completeOnboarding();
-      return;
-    }
-
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((s) => s + 1);
     } else {
@@ -136,101 +73,43 @@ export default function OnboardingScreen() {
   };
 
   const step = STEPS[currentStep];
-  const Icon = step.Icon;
   const isLast = currentStep === STEPS.length - 1;
-  const primaryColor = themeColors.primary?.main ?? Colors.primary.main;
-  const inputBg = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
-  const isAgeStep = step.id === 'age';
+  const primaryColor = '#FF6FAE';
 
   const body = (
     <>
+      <View pointerEvents="none" style={styles.bgDoodleLayer}>
+        {BG_DOODLES.map((emoji, i) => (
+          <Text key={`${emoji}:${i}`} style={[styles.bgDoodle, styles[`bgDoodle${i}` as keyof typeof styles] as any]}>
+            {emoji}
+          </Text>
+        ))}
+      </View>
+
       {/* Skip */}
       <View style={[styles.skipWrap, { top: insets.top + 8 }]}>
         <TouchableOpacity onPress={completeOnboarding} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={[styles.skipText, { color: themeColors.neutral.subtext }]}>Skip</Text>
+          <Text style={[styles.skipText, { color: '#E5E7EB' }]}>Skip</Text>
         </TouchableOpacity>
       </View>
 
       {/* Content - lowered, less top space */}
-      <View style={[styles.content, isAgeStep && styles.contentAgeStep]}>
-        <View style={[styles.iconWrap, { backgroundColor: step.iconBg }]}>
-          <Icon size={40} color={step.iconColor} strokeWidth={1.5} />
-        </View>
-        <Text style={[styles.title, { color: themeColors.neutral.text }]}>{step.title}</Text>
-        <Text style={[styles.description, { color: themeColors.neutral.subtext }]}>{step.description}</Text>
-
-        {isAgeStep && (
-          <View style={styles.dobWrap}>
-            <View style={styles.dobRow}>
-              <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                <TextInput
-                  value={dobMonth}
-                  onChangeText={(t) => {
-                    setDobError(null);
-                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
-                    setDobMonth(cleaned);
-                  }}
-                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                  placeholder="MM"
-                  placeholderTextColor={themeColors.neutral.textTertiary}
-                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                  maxLength={2}
-                  returnKeyType="next"
-                />
-              </View>
-              <View style={[styles.dobInputWrap, { backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                <TextInput
-                  value={dobDay}
-                  onChangeText={(t) => {
-                    setDobError(null);
-                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 2);
-                    setDobDay(cleaned);
-                  }}
-                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                  placeholder="DD"
-                  placeholderTextColor={themeColors.neutral.textTertiary}
-                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                  maxLength={2}
-                  returnKeyType="next"
-                />
-              </View>
-              <View style={[styles.dobInputWrap, { flex: 1.2, backgroundColor: inputBg, borderColor: themeColors.neutral.border }]}>
-                <TextInput
-                  value={dobYear}
-                  onChangeText={(t) => {
-                    setDobError(null);
-                    const cleaned = t.replace(/[^\d]/g, '').slice(0, 4);
-                    setDobYear(cleaned);
-                  }}
-                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                  placeholder="YYYY"
-                  placeholderTextColor={themeColors.neutral.textTertiary}
-                  style={[styles.dobInput, { color: themeColors.neutral.text }]}
-                  maxLength={4}
-                  returnKeyType="done"
-                  onSubmitEditing={Keyboard.dismiss}
-                />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.keyboardDismissRow}
-              onPress={Keyboard.dismiss}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Hide keyboard"
-            >
-              <KeyboardOff size={18} color={primaryColor} strokeWidth={2} />
-              <Text style={[styles.keyboardDismissText, { color: primaryColor }]}>Hide keyboard</Text>
-            </TouchableOpacity>
-            {dobError ? (
-              <Text style={[styles.dobError, { color: isDarkMode ? '#fca5a5' : '#dc2626' }]}>{dobError}</Text>
-            ) : (
-              <Text style={[styles.dobHint, { color: themeColors.neutral.subtext }]}>
-                We don’t show your age on your profile.
-              </Text>
-            )}
+      <View style={styles.content}>
+        <View style={styles.heroVisualWrap}>
+          <View style={[styles.heroDoodleCircle, styles.heroDoodleCircleLeft]} />
+          <View style={[styles.heroDoodleCircle, styles.heroDoodleCircleRight]} />
+          <View style={[styles.heroPhotoCard, styles.heroPhotoLeft]}>
+            <ExpoImage source={{ uri: HERO_IMAGE_LEFT }} style={styles.heroPhotoImage} contentFit="cover" transition={250} />
           </View>
-        )}
+          <View style={[styles.heroPhotoCard, styles.heroPhotoRight]}>
+            <ExpoImage source={{ uri: HERO_IMAGE_RIGHT }} style={styles.heroPhotoImage} contentFit="cover" transition={250} />
+          </View>
+          <View style={styles.heroChip}>
+            <Text style={styles.heroChipText}>real vibes</Text>
+          </View>
+        </View>
+        <Text style={[styles.title, { color: '#F9FAFB' }]}>{step.title}</Text>
+        <Text style={[styles.description, { color: '#CBD5E1' }]}>{step.description}</Text>
       </View>
 
       {/* Bottom - dots + CTA only */}
@@ -242,7 +121,7 @@ export default function OnboardingScreen() {
               style={[
                 styles.dot,
                 i === currentStep && styles.dotActive,
-                { backgroundColor: i === currentStep ? primaryColor : themeColors.neutral.border },
+                { backgroundColor: i === currentStep ? primaryColor : 'rgba(148,163,184,0.55)' },
               ]}
             />
           ))}
@@ -262,32 +141,15 @@ export default function OnboardingScreen() {
     <SafeAreaWrapper
       topInset={false}
       bottomInset={false}
-      backgroundColor={isDarkMode ? themeColors.neutral.background : '#FFFFFF'}
+      backgroundColor="#0B133A"
     >
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
-      <View style={[styles.container, { backgroundColor: isDarkMode ? themeColors.neutral.background : '#FFFFFF' }]}>
-        {isAgeStep ? (
-          <KeyboardAvoidingView
-            style={styles.keyboardAvoid}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-          >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.ageScrollContent}
-              bounces={false}
-            >
-              <View style={{ minHeight: height }}>{body}</View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        ) : (
-          body
-        )}
+      <View style={[styles.container, { backgroundColor: '#0B133A' }]}>
+        {body}
       </View>
     </SafeAreaWrapper>
   );
@@ -297,29 +159,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  keyboardAvoid: {
-    flex: 1,
+  bgDoodleLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
-  ageScrollContent: {
-    flexGrow: 1,
-    paddingBottom: Spacing.md,
+  bgDoodle: {
+    position: 'absolute',
+    fontSize: 22,
+    opacity: 0.12,
   },
-  contentAgeStep: {
-    justifyContent: 'flex-start',
-    paddingTop: height < 700 ? height * 0.03 : height * 0.04,
-  },
-  keyboardDismissRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  keyboardDismissText: {
-    fontSize: FontSizes.sm,
-    fontFamily: FontFamily.semibold,
-  },
+  bgDoodle0: { top: '14%', left: '10%', transform: [{ rotate: '-10deg' }] },
+  bgDoodle1: { top: '22%', right: '12%', transform: [{ rotate: '8deg' }] },
+  bgDoodle2: { top: '42%', left: '7%', transform: [{ rotate: '-6deg' }] },
+  bgDoodle3: { top: '58%', right: '10%', transform: [{ rotate: '12deg' }] },
+  bgDoodle4: { bottom: '20%', left: '16%', transform: [{ rotate: '-8deg' }] },
+  bgDoodle5: { bottom: '12%', right: '14%', transform: [{ rotate: '7deg' }] },
   skipWrap: {
     position: 'absolute',
     right: Spacing.lg,
@@ -336,13 +190,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrap: {
-    width: height < 700 ? 72 : 80,
-    height: height < 700 ? 72 : 80,
-    borderRadius: (height < 700 ? 72 : 80) / 2,
-    alignItems: 'center',
+  heroVisualWrap: {
+    width: '100%',
+    maxWidth: 280,
+    height: 140,
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
     justifyContent: 'center',
-    marginBottom: height < 700 ? Spacing.lg : Spacing.xl,
+    alignItems: 'center',
+  },
+  heroDoodleCircle: {
+    position: 'absolute',
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 1,
+    borderColor: 'rgba(255,111,174,0.24)',
+    backgroundColor: 'rgba(255,111,174,0.08)',
+  },
+  heroDoodleCircleLeft: {
+    left: 22,
+    top: 18,
+  },
+  heroDoodleCircleRight: {
+    right: 22,
+    top: 8,
+  },
+  heroPhotoCard: {
+    position: 'absolute',
+    width: 94,
+    height: 126,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(15,23,42,0.6)',
+  },
+  heroPhotoLeft: {
+    left: 58,
+    top: 10,
+    transform: [{ rotate: '-8deg' }],
+  },
+  heroPhotoRight: {
+    right: 54,
+    top: 16,
+    transform: [{ rotate: '8deg' }],
+  },
+  heroPhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroChip: {
+    position: 'absolute',
+    bottom: 0,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,111,174,0.9)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  heroChipText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   title: {
     fontSize: height < 700 ? FontSizes.xxxl : 30,
@@ -360,44 +271,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: Spacing.sm,
     maxWidth: 320,
-  },
-  dobWrap: {
-    marginTop: Spacing.xl,
-    width: '100%',
-    maxWidth: 340,
-    alignItems: 'center',
-  },
-  dobRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  dobInputWrap: {
-    flex: 1,
-    borderRadius: BorderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    height: 48,
-    justifyContent: 'center',
-  },
-  dobInput: {
-    fontFamily: FontFamily.semibold,
-    fontSize: FontSizes.md,
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
-  dobHint: {
-    marginTop: 10,
-    fontSize: FontSizes.sm,
-    fontFamily: FontFamily.regular,
-    textAlign: 'center',
-  },
-  dobError: {
-    marginTop: 10,
-    fontSize: FontSizes.sm,
-    fontFamily: FontFamily.medium,
-    textAlign: 'center',
   },
   bottom: {
     paddingHorizontal: Spacing.xxl,

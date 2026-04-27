@@ -127,7 +127,7 @@ function iapProductIdsMatch(a: string | null | undefined, b: string | null | und
   return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 }
 
-/** Always clear the Creator Pro purchase promise so UI never stays on “Opening App Store…”. */
+/** Clear timeout + resolve the checkout promise; always clear pending SKU (flow finished or failed). */
 function settlePendingCreatorProPurchase(result: { ok: boolean; error?: string }) {
   if (!creatorProPurchaseResolve) return;
   if (creatorProPurchaseTimeout) {
@@ -144,9 +144,13 @@ function settlePendingCreatorProIfProductMatches(
   storeProductId: string | undefined,
   result: { ok: boolean; error?: string }
 ) {
-  if (!creatorProPendingProductId || !creatorProPurchaseResolve) return;
+  if (!creatorProPendingProductId) return;
   if (!iapProductIdsMatch(storeProductId, creatorProPendingProductId)) return;
-  settlePendingCreatorProPurchase(result);
+  if (creatorProPurchaseResolve) {
+    settlePendingCreatorProPurchase(result);
+  } else {
+    creatorProPendingProductId = null;
+  }
 }
 
 let isInitialized = false;
@@ -582,6 +586,13 @@ export const initIAPAtAppRoot = () => {
                 (isCreatorPro || matchesPendingCreatorSku)
               ) {
                 settlePendingCreatorProPurchase({ ok: true });
+              } else if (
+                !creatorProPurchaseResolve &&
+                creatorProPendingProductId &&
+                (isCreatorPro || matchesPendingCreatorSku) &&
+                iapProductIdsMatch(productId, creatorProPendingProductId)
+              ) {
+                creatorProPendingProductId = null;
               } else if (purchaseListener && !treatAsCreatorPro) {
                 iapLog('[StoreKit] 🔔 Calling purchase listener callback (backend verified)...');
                 purchaseListener(transactionId, productId);
@@ -642,6 +653,8 @@ export const initIAPAtAppRoot = () => {
           const errMsg = `Purchase failed: ${errorCode || responseCode}`;
           if (creatorProPurchaseResolve) {
             settlePendingCreatorProPurchase({ ok: false, error: errMsg });
+          } else if (creatorProPendingProductId) {
+            creatorProPendingProductId = null;
           }
           errorListener?.(errMsg);
           if (!errorListener) Alert.alert('Purchase Error', errMsg);
@@ -656,6 +669,8 @@ export const initIAPAtAppRoot = () => {
               ok: false,
               error: listenerErr?.message || 'Purchase processing failed',
             });
+          } else if (creatorProPendingProductId) {
+            creatorProPendingProductId = null;
           }
           if (errorListener) errorListener(listenerErr?.message || 'Purchase processing failed');
           else Alert.alert('Purchase Error', listenerErr?.message || 'Purchase processing failed');
@@ -767,6 +782,9 @@ const verifyReceiptAndCreditTokens = async (
       return { success: false };
     }
 
+    const { data: sess } = await supabase.auth.getSession();
+    const bearer = sess?.session?.access_token ?? SUPABASE_ANON_KEY;
+
     const body: Record<string, unknown> = {
       receipt,
       productId,
@@ -788,7 +806,7 @@ const verifyReceiptAndCreditTokens = async (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${bearer}`,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -900,7 +918,7 @@ const verifyReceiptAndCreditTokens = async (
   }
 };
 
-/** Subscribe to Nomli Creator Pro via App Store (auto-renewable). Resolves when receipt is verified. */
+/** Subscribe to Nomli Creator Pro via App Store (auto-renewable). Resolves when the Store sheet closes; verification runs in the purchase listener. */
 export function purchaseCreatorProWithStoreKit(iapProductId: string): Promise<{ ok: boolean; error?: string }> {
   if (Platform.OS !== 'ios') {
     return Promise.resolve({ ok: false, error: 'Apple IAP is only available on iOS' });
@@ -919,15 +937,24 @@ export function purchaseCreatorProWithStoreKit(iapProductId: string): Promise<{ 
       creatorProPurchaseTimeout = null;
     }, 120000);
 
-    purchaseTokensWithIAP(iapProductId).then((r) => {
-      if (!r.success) {
-        if (creatorProPurchaseTimeout) clearTimeout(creatorProPurchaseTimeout);
-        creatorProPurchaseTimeout = null;
-        creatorProPurchaseResolve = null;
-        creatorProPendingProductId = null;
-        resolve({ ok: false, error: r.error || 'Purchase failed' });
-      }
-    });
+    purchaseTokensWithIAP(iapProductId)
+      .then((r) => {
+        if (!r.success) {
+          settlePendingCreatorProPurchase({ ok: false, error: r.error || 'Purchase failed' });
+          return;
+        }
+        // Do not resolve here: Apple invokes the purchase listener asynchronously after the sheet
+        // closes. Resolving early cleared `creatorProPurchaseResolve` so verification success/failure
+        // in the listener could not settle the Creator Pro promise (subscriptions looked "broken").
+        // `settlePendingCreatorProPurchase` runs from the listener after verify-apple-receipt, or the
+        // timeout above fires if nothing arrives.
+      })
+      .catch((err: any) => {
+        settlePendingCreatorProPurchase({
+          ok: false,
+          error: err?.message || 'Purchase failed',
+        });
+      });
   });
 }
 

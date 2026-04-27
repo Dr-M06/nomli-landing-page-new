@@ -11,13 +11,16 @@ import { generateTextStoryImage } from '../../utils/textStoryGenerator';
 import { BorderRadius, FontFamily, FontSizes, Spacing } from '../../constants/Theme';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Music2 } from 'lucide-react-native';
+import { type MusicTrack } from '../../constants/musicLibrary';
 
 export default function CreateScreen() {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const themeColors = getThemeColors(isDarkMode);
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; music?: string }>();
   const initialTab = params?.tab === 'story' ? 'story' : 'post';
   const [tab, setTab] = useState<'post' | 'story'>(initialTab);
   const flamingoMain = '#FF6FAE';
@@ -30,6 +33,22 @@ export default function CreateScreen() {
     setTab(next);
   }, [params?.tab]);
 
+  useEffect(() => {
+    if (!params?.music) return;
+    try {
+      const parsed = JSON.parse(decodeURIComponent(params.music));
+      if (!parsed?.id || !parsed?.title || !parsed?.artist || !parsed?.url) return;
+      setPrefilledStoryMusic({
+        id: String(parsed.id),
+        title: String(parsed.title),
+        artist: String(parsed.artist),
+        url: String(parsed.url),
+      });
+    } catch {
+      // Ignore malformed payload
+    }
+  }, [params?.music]);
+
   const [showStoryCamera, setShowStoryCamera] = useState(false);
   const [showStoryEditor, setShowStoryEditor] = useState(false);
   const [showStoryTextEditor, setShowStoryTextEditor] = useState(false);
@@ -37,6 +56,13 @@ export default function CreateScreen() {
   const [storyMediaType, setStoryMediaType] = useState<'photo' | 'video'>('photo');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [prefilledStoryMusic, setPrefilledStoryMusic] = useState<MusicTrack | null>(null);
+  const uploadHint =
+    uploadProgress < 0.4
+      ? 'Compressing media...'
+      : uploadProgress < 0.95
+        ? 'Uploading...'
+        : 'Finishing...';
 
   const openCameraStory = useCallback(() => {
     setShowStoryTextEditor(false);
@@ -67,6 +93,13 @@ export default function CreateScreen() {
       music?: { type: 'library'; track: { id: string; title: string; artist: string; url: string } } | null
     ) => {
       try {
+        Toast.show({
+          type: 'info',
+          text1: 'Uploading in background',
+          text2: 'You can leave this screen. We will keep posting your story.',
+          position: 'bottom',
+          visibilityTime: 2400,
+        });
         setUploading(true);
         setUploadProgress(0.05);
 
@@ -113,6 +146,13 @@ export default function CreateScreen() {
       music?: unknown
     ) => {
       try {
+        Toast.show({
+          type: 'info',
+          text1: 'Uploading in background',
+          text2: 'You can leave this screen. We will keep posting your story.',
+          position: 'bottom',
+          visibilityTime: 2400,
+        });
         setUploading(true);
         setUploadProgress(0.05);
         const imageUri = await generateTextStoryImage(text, templateId, fontSize, textAlign, 'classic');
@@ -212,17 +252,49 @@ export default function CreateScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.neutral.background, paddingTop: insets.top }]}>
       <View style={styles.top}>
-        {tabs}
+        <View style={styles.topRow}>
+          <View style={{ flex: 1 }}>{tabs}</View>
+          <TouchableOpacity
+            onPress={() => router.push('/music')}
+            activeOpacity={0.85}
+            style={[
+              styles.musicEntryBtn,
+              {
+                backgroundColor: isDarkMode ? 'rgba(255,111,174,0.14)' : 'rgba(255,111,174,0.10)',
+                borderColor: flamingoBorder,
+              },
+            ]}
+          >
+            <Music2 size={16} color={flamingoDeep} strokeWidth={2.3} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {tab === 'post' ? (
         <CreatePostScreen />
       ) : (
         <View style={styles.storyPane}>
-          <Text style={[styles.storyTitle, { color: themeColors.neutral.text }]}>Create a story</Text>
+          <Text style={[styles.storyTitle, { color: themeColors.neutral.text }]}>Share your vibe story</Text>
           <Text style={[styles.storySubtitle, { color: themeColors.neutral.textSecondary }]}>
-            Quick moments. No clutter.
+            Post your Nomli vibe in a quick moment.
           </Text>
+
+          {prefilledStoryMusic ? (
+            <View
+              style={[
+                styles.selectedMusicWrap,
+                {
+                  borderColor: themeColors.neutral.border,
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                },
+              ]}
+            >
+              <Music2 size={14} color={themeColors.primary.main} strokeWidth={2.4} />
+              <Text style={[styles.selectedMusicText, { color: themeColors.neutral.text }]} numberOfLines={1}>
+                {prefilledStoryMusic.title} · {prefilledStoryMusic.artist}
+              </Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             onPress={openCameraStory}
@@ -232,7 +304,7 @@ export default function CreateScreen() {
               { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: themeColors.neutral.border },
             ]}
           >
-            <Text style={[styles.storyActionTitle, { color: themeColors.neutral.text }]}>Camera story</Text>
+            <Text style={[styles.storyActionTitle, { color: themeColors.neutral.text }]}>Vibe camera story</Text>
             <Text style={[styles.storyActionSub, { color: themeColors.neutral.textSecondary }]}>
               Photo or video
             </Text>
@@ -246,7 +318,7 @@ export default function CreateScreen() {
               { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: themeColors.neutral.border },
             ]}
           >
-            <Text style={[styles.storyActionTitle, { color: themeColors.neutral.text }]}>Text story</Text>
+            <Text style={[styles.storyActionTitle, { color: themeColors.neutral.text }]}>Vibe text story</Text>
             <Text style={[styles.storyActionSub, { color: themeColors.neutral.textSecondary }]}>
               Gradient + big text
             </Text>
@@ -255,9 +327,14 @@ export default function CreateScreen() {
           {uploading && (
             <View style={styles.uploadRow}>
               <ActivityIndicator color={themeColors.primary.main} />
-              <Text style={[styles.uploadText, { color: themeColors.neutral.textSecondary }]}>
-                Posting… {Math.round(uploadProgress * 100)}%
-              </Text>
+              <View>
+                <Text style={[styles.uploadText, { color: themeColors.neutral.textSecondary }]}>
+                  Posting... {Math.round(uploadProgress * 100)}%
+                </Text>
+                <Text style={[styles.uploadHintText, { color: themeColors.neutral.textSecondary }]}>
+                  {uploadHint}
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -276,6 +353,7 @@ export default function CreateScreen() {
           mediaUri={storyMediaUri}
           mediaType={storyMediaType}
           onPublish={publishMediaStory}
+          initialMusic={prefilledStoryMusic}
           uploadProgress={uploadProgress}
           isUploading={uploading}
         />
@@ -285,6 +363,7 @@ export default function CreateScreen() {
         visible={showStoryTextEditor}
         onClose={() => setShowStoryTextEditor(false)}
         onPublish={publishTextStory}
+        initialMusic={prefilledStoryMusic}
       />
     </View>
   );
@@ -298,6 +377,19 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingHorizontal: Spacing.lg,
     paddingBottom: 4,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  musicEntryBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabs: {
     flexDirection: 'row',
@@ -341,6 +433,21 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: 14,
   },
+  selectedMusicWrap: {
+    marginTop: 10,
+    borderRadius: BorderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedMusicText: {
+    flex: 1,
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+  },
   storyAction: {
     marginTop: 10,
     borderRadius: BorderRadius.xl,
@@ -366,5 +473,11 @@ const styles = StyleSheet.create({
   uploadText: {
     fontFamily: FontFamily.medium,
     fontSize: 13,
+  },
+  uploadHintText: {
+    marginTop: 2,
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    opacity: 0.85,
   },
 });

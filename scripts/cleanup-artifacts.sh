@@ -19,11 +19,16 @@ echo "🔍 Scanning for build artifacts..."
 
 # Remove APK/AAB files (build artifacts)
 echo "📱 Removing Android build artifacts..."
-find . -name "*.apk" -type f -delete 2>/dev/null
-find . -name "*.aab" -type f -delete 2>/dev/null
+find android -name "*.apk" -type f -delete 2>/dev/null
+find android -name "*.aab" -type f -delete 2>/dev/null
+find android -name "*.log" -type f -delete 2>/dev/null
 safe_remove "android/app/build"
 safe_remove "android/build"
 safe_remove "android/.gradle"
+safe_remove "android/.cxx"
+safe_remove "android/app/.cxx"
+safe_remove "android/.kotlin"
+safe_remove "android/app/.kotlin"
 safe_remove "android/app/release"
 safe_remove "android/app/debug"
 safe_remove "android/app/outputs"

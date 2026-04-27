@@ -87,20 +87,38 @@ export const setProfileVisibilityDirect = async (visible: boolean): Promise<bool
  */
 export const getProfileVisibilityDirect = async (): Promise<boolean> => {
   try {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return true;
+
+    // Source of truth for Dating tab visibility:
+    // visible only when profile is visible and not explicitly hidden from discover.
     const { data, error } = await supabase
       .from('profiles')
-      .select('profile_visible')
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .select('profile_visible, hide_from_discover')
+      .eq('id', userId)
       .single();
-    
-    if (error) {
-      error('[ProfileVisibility] Direct query failed:', error);
+
+    if (!error && data) {
+      const profileVisible = data?.profile_visible !== false;
+      const hiddenFromDiscover = data?.hide_from_discover === true;
+      return profileVisible && !hiddenFromDiscover;
+    }
+
+    // Backward-compatible fallback if hide_from_discover is unavailable in some environments.
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('profiles')
+      .select('profile_visible')
+      .eq('id', userId)
+      .single();
+
+    if (fallbackError) {
+      error('[ProfileVisibility] Direct query failed:', fallbackError);
       return true; // Default to visible
     }
-    
-    return data?.profile_visible ?? true;
-  } catch (error) {
-    error('[ProfileVisibility] Direct query error:', error);
+
+    return fallbackData?.profile_visible ?? true;
+  } catch (e) {
+    error('[ProfileVisibility] Direct query error:', e);
     return true; // Default to visible
   }
 };

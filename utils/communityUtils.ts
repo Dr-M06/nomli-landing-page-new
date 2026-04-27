@@ -901,7 +901,7 @@ export const fetchPosts = async (
               // Try to fetch profiles with timeout
               const profilePromise = supabase
                 .from('profiles')
-                .select('id, username, full_name, avatar_url, is_verified, is_suspended')
+                .select('id, username, full_name, avatar_url, is_verified, is_suspended, creator_pro_until')
                 .in('id', userIds);
               
               const timeoutPromise = new Promise((_, reject) => 
@@ -1046,7 +1046,7 @@ export const fetchPosts = async (
         // Try to fetch profiles with timeout
         const profilePromise = supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, is_verified, is_suspended')
+          .select('id, username, full_name, avatar_url, is_verified, is_suspended, creator_pro_until')
           .in('id', userIds);
         
         const timeoutPromise = new Promise((_, reject) => 

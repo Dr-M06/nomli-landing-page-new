@@ -16,7 +16,7 @@ import {
 import AnimatedReanimated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Video, ResizeMode, Audio } from 'expo-av';
 import { BlurView } from 'expo-blur';
-import { Zap, MessageCircle, Share2, Bookmark, User, Video as VideoIcon, Play, Pause, Volume2, VolumeX, MoreVertical, Maximize2, Lock, Eye, Pin, PinOff, Trash2 } from 'lucide-react-native';
+import { Zap, MessageCircle, Bookmark, User, Video as VideoIcon, Play, Pause, Volume2, VolumeX, MoreVertical, Maximize2, Lock, Eye, Pin, PinOff, Trash2 } from 'lucide-react-native';
 import { useDoubleTap } from '../hooks/useDoubleTap';
 import DoubleTapHeart from './DoubleTapHeart';
 import * as Haptics from 'expo-haptics';
@@ -31,11 +31,11 @@ import ReactionPicker, { ReactionType as PickerReactionType } from './ReactionPi
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../utils/supabase';
 import EnhancedAvatar from './EnhancedAvatar';
-import Toast from 'react-native-toast-message';
 import { toggleReaction, getUserReaction, getReactionCounts } from '../utils/reactionUtils';
 import { stripAtSymbol } from '../utils/contentFilter';
 import { queueViewCount } from '../utils/viewCountBatch';
 import { log, warn, error } from '../utils/productionLogger';
+import CreatorProAuthorBadge from './CreatorProAuthorBadge';
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -49,7 +49,8 @@ interface VideoPostItemProps {
   themeColors: any;
   onLike: (postId: string) => void;
   onBookmark: (postId: string) => void;
-  onShare: (post: any) => void;
+  /** If omitted, share opens the system sheet via `shareHomeFeedPost`-style logic. */
+  onShare?: (post: any) => void;
   onComment: () => void;
   onUserPress: (userId: string) => void;
   onPostMenuPress?: (postId: string) => void;
@@ -967,7 +968,10 @@ const VideoPostItem: React.FC<VideoPostItemProps> = ({
           />
           <View style={styles.userText}>
             <View style={styles.usernameRow}>
-              <Text style={[styles.username, { color: themeColors.neutral.text }]}>
+              <Text
+                style={[styles.username, { color: themeColors.neutral.text, flex: 1, minWidth: 0 }]}
+                numberOfLines={1}
+              >
                 @{(() => {
                   // Check all possible sources for username before showing fallback
                   const username = video.username || 
@@ -983,6 +987,10 @@ const VideoPostItem: React.FC<VideoPostItemProps> = ({
                   return cleaned || 'user';
                 })()}
               </Text>
+              <CreatorProAuthorBadge
+                creatorProUntil={video.profile?.creator_pro_until}
+                isDark={isDarkMode}
+              />
               <View style={styles.videoIndicator}>
                 <VideoIcon size={12} color={themeColors.primary.main} />
               </View>
@@ -1309,9 +1317,16 @@ const VideoPostItem: React.FC<VideoPostItemProps> = ({
             )}
           </TouchableOpacity>
           {(reactionCounts.likes + reactionCounts.loves + reactionCounts.laughs) > 0 && (
-            <Text style={[styles.actionCount, { color: themeColors.neutral.subtext }]}>
-              {reactionCounts.likes + reactionCounts.loves + reactionCounts.laughs}
-            </Text>
+            <TouchableOpacity
+              onPress={() => setShowLikesModal(true)}
+              hitSlop={{ top: 12, bottom: 12, left: 10, right: 12 }}
+              style={styles.likeCountTapTarget}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.actionCount, { color: themeColors.neutral.subtext }]}>
+                {reactionCounts.likes + reactionCounts.loves + reactionCounts.laughs}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
         
@@ -1379,13 +1394,7 @@ const VideoPostItem: React.FC<VideoPostItemProps> = ({
           </View>
         )}
 
-        {/* Share button - DISABLED */}
-        {/* <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onShare(video)}
-        >
-          <Share2 size={16} color={themeColors.neutral.subtext} strokeWidth={2} />
-        </TouchableOpacity> */}
+        {/* Share hidden temporarily */}
 
         <TouchableOpacity
           style={styles.actionButton}
@@ -1767,6 +1776,10 @@ const styles = StyleSheet.create({
   actionCount: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  likeCountTapTarget: {
+    paddingVertical: 4,
+    paddingRight: 4,
   },
   likedByContainer: {
     flexDirection: 'row',

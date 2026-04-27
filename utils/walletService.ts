@@ -186,7 +186,18 @@ export interface TokenRedemption {
 export interface WalletTransaction {
   id: string;
   user_id: string;
-  transaction_type: 'purchase' | 'gift_sent' | 'gift_received' | 'redemption' | 'refund' | 'bonus' | 'user_credit_sent' | 'user_credit' | string; // Allow string for flexibility
+  transaction_type:
+    | 'purchase'
+    | 'gift_sent'
+    | 'gift_received'
+    | 'redemption'
+    | 'refund'
+    | 'bonus'
+    | 'user_credit_sent'
+    | 'user_credit'
+    | 'founding_creator_credit'
+    | 'creator_pro_revenuecat'
+    | string; // Allow string for flexibility
   amount: number;
   balance_after: number;
   reference_id: string | null;

@@ -20,7 +20,7 @@ import {
   DeviceEventEmitter,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
-import { ArrowLeft, MapPin, Heart, X, Grid3X3, Play, FileText, Calendar, Users, Star, Send, UserPlus, Ban, UserX, Flag, Eye } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Heart, X, Grid3X3, Play, FileText, Calendar, Users, Star, MessageCircle, UserPlus, Ban, UserX, Flag, Eye } from 'lucide-react-native';
 import { Colors, getThemeColors } from '../../constants/Colors';
 import { BorderRadius, FontFamily, FontSizes, GlobalStyles, Shadow, Spacing } from '../../constants/Theme';
 import { getProfileById } from '../../utils/profilesManager';
@@ -45,9 +45,9 @@ import FollowButton from '../../components/FollowButton';
 import FollowStatsCard from '../../components/FollowStatsCard';
 import FollowersModal from '../../components/FollowersModal';
 import LikesPrivacyModal from '../../components/LikesPrivacyModal';
-import PremiumSendButton from '../../components/PremiumSendButton';
 import ReportUserModal from '../../components/ReportUserModal';
-import { isFollowing } from '../../utils/followersServiceFixed';
+import { isMutualFollowing } from '../../utils/followersService';
+import { likeDatingProfile } from '../../utils/datingFlowService';
 import Toast from 'react-native-toast-message';
 import { getUserBadges } from '../../utils/badgeService';
 import { UserBadgeData } from '../../components/UserBadge';
@@ -55,7 +55,6 @@ import UserBadgesList from '../../components/UserBadgesList';
 import { trackProfileViewWithDuration } from '../../utils/profileViewTracker';
 import { log, warn, error } from '../../utils/productionLogger';
 import { formatViewCountLabel } from '../../utils/formatters';
-import { OFFICIAL_ACCOUNT_ID } from '../../constants/ContactEmails';
 import { isVerifiedEntity } from '../../utils/verification';
 
 
@@ -77,43 +76,21 @@ export default function ProfileDetailScreen() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Handle follow changes
-  const handleFollowChange = (isFollowing: boolean) => {
-    setIsFollowingProfile(isFollowing);
-    setRefreshTrigger(prev => prev + 1);
+  const handleFollowChange = (_isFollowing: boolean) => {
+    setRefreshTrigger((prev) => prev + 1);
   };
 
-  // Check follow status
-  useEffect(() => {
-    const checkFollowStatus = async () => {
-      if (!user || !profile || user.id === profile.id) return;
-      
-      try {
-        const [youFollowThem, theyFollowYou] = await Promise.all([
-          isFollowing(profile.id, user.id),
-          isFollowing(user.id, profile.id),
-        ]);
-        setIsFollowingProfile(youFollowThem);
-        setFollowsYou(theyFollowYou);
-      } catch (error) {
-        error('[Profile] Error checking follow status:', error);
-      }
-    };
-
-    if (profile && user) {
-      checkFollowStatus();
-    }
-  }, [profile?.id, user?.id]);
-  
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profileVisible, setProfileVisible] = useState(true);
   const [profileVisibilityLoaded, setProfileVisibilityLoaded] = useState(false);
-  const [isFollowingProfile, setIsFollowingProfile] = useState(false);
-  const [followsYou, setFollowsYou] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [hasBlocked, setHasBlocked] = useState(false);
   const [blockStatusLoaded, setBlockStatusLoaded] = useState(false);
+  const [isMutualConnected, setIsMutualConnected] = useState(false);
+  const [mutualStatusLoaded, setMutualStatusLoaded] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   
   // Track last refresh time to prevent excessive refreshes and double-load on open
@@ -420,6 +397,56 @@ export default function ProfileDetailScreen() {
     } catch (error) {
       error('[Profile] Error checking block status:', error);
       setBlockStatusLoaded(true);
+    }
+  };
+
+  // Vibe parity: only mutual connections can access Message.
+  const checkMutualConnection = async () => {
+    try {
+      if (!user?.id || !profile?.id || user.id === profile.id) {
+        setIsMutualConnected(false);
+        setMutualStatusLoaded(true);
+        return;
+      }
+
+      setMutualStatusLoaded(false);
+      const mutual = await isMutualFollowing(profile.id);
+      setIsMutualConnected(mutual);
+      setMutualStatusLoaded(true);
+    } catch (err) {
+      error('[Profile] Error checking mutual connection:', err);
+      setIsMutualConnected(false);
+      setMutualStatusLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    checkMutualConnection();
+  }, [user?.id, profile?.id, refreshTrigger]);
+
+  const handleMessagePress = () => {
+    if (!profile?.id || !user?.id) return;
+    router.push(`/chat/${profile.id}`);
+  };
+
+  const handleDatingLikePress = async () => {
+    if (!user?.id || !profile?.id || isLiking) return;
+    try {
+      setIsLiking(true);
+      const result = await likeDatingProfile(user.id, profile.id, false);
+      if (!result.ok) {
+        Alert.alert('Could not like profile', result.reason === 'limit_reached' ? "You've used all likes for today." : 'Please try again.');
+        return;
+      }
+      if (!result.consumedLike) {
+        Alert.alert('Already liked', 'You already liked this profile.');
+        return;
+      }
+      Alert.alert(result.matched ? "It's a match!" : 'Liked', result.matched ? 'You both liked each other.' : 'Like sent.');
+    } catch (e) {
+      Alert.alert('Could not like profile', 'Please try again.');
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -951,21 +978,44 @@ export default function ProfileDetailScreen() {
           <View style={styles.lightActionSection}>
             {!isBlocked && (
               <View style={styles.lightActionsRow}>
-                <FollowButton
-                  userId={profile.id}
-                  size="small"
-                  variant="primary"
-                  style={styles.lightFollowBtn}
-                  onFollowChange={handleFollowChange}
-                  profileVisible={profileVisible}
-                />
-                {(profile.id === OFFICIAL_ACCOUNT_ID || (isFollowingProfile && followsYou)) && profileVisible && (
+                {fromDiscover ? (
                   <TouchableOpacity
-                    onPress={() => router.push(`/chat/${profile.id}`)}
-                    style={[styles.lightActionBtn, { backgroundColor: themeColors.primary.main }]}
-                    activeOpacity={0.8}
+                    style={[styles.lightMessageOutlineBtn, styles.lightLikeBtn, { opacity: isLiking ? 0.75 : 1 }]}
+                    onPress={handleDatingLikePress}
+                    activeOpacity={0.85}
+                    disabled={isLiking}
                   >
-                    <Send size={14} color="#FFFFFF" />
+                    <Heart size={14} color="#FFFFFF" strokeWidth={2.1} />
+                    <Text style={[styles.lightMessageOutlineBtnText, { color: '#FFFFFF' }]}>
+                      {isLiking ? 'Liking...' : 'Like'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <FollowButton
+                    userId={profile.id}
+                    size="small"
+                    variant="primary"
+                    style={styles.lightFollowBtn}
+                    onFollowChange={handleFollowChange}
+                    profileVisible={profileVisible}
+                  />
+                )}
+                {profileVisible && (
+                  <TouchableOpacity
+                    onPress={handleMessagePress}
+                    style={[
+                      styles.lightMessageOutlineBtn,
+                      {
+                        borderColor: themeColors.neutral.border,
+                        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8faff',
+                      },
+                    ]}
+                    activeOpacity={0.85}
+                  >
+                    <MessageCircle size={14} color={themeColors.primary.main} strokeWidth={2} />
+                    <Text style={[styles.lightMessageOutlineBtnText, { color: themeColors.primary.main }]}>
+                      Message
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1161,22 +1211,29 @@ export default function ProfileDetailScreen() {
                 <Pressable
                   key={post.id}
                   style={({ pressed }) => [
-                    styles.textPostItem,
+                    styles.textPostCard,
                     { 
-                      backgroundColor: pressed ? themeColors.neutral.border + '30' : 'transparent',
-                      borderBottomColor: themeColors.neutral.border 
+                      backgroundColor: isDarkMode ? (pressed ? 'rgba(255,111,174,0.20)' : 'rgba(255,111,174,0.12)') : (pressed ? 'rgba(255,111,174,0.14)' : 'rgba(255,111,174,0.08)'),
+                      borderColor: isDarkMode ? 'rgba(255,111,174,0.45)' : 'rgba(255,111,174,0.34)',
                     }
                   ]}
                   onPress={() => router.push(`/community/post/${post.id}`)}
                 >
+                  <View style={styles.textPostAccent} />
+                  <View style={styles.textPostTopRow}>
+                    <View style={styles.textPostBadge}>
+                      <FileText size={12} color={themeColors.neutral.subtext} />
+                      <Text style={[styles.textPostBadgeText, { color: themeColors.neutral.subtext }]}>Text</Text>
+                    </View>
+                    <Text style={[styles.textPostMeta, { color: themeColors.neutral.subtext }]}>
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
                   <Text 
                     style={[styles.textPostContent, { color: themeColors.neutral.text }]} 
-                    numberOfLines={3}
+                    numberOfLines={4}
                   >
                     {post.content || 'Text post'}
-                  </Text>
-                  <Text style={[styles.textPostMeta, { color: themeColors.neutral.subtext }]}>
-                    {new Date(post.created_at).toLocaleDateString()}
                   </Text>
                 </Pressable>
               ))}
@@ -1673,12 +1730,12 @@ const styles = StyleSheet.create({
   },
   lightHeader: {
     paddingHorizontal: 12,
-    paddingTop: 34,
-    paddingBottom: 8,
+    paddingTop: 44,
+    paddingBottom: 12,
     alignItems: 'center',
   },
   lightAvatarContainer: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   simpleAvatarRing: {
     width: 68,
@@ -1694,7 +1751,7 @@ const styles = StyleSheet.create({
   },
   lightNameSection: {
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   lightNameRow: {
     flexDirection: 'row',
@@ -1726,8 +1783,9 @@ const styles = StyleSheet.create({
     marginLeft: 0,
   },
   lightUsername: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: FontFamily.regular,
+    marginTop: 1,
   },
   lightBusinessBadge: {
     paddingHorizontal: 8,
@@ -1746,37 +1804,51 @@ const styles = StyleSheet.create({
   // Lightweight action buttons
   lightActionSection: {
     paddingHorizontal: 12,
-    paddingTop: 6,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   lightActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   lightFollowBtn: {
     flexShrink: 0,
     paddingHorizontal: 0,
-    minWidth: 96,
+    minWidth: 112,
   },
-  lightActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  lightLikeBtn: {
+    minWidth: 112,
+    backgroundColor: '#FF4D9A',
+    borderColor: 'transparent',
+  },
+  lightMessageOutlineBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
   },
-  
+  lightMessageOutlineBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : FontFamily.semibold,
+  },
+
   // Lightweight utility row
   lightUtilityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    paddingVertical: 8,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   lightUtilityBtn: {
     paddingHorizontal: 12,
@@ -1817,9 +1889,9 @@ const styles = StyleSheet.create({
   // Lightweight info strip
   lightInfoStrip: {
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingBottom: 16,
-    gap: 10,
+    gap: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   lightBio: {
@@ -1986,20 +2058,54 @@ const styles = StyleSheet.create({
   },
 
   // Text Post Items
-  textPostItem: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
+  textPostCard: {
+    marginHorizontal: Spacing.md,
+    marginTop: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    overflow: 'hidden',
+  },
+  textPostAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: '#FF6FAE',
+  },
+  textPostTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 8,
+  },
+  textPostBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(2,6,23,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  textPostBadgeText: {
+    fontSize: 10,
+    fontFamily: FontFamily.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   textPostContent: {
-    fontSize: FontSizes.sm,
+    fontSize: 14,
     fontFamily: FontFamily.regular,
-    lineHeight: 20,
+    lineHeight: 21,
+    marginTop: 2,
   },
   textPostMeta: {
-    fontSize: FontSizes.xs,
+    fontSize: 11,
     fontFamily: FontFamily.regular,
-    marginTop: 4,
   },
 
   // Content Cards - Clean and minimal with dynamic height

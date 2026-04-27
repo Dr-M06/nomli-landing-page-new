@@ -38,6 +38,32 @@ export default function useAuth() {
   // Track if sign-out is for TOTP flow (don't navigate to signin in this case)
   const isTOTPSignOutRef = useRef(false);
 
+  const ensureProfileRowExists = async (
+    userId: string | undefined,
+    fallbackEmail?: string | null
+  ): Promise<void> => {
+    if (!userId) return;
+    try {
+      // Minimal upsert to guarantee FK-safe profile existence for new accounts.
+      // Some app flows (messages/story views) can run before any explicit profile edit happens.
+      const payload: Record<string, any> = {
+        id: userId,
+        updated_at: new Date().toISOString(),
+      };
+      if (fallbackEmail) payload.email = fallbackEmail;
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(payload, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('[Auth] ensureProfileRowExists upsert failed:', error.message);
+      }
+    } catch (e) {
+      console.warn('[Auth] ensureProfileRowExists exception:', e);
+    }
+  };
+
   // Monitor network connectivity (with throttling to prevent loops)
   useEffect(() => {
     let lastStatus: boolean | null = null;
@@ -421,6 +447,8 @@ export default function useAuth() {
             
             // Initialize systems for the user
             if (session.user?.id) {
+            // Ensure profile row exists before any feature writes that FK into profiles.id.
+            await ensureProfileRowExists(session.user.id, session.user.email ?? null);
             // Check if user is suspended (non-blocking, show alert)
             // Defer import to prevent blocking auth flow - use longer delay to prevent state update loops
             setTimeout(async () => {
@@ -502,6 +530,12 @@ export default function useAuth() {
             setSession(session);
             lastSessionUserIdRef.current = session.user?.id;
             initialLoadCompletedRef.current = true; // Mark initial load as completed
+            // Align Creator Pro in Supabase with RevenueCat (non-blocking; avoids stale Pro until user opens paywall).
+            setTimeout(() => {
+              import('../utils/revenueCatService')
+                .then(({ maybeSyncRevenueCatSubscriptionsBackendThrottled }) => maybeSyncRevenueCatSubscriptionsBackendThrottled())
+                .catch(() => {});
+            }, 2000);
             // Use setTimeout to ensure state updates happen in correct order
             setTimeout(() => {
               setError(null);
@@ -946,6 +980,7 @@ export default function useAuth() {
 
       // Set session and update loading states immediately
       console.log('[Auth] SignUp successful, setting session:', !!data.session);
+      await ensureProfileRowExists(data.user?.id, data.user?.email ?? email);
       setSession(data.session);
       setLoading(false);
       setIsLoaded(true);
@@ -1070,6 +1105,7 @@ export default function useAuth() {
       let mfaFactors: any[] = [];
       
       if (data.session && data.user) {
+        await ensureProfileRowExists(data.user.id, data.user.email ?? email);
         try {
           // Check TOTP status directly from profiles table using the user ID from sign-in response
           const { checkTOTPEnabled } = await import('../utils/totpService');
@@ -1321,6 +1357,10 @@ export default function useAuth() {
       console.log('[Auth] Calling supabase.auth.signOut()...');
       // Local-only sign out keeps other logged-in devices/sister apps active.
       const { error } = await supabase.auth.signOut({ scope: 'local' });
+
+      void import('../utils/revenueCatService')
+        .then((m) => m.logOutRevenueCat())
+        .catch(() => {});
 
       // Clear session storage after signOut to ensure it's fully cleared
       try {

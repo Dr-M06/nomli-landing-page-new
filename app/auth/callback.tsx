@@ -121,7 +121,7 @@ export default function AuthCallbackScreen() {
         if (profileComplete) {
           // Existing user with complete profile - go to main app
           log('✅ OAuth sign-in successful - existing user');
-          router.replace('/(tabs)/community');
+          router.replace('/(tabs)/discovery');
         } else {
           // New user or incomplete profile - go to profile setup
           log('✅ OAuth sign-in successful - new user, redirecting to profile setup');

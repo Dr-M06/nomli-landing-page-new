@@ -145,6 +145,12 @@ export default function CreatePostScreen() {
   const [uploadingMedia, setUploadingMedia] = useState(false); // Media upload state
   const [uploadProgress, setUploadProgress] = useState(0); // Upload progress (0-100)
   const [uploadMessage, setUploadMessage] = useState(''); // Upload status message
+  const uploadHint =
+    uploadProgress < 35
+      ? 'Compressing media...'
+      : uploadProgress < 95
+        ? 'Uploading...'
+        : 'Finishing...';
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isBusiness, setIsBusiness] = useState(false); // Business promotion toggle
   const [adultContent, setAdultContent] = useState(false); // 18+ / sensitive content (Twitter-style hide until Show)
@@ -904,7 +910,7 @@ export default function CreatePostScreen() {
       <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: themeColors.background }]}>
         {/* Simple Header */}
         <View style={[styles.header, { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
-          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Create Post</Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Share Your Vibe</Text>
           {keyboardVisible && (
             <TouchableOpacity
               style={styles.doneButton}
@@ -938,6 +944,9 @@ export default function CreatePostScreen() {
               
               <Text style={[styles.uploadPercentage, { color: themeColors.primary.main }]}>
                 {Math.round(uploadProgress)}%
+              </Text>
+              <Text style={[styles.uploadSubtext, { color: themeColors.textSecondary }]}>
+                {uploadHint}
               </Text>
             </View>
           </View>
@@ -1134,7 +1143,7 @@ export default function CreatePostScreen() {
                     fontSize: FontSizes.lg,
                   },
                 ]}
-                placeholder="What's on your mind?"
+                placeholder="Share your Nomli vibe..."
                 placeholderTextColor={themeColors.textSecondary}
                 multiline
                 value={content}

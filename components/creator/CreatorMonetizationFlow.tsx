@@ -14,12 +14,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronLeft, Lock, Check, Info } from 'lucide-react-native';
+import { ChevronLeft, Lock, Check, Info, ExternalLink } from 'lucide-react-native';
 import { FontFamily } from '../../constants/Theme';
 import { getFloatingTabBarReservedHeight } from '../../utils/tabBarInset';
 import Toast from 'react-native-toast-message';
 import { useCreatorMonetization } from '../../hooks/useCreatorMonetization';
-import { isCreatorProActive } from '../../utils/creatorMonetizationService';
+import { WALLET_WITHDRAWAL_URL } from '../../constants/shareLinks';
+import {
+  hasCreatorProAccess,
+  isCreatorProActive,
+  tokensToUsd,
+  giftNominalUsdToCreatorPayoutUsd,
+} from '../../utils/creatorMonetizationService';
 
 /** Dark creator shell with mint highlights + lemon primary CTAs (no pink). */
 const D = {
@@ -63,6 +69,17 @@ function openSubscriptionLegalUrl(url: string) {
       type: 'info',
       text1: 'Could not open link',
       text2: 'Copy the URL from nomlimingle.com if this persists.',
+      position: 'bottom',
+    });
+  });
+}
+
+function openWalletWithdrawal() {
+  Linking.openURL(WALLET_WITHDRAWAL_URL).catch(() => {
+    Toast.show({
+      type: 'info',
+      text1: 'Could not open withdrawal',
+      text2: `Open ${WALLET_WITHDRAWAL_URL} in your browser.`,
       position: 'bottom',
     });
   });
@@ -119,12 +136,6 @@ function formatCount(n: number): string {
   if (n >= 10_000) return `${Math.round(n / 1000)}K`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(Math.round(n));
-}
-
-/** Gift ledger amounts are Nomli tokens (same unit as wallet); do not show USD here. */
-function formatGiftTokens(n: number): string {
-  const t = Math.round(Math.max(0, n));
-  return `${t.toLocaleString()} tokens`;
 }
 
 function formatRelative(iso: string): string {
@@ -222,6 +233,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     refetch,
     refetchUntilProVisible,
     subscribeCreatorPro,
+    profileCreatorProUntil,
   } = useCreatorMonetization();
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<CreatorTabId>('dashboard');
@@ -231,15 +243,14 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     if (!loading) setHydrated(true);
   }, [loading]);
 
-  const proUnlocked = !hydrated
-    ? initialProUnlocked
-    : snapshot !== null
-      ? snapshot.creator_pro_active || isCreatorProActive(snapshot.creator_pro_until)
-      : initialProUnlocked;
+  const proUnlocked = !hydrated ? initialProUnlocked : hasCreatorProAccess(snapshot, profileCreatorProUntil);
 
   const lastMonthCombinedUsd = useMemo(() => {
     if (!snapshot) return 0;
-    return snapshot.estimated_content_usd_last_month + snapshot.estimated_gift_usd_last_month;
+    return (
+      snapshot.estimated_content_usd_last_month +
+      giftNominalUsdToCreatorPayoutUsd(snapshot.estimated_gift_usd_last_month)
+    );
   }, [snapshot]);
   const foundingAmountUsd = snapshot?.founding_credit_amount_usd ?? 1;
   const foundingPaywallUsd = snapshot?.founding_credit_paywall_usd ?? 1;
@@ -250,13 +261,27 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
   );
   const thisMonthCombinedUsd = useMemo(() => {
     if (!snapshot) return 0;
-    return snapshot.estimated_content_usd_month + snapshot.estimated_gift_usd_month;
+    return (
+      snapshot.estimated_content_usd_month +
+      giftNominalUsdToCreatorPayoutUsd(snapshot.estimated_gift_usd_month)
+    );
   }, [snapshot]);
   const walletGiftTokens = useMemo(() => {
     if (!snapshot) return 0;
     return snapshot.wallet_earned_token_balance > 0 ? snapshot.wallet_earned_token_balance : snapshot.wallet_token_balance;
   }, [snapshot]);
-  const giftAllTimeTokens = useMemo(() => Math.round(snapshot?.gift_tokens_all_time ?? 0), [snapshot]);
+  /** Creator’s estimated bank payout from gift-linked balance (70% of nominal token USD). */
+  const giftWalletPayoutUsd = useMemo(() => {
+    if (!snapshot) return 0;
+    const gross = tokensToUsd(walletGiftTokens, snapshot.token_usd_rate);
+    return giftNominalUsdToCreatorPayoutUsd(gross);
+  }, [snapshot, walletGiftTokens]);
+  const canWithdrawGiftBalance = giftWalletPayoutUsd >= MIN_CREATOR_WITHDRAWAL_USD;
+  const giftAllTimePayoutUsd = useMemo(() => {
+    if (!snapshot) return 0;
+    const gross = tokensToUsd(snapshot.gift_tokens_all_time, snapshot.token_usd_rate);
+    return giftNominalUsdToCreatorPayoutUsd(gross);
+  }, [snapshot]);
   const breakdownBars = useMemo(() => {
     if (!snapshot?.breakdown_month?.length) return [];
     const pts = snapshot.breakdown_month.map((b) => Math.max(0, b.points));
@@ -293,14 +318,28 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
       case 'history':
         return { title: 'Payout history', right: <View style={{ width: 28 }} /> };
       case 'upgrade':
-        return { title: 'Go Pro', right: <View style={{ width: 28 }} /> };
+        return {
+          title: proUnlocked ? 'Creator Pro' : 'Go Pro',
+          right: proUnlocked ? <ProPill /> : <View style={{ width: 28 }} />,
+        };
       default:
         return { title: 'Creator', right: null };
     }
-  }, [activeTab]);
+  }, [activeTab, proUnlocked]);
 
   const toastSoon = (msg: string) =>
     Toast.show({ type: 'info', text1: msg, text2: 'Coming soon.', position: 'bottom' });
+
+  const onRegionalPriceInfo = useCallback(() => {
+    Toast.show({
+      type: 'info',
+      text1: 'Price at checkout',
+      text2:
+        'We show an estimate from Nomli (often in USD). The App Store or Play Store may show a different amount for your country or region, include taxes, or match Apple/Google’s current list price. The payment sheet is always final.',
+      position: 'bottom',
+      visibilityTime: 7000,
+    });
+  }, []);
 
   const subscribePriceLabel = useMemo(() => {
     if (!creatorPlan) return `$${CREATOR_PRO_FALLBACK_USD.toFixed(2)}`;
@@ -344,6 +383,43 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     return 'Cancel anytime · Secure checkout in your browser';
   }, []);
 
+  const proRenewThroughLabel = useMemo(() => {
+    const iso = snapshot?.creator_pro_until || profileCreatorProUntil;
+    if (!iso || !isCreatorProActive(iso)) return null;
+    try {
+      return new Date(iso).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return null;
+    }
+  }, [snapshot?.creator_pro_until, profileCreatorProUntil]);
+
+  const openManageSubscription = useCallback(() => {
+    if (Platform.OS === 'android') {
+      Linking.openURL(
+        'https://play.google.com/store/account/subscriptions?package=com.nomli.mingle2'
+      ).catch(() =>
+        Toast.show({ type: 'error', text1: 'Could not open subscription settings', position: 'bottom' })
+      );
+      return;
+    }
+    if (Platform.OS === 'ios') {
+      Linking.openURL('itms-apps://apps.apple.com/account/subscriptions').catch(() =>
+        Linking.openURL('https://apps.apple.com/account/subscriptions')
+      );
+      return;
+    }
+    Toast.show({
+      type: 'info',
+      text1: 'Subscriptions',
+      text2: 'Manage recurring plans in Account settings on nomlimingle.com.',
+      position: 'bottom',
+    });
+  }, []);
+
   const subscribeLoadingLabel = useMemo(() => {
     if (Platform.OS === 'ios') return 'Opening App Store…';
     if (Platform.OS === 'android') return 'Opening Google Play…';
@@ -354,13 +430,23 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     const res = await subscribeCreatorPro('monthly');
     if (res.ok) {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        Toast.show({
-          type: 'success',
-          text1: 'Creator Pro',
-          text2: 'Your subscription is active.',
-          position: 'bottom',
-        });
-        await refetchUntilProVisible();
+        const { visible } = await refetchUntilProVisible();
+        if (visible) {
+          Toast.show({
+            type: 'success',
+            text1: 'Creator Pro',
+            text2: 'Your subscription is active.',
+            position: 'bottom',
+          });
+        } else {
+          Toast.show({
+            type: 'info',
+            text1: 'Creator Pro',
+            text2:
+              'Purchase completed. Activating can take a moment — pull to refresh or check back shortly.',
+            position: 'bottom',
+          });
+        }
       } else {
         Toast.show({
           type: 'info',
@@ -379,13 +465,23 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
     const res = await subscribeCreatorPro('yearly');
     if (res.ok) {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        Toast.show({
-          type: 'success',
-          text1: 'Creator Pro',
-          text2: 'Your subscription is active.',
-          position: 'bottom',
-        });
-        await refetchUntilProVisible();
+        const { visible } = await refetchUntilProVisible();
+        if (visible) {
+          Toast.show({
+            type: 'success',
+            text1: 'Creator Pro',
+            text2: 'Your subscription is active.',
+            position: 'bottom',
+          });
+        } else {
+          Toast.show({
+            type: 'info',
+            text1: 'Creator Pro',
+            text2:
+              'Purchase completed. Activating can take a moment — pull to refresh or check back shortly.',
+            position: 'bottom',
+          });
+        }
       } else {
         Toast.show({
           type: 'info',
@@ -453,18 +549,10 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
               <Text style={styles.lockSub}>Last month you would have earned</Text>
               <Text style={styles.bigNumAccent}>{formatCreatorUsd(lastMonthCombinedUsd)}</Text>
               <Text style={styles.lockHint}>from your content engagement and gifts (est.)</Text>
-              <View style={styles.stat3}>
-                {[
-                  [formatCount(snapshot?.views_last_month ?? 0), 'views'],
-                  [formatCount(snapshot?.likes_last_month ?? 0), 'likes'],
-                  [formatCount(snapshot?.comments_last_month ?? 0), 'comments'],
-                ].map(([v, l]) => (
-                  <View key={l} style={styles.statCell}>
-                    <Text style={styles.statVal}>{v}</Text>
-                    <Text style={styles.statLbl}>{l}</Text>
-                  </View>
-                ))}
-              </View>
+              <Text style={styles.statInline}>
+                {formatCount(snapshot?.views_last_month ?? 0)} views · {formatCount(snapshot?.likes_last_month ?? 0)} likes ·{' '}
+                {formatCount(snapshot?.comments_last_month ?? 0)} comments
+              </Text>
               <TouchableOpacity style={styles.upgradeBtn} activeOpacity={0.9} onPress={() => setTab('upgrade')}>
                 <Text style={styles.upgradeBtnTxt}>Unlock earnings — Go Pro</Text>
               </TouchableOpacity>
@@ -474,14 +562,24 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
             </View>
             <SectionHead>Gift earnings</SectionHead>
             <CardD>
-              <RowD label="Wallet balance (tokens)" value={formatGiftTokens(walletGiftTokens)} valueColor={D.mintBright} />
-              <RowD label="Total received (all time, tokens)" value={formatGiftTokens(giftAllTimeTokens)} />
+              <RowD label="Estimated payout balance" value={formatCreatorUsd(giftWalletPayoutUsd)} valueColor={D.mintBright} />
+              <RowD label="Total received (est. payout, all time)" value={formatCreatorUsd(giftAllTimePayoutUsd)} />
               <RowD label="Min. withdrawal" value={formatUsd(MIN_CREATOR_WITHDRAWAL_USD)} valueColor={D.muted} isLast />
             </CardD>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 16 }}>
-              <TouchableOpacity style={styles.outlineWithdraw} activeOpacity={0.85} onPress={() => toastSoon('Withdraw')}>
-                <Text style={styles.outlineWithdrawTxt}>Withdraw gift balance</Text>
+              <TouchableOpacity
+                style={[styles.outlineWithdraw, !canWithdrawGiftBalance && styles.outlineWithdrawDisabled]}
+                activeOpacity={canWithdrawGiftBalance ? 0.85 : 1}
+                disabled={!canWithdrawGiftBalance}
+                onPress={() => (canWithdrawGiftBalance ? openWalletWithdrawal() : undefined)}
+              >
+                <Text style={[styles.outlineWithdrawTxt, !canWithdrawGiftBalance && styles.outlineWithdrawTxtDisabled]}>
+                  Withdraw gift balance
+                </Text>
               </TouchableOpacity>
+              {!canWithdrawGiftBalance ? (
+                <Text style={styles.withdrawHint}>{`Withdrawals open at ${formatUsd(MIN_CREATOR_WITHDRAWAL_USD)}.`}</Text>
+              ) : null}
             </View>
           </>
         )}
@@ -617,9 +715,9 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
                   <Text style={styles.totalsVal}>{formatCreatorUsd(snapshot?.estimated_content_usd_month ?? 0)}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.totalsLbl}>Gift earnings (est.)</Text>
+                  <Text style={styles.totalsLbl}>Gifts — your payout (est., 70%)</Text>
                   <Text style={[styles.totalsVal, { color: D.mintBright }]}>
-                    {formatCreatorUsd(snapshot?.estimated_gift_usd_month ?? 0)}
+                    {formatCreatorUsd(giftNominalUsdToCreatorPayoutUsd(snapshot?.estimated_gift_usd_month ?? 0))}
                   </Text>
                 </View>
               </View>
@@ -630,13 +728,25 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
         {activeTab === 'gifts' && (
           <>
             <View style={[styles.estimateRow, { paddingHorizontal: H_PAD }]}>
-              <Text style={[styles.bigNumAccent, { color: D.mintBright }]}>{formatGiftTokens(walletGiftTokens)}</Text>
-              <Text style={styles.estLbl}>gift wallet (tokens)</Text>
+              <Text style={[styles.bigNumAccent, { color: D.mintBright }]}>
+                {formatCreatorUsd(giftWalletPayoutUsd)}
+              </Text>
+              <Text style={styles.estLbl}>Estimated payout (after your 70% share)</Text>
             </View>
             <View style={{ paddingHorizontal: H_PAD, paddingBottom: 12 }}>
-              <TouchableOpacity style={styles.withdrawGreen} activeOpacity={0.9} onPress={() => toastSoon('Withdraw to bank')}>
-                <Text style={styles.withdrawGreenTxt}>Withdraw to bank</Text>
+              <TouchableOpacity
+                style={[styles.withdrawGreen, !canWithdrawGiftBalance && styles.withdrawGreenDisabled]}
+                activeOpacity={canWithdrawGiftBalance ? 0.9 : 1}
+                disabled={!canWithdrawGiftBalance}
+                onPress={() => (canWithdrawGiftBalance ? openWalletWithdrawal() : undefined)}
+              >
+                <Text style={[styles.withdrawGreenTxt, !canWithdrawGiftBalance && styles.withdrawGreenTxtDisabled]}>
+                  Withdraw to bank
+                </Text>
               </TouchableOpacity>
+              {!canWithdrawGiftBalance ? (
+                <Text style={styles.withdrawHint}>{`Minimum withdrawal is ${formatUsd(MIN_CREATOR_WITHDRAWAL_USD)}.`}</Text>
+              ) : null}
             </View>
             <CardD style={{ marginBottom: 14 }}>
               <RowD label="You keep" value="70% of each gift" />
@@ -658,7 +768,14 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
                       {(g.description || 'Gift').trim()} · {formatRelative(g.created_at)}
                     </Text>
                   </View>
-                  <Text style={styles.giftAmt}>+{formatGiftTokens(g.amount)}</Text>
+                  <Text style={styles.giftAmt}>
+                    +
+                    {formatCreatorUsd(
+                      giftNominalUsdToCreatorPayoutUsd(
+                        tokensToUsd(g.amount, snapshot?.token_usd_rate ?? 0.01)
+                      )
+                    )}
+                  </Text>
                 </View>
               ))
             )}
@@ -703,48 +820,91 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
           </>
         )}
 
-        {activeTab === 'upgrade' && (
+        {activeTab === 'upgrade' && proUnlocked && (
+          <View style={{ paddingHorizontal: H_PAD, paddingTop: 8, paddingBottom: 20 }}>
+            <View style={styles.proActiveCard}>
+              <View style={styles.proActiveTop}>
+                <View style={styles.proActiveCheck}>
+                  <Check size={20} color={D.ctaText} strokeWidth={2.8} />
+                </View>
+                <Text style={styles.proActiveTitle}>You're on Creator Pro</Text>
+                <Text style={styles.proActiveSub}>
+                  Your dashboard, payouts, and earnings tools are unlocked. Use Earnings or Home above.
+                </Text>
+                {proRenewThroughLabel ? (
+                  <Text style={styles.proActiveRenew}>Access active through {proRenewThroughLabel}</Text>
+                ) : null}
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.manageSubBtn, pressed && Platform.OS === 'ios' && { opacity: 0.88 }]}
+                onPress={openManageSubscription}
+                android_ripple={{ color: D.mint, borderless: false }}
+              >
+                <ExternalLink size={16} color={D.mintBright} />
+                <Text style={styles.manageSubBtnTxt}>
+                  Manage subscription{Platform.OS === 'ios' ? ' in App Store' : Platform.OS === 'android' ? ' in Google Play' : ''}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={{ height: 12 }} />
+          </View>
+        )}
+
+        {activeTab === 'upgrade' && !proUnlocked && (
           <>
             <View style={styles.upgradeHero}>
-              <Text style={styles.upgradeHeroTitle}>Unlock your earnings</Text>
-              <Text style={styles.upgradeHeroSub}>Your content is already earning. Start collecting.</Text>
-            </View>
-            <View style={[styles.cardHero, { marginHorizontal: H_PAD }]}>
-              <Text style={styles.cardHeroLbl}>Your creator wallet</Text>
-              <Text style={styles.cardHeroNum}>{formatCreatorUsd(upgradeWalletDisplayUsd)}</Text>
-              <Text style={styles.cardHeroHint}>
-                {foundingState === 'ineligible'
-                  ? `Last month's engagement (est.). Subscribe to unlock creator earnings and payouts.`
-                  : `${formatUsd(foundingAmountUsd)} founding creator credit · unlocks after your first billing month`}
+              <Text style={styles.upgradeHeroTitle}>Go Pro to collect</Text>
+              <Text style={styles.upgradeHeroSub}>
+                Earnings are estimated for your account; subscription unlocks wallet and monthly payout.
               </Text>
             </View>
-            <View style={{ paddingHorizontal: H_PAD, marginBottom: 10 }}>
+            <View style={[styles.cardHero, { marginHorizontal: H_PAD }]}>
+              <Text style={styles.cardHeroLbl}>Est. in your creator wallet</Text>
+              <Text style={styles.cardHeroNumSmall}>{formatCreatorUsd(upgradeWalletDisplayUsd)}</Text>
+              <Text style={styles.cardHeroHint}>
+                {foundingState === 'ineligible'
+                  ? `Includes last month’s engagement (est.).`
+                  : `${formatUsd(foundingAmountUsd)} founding credit after your first paid month`}
+              </Text>
+            </View>
+            <View style={{ paddingHorizontal: H_PAD, marginBottom: 8 }}>
               <View style={styles.proFeatureCard}>
-                <View style={styles.proPriceRow}>
-                  <Text style={styles.proName}>Nomli Creator Pro</Text>
-                  <Text>
-                    <Text style={styles.proPrice}>{subscribePriceLabel}</Text>
-                    <Text style={styles.proPriceSuffix}>/month</Text>
-                  </Text>
+                <View style={styles.proPriceRowTight}>
+                  <Text style={styles.proName}>Creator Pro</Text>
+                  <View style={styles.proPriceRight}>
+                    <Text>
+                      <Text style={styles.proPriceSm}>{subscribePriceLabel}</Text>
+                      <Text style={styles.proPriceSuffix}>/mo</Text>
+                    </Text>
+                    <Pressable
+                      onPress={onRegionalPriceInfo}
+                      hitSlop={12}
+                      style={({ pressed }) => [styles.proPriceInfoBtn, pressed && { opacity: 0.75 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Why the price at checkout may differ"
+                    >
+                      <Info size={17} color={D.meta} strokeWidth={2} />
+                    </Pressable>
+                  </View>
                 </View>
                 {[
-                  'Earn from post engagement monthly',
-                  'Priority processing for gift payouts',
-                  'Creator dashboard and score tracking',
-                  'Monthly payout on the 15th',
+                  'Monthly earnings from engagement',
+                  'Gift payout priority',
+                  'Dashboard & score',
+                  'Payouts on the 15th',
                 ].map((line) => (
-                  <View key={line} style={styles.benefitRow}>
-                    <Check size={14} color={D.mint} strokeWidth={2.5} />
+                  <View key={line} style={styles.benefitRowTight}>
+                    <Check size={13} color={D.mint} strokeWidth={2.5} />
                     <Text style={styles.benefitTxt}>{line}</Text>
                   </View>
                 ))}
-                <View style={styles.benefitRowMuted}>
-                  <Info size={14} color={D.meta} strokeWidth={2} />
+                <View style={[styles.benefitRowMuted, { marginTop: 4 }]}>
+                  <Info size={13} color={D.meta} strokeWidth={2} />
                   <Text style={styles.benefitTxtMuted}>Ad revenue share — coming soon</Text>
                 </View>
               </View>
             </View>
-            <View style={{ paddingHorizontal: H_PAD, paddingBottom: 8 }}>
+            <View style={{ paddingHorizontal: H_PAD, paddingBottom: 6 }}>
               <Pressable
                 style={({ pressed }) => [
                   styles.upgradeBtn,
@@ -760,7 +920,7 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
                 </Text>
               </Pressable>
             </View>
-            <View style={{ paddingHorizontal: H_PAD, paddingBottom: 16 }}>
+            <View style={{ paddingHorizontal: H_PAD, paddingBottom: 14 }}>
               <Pressable
                 style={({ pressed }) => [
                   styles.upgradeAnnualSecondary,
@@ -773,40 +933,35 @@ export default function CreatorMonetizationFlow({ initialProUnlocked = false }: 
               >
                 <Text style={styles.upgradeOutlineTxt}>{annualPayTeaserLabel}</Text>
               </Pressable>
-              <View style={styles.upgradeSubscribeFoot}>
-                <Text style={styles.payFoot}>{payFootNote}</Text>
-                <Text style={styles.payFootFollow}>
-                  Auto-renews until you cancel. Manage in {Platform.OS === 'ios' ? 'App Store' : Platform.OS === 'android' ? 'Google Play' : 'your account'} settings.
-                </Text>
-                <View style={styles.legalLinksInner}>
-                  <Text style={styles.legalLinksLine}>
-                    <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_TERMS_URL)}>
-                      Terms of Service
-                    </Text>
-                    <Text style={styles.legalSep}> · </Text>
-                    <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_PRIVACY_URL)}>
-                      Privacy Policy
-                    </Text>
-                    {Platform.OS === 'ios' ? (
-                      <>
-                        <Text style={styles.legalSep}> · </Text>
-                        <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(IOS_SUBSCRIPTION_EULA_URL)}>
-                          Standard EULA
-                        </Text>
-                      </>
-                    ) : Platform.OS === 'android' ? (
-                      <>
-                        <Text style={styles.legalSep}> · </Text>
-                        <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(GOOGLE_PLAY_TERMS_URL)}>
-                          Google Play terms
-                        </Text>
-                      </>
-                    ) : null}
+              <View style={styles.upgradeSubscribeFootTight}>
+                <Text style={styles.payFootCompact}>
+                  {payFootNote}. Auto-renews until cancelled.{' '}
+                  <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_TERMS_URL)}>
+                    Terms
                   </Text>
-                </View>
+                  {' · '}
+                  <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(LEGAL_PRIVACY_URL)}>
+                    Privacy
+                  </Text>
+                  {Platform.OS === 'ios' ? (
+                    <>
+                      {' · '}
+                      <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(IOS_SUBSCRIPTION_EULA_URL)}>
+                        EULA
+                      </Text>
+                    </>
+                  ) : Platform.OS === 'android' ? (
+                    <>
+                      {' · '}
+                      <Text style={styles.legalLink} onPress={() => openSubscriptionLegalUrl(GOOGLE_PLAY_TERMS_URL)}>
+                        Play terms
+                      </Text>
+                    </>
+                  ) : null}
+                </Text>
               </View>
             </View>
-            <View style={{ height: 16 }} />
+            <View style={{ height: 8 }} />
           </>
         )}
       </ScrollView>
@@ -973,29 +1128,13 @@ const styles = StyleSheet.create({
     color: D.meta,
     marginTop: 4,
   },
-  stat3: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 16,
-    alignSelf: 'stretch',
-  },
-  statCell: {
-    flex: 1,
-    backgroundColor: D.card,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-  },
-  statVal: {
-    fontSize: 18,
-    fontFamily: FontFamily.semibold,
-    color: D.text,
-  },
-  statLbl: {
-    fontSize: 10,
+  statInline: {
+    fontSize: 11,
     color: D.meta,
-    marginTop: 2,
+    marginTop: 14,
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 4,
   },
   /** iOS only: tiny opacity on press (Android uses same-color ripple to avoid dark fringes). */
   upgradeCtaPressedIOS: {
@@ -1063,6 +1202,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: D.mintBright,
     fontFamily: FontFamily.medium,
+  },
+  outlineWithdrawDisabled: {
+    opacity: 0.45,
+    borderColor: D.rowBorder,
+  },
+  outlineWithdrawTxtDisabled: {
+    color: D.muted,
+  },
+  withdrawHint: {
+    fontSize: 11,
+    color: D.muted,
+    marginTop: 8,
+    textAlign: 'center',
+    fontFamily: FontFamily.regular,
   },
   estimateRow: {
     flexDirection: 'row',
@@ -1249,6 +1402,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: FontFamily.semibold,
   },
+  withdrawGreenDisabled: {
+    backgroundColor: D.segBg,
+    opacity: 0.85,
+  },
+  withdrawGreenTxtDisabled: {
+    color: D.muted2,
+  },
   giftRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1346,31 +1506,33 @@ const styles = StyleSheet.create({
   },
   upgradeHero: {
     paddingHorizontal: H_PAD,
-    paddingTop: 14,
-    paddingBottom: 8,
+    paddingTop: 10,
+    paddingBottom: 6,
     alignItems: 'center',
   },
   upgradeHeroTitle: {
-    fontSize: 22,
+    fontSize: 19,
     fontFamily: FontFamily.bold,
     color: D.text,
     marginBottom: 4,
     textAlign: 'center',
   },
   upgradeHeroSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: D.muted2,
     textAlign: 'center',
     fontFamily: FontFamily.regular,
+    lineHeight: 17,
+    paddingHorizontal: 8,
   },
   cardHero: {
     backgroundColor: D.mintSoft,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: D.mintBorder,
     borderRadius: 14,
-    padding: 20,
+    padding: 14,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   cardHeroLbl: {
     fontSize: 13,
@@ -1384,6 +1546,12 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     color: D.mintBright,
   },
+  cardHeroNumSmall: {
+    fontSize: 30,
+    fontFamily: FontFamily.bold,
+    letterSpacing: -0.5,
+    color: D.mintBright,
+  },
   cardHeroHint: {
     fontSize: 12,
     color: D.meta,
@@ -1393,7 +1561,7 @@ const styles = StyleSheet.create({
   proFeatureCard: {
     backgroundColor: D.card,
     borderRadius: 14,
-    padding: 16,
+    padding: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#333333',
   },
@@ -1403,6 +1571,22 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     marginBottom: 14,
   },
+  proPriceRowTight: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 10,
+  },
+  proPriceRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  proPriceInfoBtn: {
+    padding: 2,
+    marginLeft: 2,
+    borderRadius: 8,
+  },
   proName: {
     fontSize: 15,
     fontFamily: FontFamily.semibold,
@@ -1410,6 +1594,11 @@ const styles = StyleSheet.create({
   },
   proPrice: {
     fontSize: 24,
+    fontFamily: FontFamily.bold,
+    color: D.text,
+  },
+  proPriceSm: {
+    fontSize: 20,
     fontFamily: FontFamily.bold,
     color: D.text,
   },
@@ -1423,6 +1612,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 9,
+  },
+  benefitRowTight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 5,
   },
   benefitTxt: {
     flex: 1,
@@ -1466,6 +1661,73 @@ const styles = StyleSheet.create({
   upgradeSubscribeFoot: {
     marginTop: 18,
     paddingTop: 6,
+  },
+  upgradeSubscribeFootTight: {
+    marginTop: 12,
+    paddingTop: 4,
+  },
+  payFootCompact: {
+    fontSize: 10,
+    color: D.subtle,
+    textAlign: 'center',
+    fontFamily: FontFamily.regular,
+    lineHeight: 15,
+    paddingHorizontal: 4,
+  },
+  proActiveCard: {
+    backgroundColor: D.card,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: D.mintBorder,
+    overflow: 'hidden',
+  },
+  proActiveTop: {
+    padding: 18,
+    alignItems: 'center',
+  },
+  proActiveCheck: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: D.lemon,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  proActiveTitle: {
+    fontSize: 18,
+    fontFamily: FontFamily.bold,
+    color: D.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  proActiveSub: {
+    fontSize: 13,
+    color: D.muted2,
+    textAlign: 'center',
+    lineHeight: 19,
+    fontFamily: FontFamily.regular,
+  },
+  proActiveRenew: {
+    marginTop: 10,
+    fontSize: 12,
+    color: D.mintBright,
+    fontFamily: FontFamily.medium,
+  },
+  manageSubBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: D.rowBorder,
+    backgroundColor: D.pillMintBg,
+  },
+  manageSubBtnTxt: {
+    fontSize: 14,
+    fontFamily: FontFamily.semibold,
+    color: D.mintBright,
   },
   payFoot: {
     fontSize: 11,

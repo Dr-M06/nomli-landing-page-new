@@ -1,13 +1,14 @@
 /**
- * Discover daily like limits: free = 5/day (reset every 24h), premium = unlimited.
- * When user upgrades with a package that includes likes, they get unlimited (discover_premium_until).
+ * Discover daily like limits: free = 10/day (reset every 24h), premium = unlimited.
+ * Unlimited is tied to active subscriptions (dating/creator), not legacy token reveals.
  */
 
 import { supabase } from './supabase';
 import { log, warn } from './productionLogger';
+import { hasActiveWindow, readSubscriptionWindowsCache, writeSubscriptionWindowsCache } from './subscriptionCache';
 
-/** Free tier: daily like limit (sweet spot for scarcity + habit). */
-export const DAILY_LIKES_LIMIT = 5;
+/** Free tier: daily like limit for dating home. */
+export const DAILY_LIKES_LIMIT = 10;
 
 /** Start of today UTC (for consistent 24h reset). */
 function getTodayStart(): string {
@@ -25,32 +26,37 @@ function getTodayEnd(): string {
 
 /**
  * Check if user has unlimited discover likes.
- * True if: profiles.discover_premium_until is in the future, OR they have an active token reveal (discover_who_liked_reveals).
+ * True if: profiles.discover_premium_until or profiles.creator_pro_until is in the future.
  */
 export async function hasUnlimitedDiscoverLikes(userId: string): Promise<boolean> {
-  const now = new Date().toISOString();
   try {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('discover_premium_until')
+      .select('discover_premium_until, creator_pro_until')
       .eq('id', userId)
       .maybeSingle();
-    if (!profileError && profile?.discover_premium_until && profile.discover_premium_until > now) {
-      return true;
+    if (!profileError) {
+      const hasUnlimited =
+        hasActiveWindow(profile?.discover_premium_until) || hasActiveWindow(profile?.creator_pro_until);
+      if (hasUnlimited) {
+        await writeSubscriptionWindowsCache(userId, {
+          discoverPremiumUntil: profile?.discover_premium_until ?? null,
+          creatorProUntil: profile?.creator_pro_until ?? null,
+        }).catch(() => {});
+        return true;
+      }
     }
-    const { data: reveals, error: revealError } = await supabase
-      .from('discover_who_liked_reveals')
-      .select('expires_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    if (!revealError && reveals?.length) {
-      const exp = reveals[0].expires_at;
-      if (exp === null || exp > now) return true;
+    const cached = await readSubscriptionWindowsCache(userId);
+    if (cached) {
+      return hasActiveWindow(cached.discoverPremiumUntil) || hasActiveWindow(cached.creatorProUntil);
     }
     return false;
   } catch (e) {
     warn('[discoverDailyLikes] hasUnlimitedDiscoverLikes exception:', e);
+    const cached = await readSubscriptionWindowsCache(userId);
+    if (cached) {
+      return hasActiveWindow(cached.discoverPremiumUntil) || hasActiveWindow(cached.creatorProUntil);
+    }
     return false;
   }
 }

@@ -146,15 +146,18 @@ fi
 # Get absolute path to keystore before changing directory
 KEYSTORE_ABSOLUTE_PATH=$(cd "$(dirname "$KEYSTORE_PATH")" && pwd)/$(basename "$KEYSTORE_PATH")
 
-# Navigate to android directory
-cd android
-echo ""
-
 # Export with standard names for Gradle
 export MYAPP_RELEASE_KEY_ALIAS="${MYAPP_RELEASE_KEY_ALIAS:-nomli-mingle-key-alias}"
 
 # Use absolute path to keystore to avoid path resolution issues
 export MYAPP_RELEASE_STORE_FILE="$KEYSTORE_ABSOLUTE_PATH"
+
+echo "🧹 Removing iOS build outputs (frees disk)…"
+rm -rf ios/build ios/DerivedData 2>/dev/null || true
+
+# Navigate to android directory
+cd android
+echo ""
 
 echo "🧹 Cleaning previous build..."
 ./gradlew clean

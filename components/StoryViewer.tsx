@@ -59,6 +59,7 @@ import { log, warn, error } from '../utils/productionLogger';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PROGRESS_BAR_HEIGHT = 2;
 const STORY_DURATION = 5000; // 5 seconds for photos
+const STORY_MUSIC_DURATION_MS = 15000; // Keep story music clips in sync with progress
 const MIN_SWIPE_DISTANCE = 50;
 
 interface StoryUser {
@@ -229,8 +230,7 @@ export default function StoryViewer({
     return () => { cancelled = true; };
   }, [visible, StoryViewersComponent]);
 
-  // Inline story music playback (15s) - deferred so progress timer starts first (avoids audio blocking auto-advance)
-  const STORY_MUSIC_DURATION_MS = 15000;
+  // Inline story music playback (15s) - lightweight and synced with story progress duration.
   useEffect(() => {
     const audioUrl = visible && currentStory?.audio_url?.trim() ? currentStory.audio_url : null;
     if (!audioUrl) {
@@ -290,7 +290,7 @@ export default function StoryViewer({
         }
       }
     })();
-    }, 400); // Defer so progress timer starts first; Audio.setAudioModeAsync can block auto-advance on iOS
+    }, 120); // Small defer only; long defer makes progress feel out-of-sync at story start.
     return () => {
       cancelled = true;
       clearTimeout(delay);
@@ -300,6 +300,23 @@ export default function StoryViewer({
       storyMusicSoundRef.current = null;
     };
   }, [visible, currentStory?.id, currentStory?.audio_url]);
+
+  // Keep inline music playback aligned with hold-to-pause behavior.
+  useEffect(() => {
+    const sound = storyMusicSoundRef.current;
+    if (!sound) return;
+    (async () => {
+      try {
+        if (isPaused || showViewers || showOptions || showComments) {
+          await sound.pauseAsync();
+        } else {
+          await sound.playAsync();
+        }
+      } catch {
+        // Non-fatal: story media flow should continue even if audio command fails.
+      }
+    })();
+  }, [isPaused, showViewers, showOptions, showComments, currentStory?.id]);
 
   // Music wave animation - gentle loop when story has music
   useEffect(() => {
@@ -651,8 +668,8 @@ export default function StoryViewer({
     videoDuration.current = 0;
 
     if (story.media_type !== 'video') {
-      // Photos/text: fixed 5s timer, smooth 100ms updates
-      const duration = STORY_DURATION;
+      // Photos/text: if story has attached music, use music clip duration so progress stays in sync.
+      const duration = story.audio_url?.trim() ? STORY_MUSIC_DURATION_MS : STORY_DURATION;
       progressInterval.current = setInterval(() => {
         const elapsed = Date.now() - startTime.current;
         const newProgress = Math.min((elapsed / duration) * 100, 100);

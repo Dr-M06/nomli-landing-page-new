@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
-  Share,
   Platform,
   RefreshControl,
   ViewToken,
@@ -43,7 +42,6 @@ import {
   Heart,
   Zap,
   MessageCircle,
-  Share as ShareIcon,
   Bookmark,
   VolumeX,
   Volume2,
@@ -127,6 +125,8 @@ export interface VideoPost {
 
 import { PromoBanner } from '../utils/promoBannerUtils';
 import { log, warn, error } from '../utils/productionLogger';
+import { shareVideoPost, getAppStoreLine } from '../utils/shareContent';
+import { shareCommunityPostUrl } from '../constants/shareLinks';
 
 /** Total FlatList rows (videos + inserted promo banners). Must match mixedFeed useMemo. */
 export function mixedFeedItemCount(
@@ -1195,11 +1195,6 @@ const VideoItem = memo(function VideoItem({
     onSave?.(item.id, newIsBookmarked);
   };
 
-  const handleShare = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onShare?.(item);
-  };
-
   const handleProfilePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onProfilePress?.(item.user.id);
@@ -1697,15 +1692,7 @@ const VideoItem = memo(function VideoItem({
               </TouchableOpacity>
             </View>
 
-            {/* Share Button - DISABLED */}
-            {/* <View style={styles.actionButton}>
-              <TouchableOpacity style={styles.actionButtonContainer} onPress={handleShare}>
-                <ShareIcon size={28} color="white" strokeWidth={2} />
-              </TouchableOpacity>
-              <Text style={styles.actionText}>
-                {item.shares_count > 999 ? `${(item.shares_count / 1000).toFixed(1)}k` : item.shares_count}
-              </Text>
-            </View> */}
+            {/* Share hidden temporarily */}
 
             {/* Mute/Unmute Button */}
             <View style={styles.actionButton}>
@@ -2168,26 +2155,19 @@ export default function VideoFeed({
       onShare(post);
     } else {
       try {
-        // Create deep link that opens the app directly
-        const deepLink = `nomlimingle://video/${post.id}`;
-        const universalLink = `https://nomlimingle.app/video/${post.id}`;
-        const appStoreUrl = Platform.OS === 'ios' 
-          ? 'https://apps.apple.com/app/nomli-mingle/id123456789' // Replace with actual App Store ID
-          : 'https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en';
-        
-        const shareContent = {
-          title: `Video by @${post.user.username} on Nomli Mingle`,
-          message: `${post.description || 'Check out this video!'}\n\n📱 View in Nomli Mingle app: ${universalLink}\n\nGet Nomli Mingle: ${appStoreUrl}\n\n#NomliMingle #Video`,
-          url: universalLink, // Use universal link - opens app if installed
-        };
-
-        const result = await Share.share(shareContent);
-
-        if (result.action === Share.sharedAction) {
-          log('Video shared successfully');
-        }
-    } catch (error) {
-        error('Error sharing video:', error);
+        const link = shareCommunityPostUrl(post.id);
+        const title = `Video by @${post.user.username} on Nomli Mingle`;
+        await shareVideoPost({
+          title,
+          description: post.description || 'Check out this video!',
+          link,
+          videoUrl: post.video_url,
+          thumbnailUrl: post.thumbnail_url,
+          storeLine: getAppStoreLine(),
+        });
+        log('Video shared successfully');
+      } catch (err) {
+        error('Error sharing video:', err);
         Alert.alert('Error', 'Failed to share video');
       }
     }

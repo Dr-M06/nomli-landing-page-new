@@ -29,6 +29,8 @@ let engine: any = null;
 let engineAppId: string | null = null; // Track the App ID used to initialize the engine
 let isInitializing = false;
 let initializationPromise: Promise<any> | null = null;
+let joinedChannelName: string | null = null;
+let joinedUid: number | null = null;
 
 /**
  * Initialize the Agora RTC engine for livestreaming
@@ -157,6 +159,14 @@ export const getLivestreamEngine = (): any => {
   return engine;
 };
 
+export const getLivestreamJoinState = (): { isJoined: boolean; channelName: string | null; uid: number | null } => {
+  return {
+    isJoined: !!joinedChannelName,
+    channelName: joinedChannelName,
+    uid: joinedUid,
+  };
+};
+
 /**
  * Join a livestream channel
  */
@@ -184,12 +194,21 @@ export const joinLivestreamChannel = async (params: JoinLivestreamParams): Promi
     log('✅ [LIVESTREAM_ENGINE] Client role set to BROADCASTER');
   }
 
-  // Join channel
-  const joinResult = await engine.joinChannel(params.token, params.channelName, null, params.uid);
+  // Agora RN SDK v4 join signature is: joinChannel(token, channelId, uid, options).
+  // Passing null as the third arg makes uid null and causes -2 INVALID_ARGUMENT.
+  if (joinedChannelName === params.channelName && joinedUid === params.uid) {
+    log('✅ [LIVESTREAM_ENGINE] Already joined channel, skipping duplicate join');
+    return;
+  }
+
+  const joinResult = await engine.joinChannel(params.token, params.channelName, params.uid, {});
   
-  if (joinResult !== 0) {
+  if (joinResult !== 0 && joinResult !== -17) {
     throw new Error(`Failed to join channel. Error code: ${joinResult}`);
   }
+
+  joinedChannelName = params.channelName;
+  joinedUid = params.uid;
 
   log('✅ [LIVESTREAM_ENGINE] Joined channel:', {
     channelName: params.channelName,
@@ -209,6 +228,8 @@ export const leaveLivestreamChannel = async (): Promise<void> => {
 
   try {
     await engine.leaveChannel();
+    joinedChannelName = null;
+    joinedUid = null;
     log('✅ [LIVESTREAM_ENGINE] Left channel');
   } catch (error) {
     error('❌ [LIVESTREAM_ENGINE] Error leaving channel:', error);
@@ -227,10 +248,16 @@ export const enableLocalVideo = async (enabled: boolean): Promise<void> => {
   try {
     if (enabled) {
       await engine.enableVideo();
+      if (engine.muteLocalVideoStream) {
+        await engine.muteLocalVideoStream(false);
+      }
       if (engine.enableLocalVideo) {
         await engine.enableLocalVideo(true);
       }
     } else {
+      if (engine.muteLocalVideoStream) {
+        await engine.muteLocalVideoStream(true);
+      }
       if (engine.enableLocalVideo) {
         await engine.enableLocalVideo(false);
       }
@@ -286,6 +313,29 @@ export const switchCamera = async (): Promise<void> => {
 };
 
 /**
+ * Route call audio to loudspeaker or earpiece.
+ */
+export const setSpeakerphoneEnabled = async (enabled: boolean): Promise<void> => {
+  if (!engine) {
+    throw new Error('Engine not initialized');
+  }
+
+  try {
+    if (typeof engine.setEnableSpeakerphone === 'function') {
+      await engine.setEnableSpeakerphone(enabled);
+    } else if (typeof engine.setDefaultAudioRouteToSpeakerphone === 'function') {
+      await engine.setDefaultAudioRouteToSpeakerphone(enabled);
+    } else {
+      throw new Error('Speakerphone control is not supported by current Agora runtime');
+    }
+    log(`✅ [LIVESTREAM_ENGINE] Speakerphone ${enabled ? 'enabled' : 'disabled'}`);
+  } catch (error) {
+    error('❌ [LIVESTREAM_ENGINE] Error toggling speakerphone:', error);
+    throw error;
+  }
+};
+
+/**
  * Cleanup and release engine
  * Use with caution - only when completely done with livestreaming
  */
@@ -306,6 +356,8 @@ export const releaseLivestreamEngine = async (): Promise<void> => {
     await engine.release();
     engine = null;
     engineAppId = null;
+    joinedChannelName = null;
+    joinedUid = null;
     isInitializing = false;
     initializationPromise = null;
     

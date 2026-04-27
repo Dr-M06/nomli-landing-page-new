@@ -1,11 +1,14 @@
 #!/bin/bash
-# Remove Android build outputs and Gradle caches for this repo only (does not touch iOS).
+# Remove Android build outputs, Gradle project cache, and common clutter (.cxx, Kotlin caches, logs).
+# Does not touch iOS or ~/.gradle (global Gradle home).
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "Cleaning Android build artifacts..."
+echo "Cleaning Android build artifacts and cache clutter..."
 find android -name "*.apk" -type f -delete 2>/dev/null || true
 find android -name "*.aab" -type f -delete 2>/dev/null || true
+find android -name "*.log" -type f -delete 2>/dev/null || true
+find android -name ".DS_Store" -type f -delete 2>/dev/null || true
 rm -rf \
   android/app/build \
   android/build \
@@ -15,6 +18,8 @@ rm -rf \
   android/app/debug \
   android/.cxx \
   android/app/.cxx \
+  android/.kotlin \
+  android/app/.kotlin \
   2>/dev/null || true
 
 if [ -d "$ROOT/node_modules" ]; then

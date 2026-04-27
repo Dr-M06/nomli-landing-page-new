@@ -36,6 +36,7 @@ import { queueViewCount } from '../../utils/viewCountBatch';
 import { useVideoContext } from '../../contexts/VideoContext';
 import { PostMusicStrip, PostAudioAutoPlay } from '../PostMusicStrip';
 import { ReactionIcon } from '../reactions/ReactionIcon';
+import CreatorProAuthorBadge from '../CreatorProAuthorBadge';
 
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -422,7 +423,8 @@ export default function FeedPostCard({
                 <Text style={[styles.authorName, { color: c.neutral.text }]} numberOfLines={1}>
                   {displayName}
                 </Text>
-                {isBoosted && <Flame size={10} color="#f59e0b" fill="#f59e0b" style={{ marginLeft: 3 }} />}
+                <CreatorProAuthorBadge creatorProUntil={post.profile?.creator_pro_until} isDark={isDark} />
+                {isBoosted && <Flame size={10} color="#f59e0b" fill="#f59e0b" />}
               </View>
               <Text style={[styles.timestamp, { color: c.neutral.textTertiary }]}>
                 {formatTimeAgo(post.created_at)}
@@ -785,14 +787,18 @@ export default function FeedPostCard({
             activeColor="#FACC15"
             inactiveColor={c.neutral.textSecondary}
           />
-          {reactionCounts.total > 0 && (
-            <Pressable onPress={() => setShowReactions(true)} hitSlop={8}>
-              <Text style={[styles.actionCount, { color: myReaction ? '#ef4444' : c.neutral.textSecondary }]}>
-                {shortCount(reactionCounts.total)}
-              </Text>
-            </Pressable>
-          )}
         </Pressable>
+        {reactionCounts.total > 0 && (
+          <Pressable
+            onPress={() => setShowReactions(true)}
+            hitSlop={{ top: 12, bottom: 12, left: 10, right: 12 }}
+            style={styles.likesCountHit}
+          >
+            <Text style={[styles.actionCount, { color: myReaction ? '#ef4444' : c.neutral.textSecondary }]}>
+              {shortCount(reactionCounts.total)}
+            </Text>
+          </Pressable>
+        )}
         <Pressable 
           style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]} 
           hitSlop={6}
@@ -801,6 +807,7 @@ export default function FeedPostCard({
           <MessageCircle size={16} color={c.neutral.textSecondary} strokeWidth={1.8} />
           {comments > 0 && <Text style={[styles.actionCount, { color: c.neutral.textSecondary }]}>{shortCount(comments)}</Text>}
         </Pressable>
+        {/* Share hidden temporarily */}
         <View style={styles.actionsSpacer} />
         <Pressable 
           style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]} 
@@ -892,11 +899,14 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
   },
   authorName: {
     fontFamily: FontFamily.semibold,
     fontSize: 13,
-    maxWidth: '85%',
+    flex: 1,
+    minWidth: 0,
   },
   timestamp: {
     fontFamily: FontFamily.regular,
@@ -1146,5 +1156,10 @@ const styles = StyleSheet.create({
   actionCount: {
     fontFamily: FontFamily.semibold,
     fontSize: 12,
+  },
+  likesCountHit: {
+    paddingVertical: 6,
+    paddingRight: 6,
+    marginLeft: -2,
   },
 });

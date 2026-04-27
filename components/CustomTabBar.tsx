@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -6,55 +6,36 @@ import {
   Animated,
   Platform,
   Text,
-  Modal,
-  Pressable,
   DeviceEventEmitter,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { usePathname, useRouter } from 'expo-router';
-import { CircleDollarSign, CircleUserRound, Compass, Menu, Plus, Settings } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getThemeColors } from '../constants/Colors';
 import { BorderRadius, FontSizes } from '../constants/Theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { setImmersiveMode, showNavigationBar, hideNavigationBar } from '../utils/navigationBarManager';
 
-/** Bottom bar order: Home, Live, Post (center FAB), Inbox — rest in “More” sheet. */
-const BOTTOM_TAB_ORDER = ['community', 'live', 'create', 'chats'] as const;
-
-type MoreMenuIcon = typeof Compass;
-
-type MoreMenuItem =
-  | { kind: 'tab'; name: 'videos' | 'profile'; title: string; Icon: MoreMenuIcon }
-  | { kind: 'route'; path: '/settings'; title: string; Icon: typeof Settings }
-  | { kind: 'route'; path: '/creator'; title: string; Icon: typeof CircleDollarSign };
-
-const MORE_MENU_ITEMS: MoreMenuItem[] = [
-  { kind: 'tab', name: 'videos', title: 'Discovery', Icon: Compass },
-  { kind: 'tab', name: 'profile', title: 'Profile', Icon: CircleUserRound },
-  { kind: 'route', path: '/creator', title: 'Creator', Icon: CircleDollarSign },
-  { kind: 'route', path: '/settings', title: 'Settings', Icon: Settings },
-];
+/** Final order: Discover, Social, Post (center FAB), Inbox, Profile. */
+const BOTTOM_TAB_ORDER = ['discovery', 'community', 'create', 'chats', 'profile'] as const;
 
 const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
   const { isDarkMode } = useTheme();
   const themeColors = getThemeColors(isDarkMode);
   const flamingoMain = '#FF6FAE';
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const visibleRoutes = (BOTTOM_TAB_ORDER as readonly string[])
     .map((name) => state.routes.find((r) => r.name === name))
-    .filter((r): r is (typeof state.routes)[number] => r != null);
-  const currentRouteName = state.routes[state.index]?.name;
-  const isSettingsActive = typeof pathname === 'string' && pathname.startsWith('/settings');
-  const isCreatorRouteActive = typeof pathname === 'string' && pathname.startsWith('/creator');
-  const isMoreMenuRouteActive =
-    currentRouteName === 'videos' ||
-    currentRouteName === 'profile' ||
-    isSettingsActive ||
-    isCreatorRouteActive;
+    .filter((r): r is (typeof state.routes)[number] => {
+      if (!r) return false;
+      const options = descriptors[r.key]?.options;
+      return options?.href !== null;
+    });
+  const hasDatingTab = visibleRoutes.some((r) => r.name === 'discovery');
+  // Keep Post visually centered when Dating is hidden by reserving a left spacer slot.
+  const tabSlots: Array<(typeof state.routes)[number] | null> = hasDatingTab
+    ? visibleRoutes
+    : [null, ...visibleRoutes];
 
   const insets = useSafeAreaInsets();
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,18 +93,6 @@ const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navi
     });
 
   }, [state.index]);
-
-  const onMoreItemPress = useCallback(
-    (item: MoreMenuItem) => {
-      setMoreMenuOpen(false);
-      if (item.kind === 'tab') {
-        navigation.navigate(item.name);
-      } else {
-        router.push(item.path);
-      }
-    },
-    [navigation, router]
-  );
 
   const renderTab = (route: typeof state.routes[number]) => {
     const { options } = descriptors[route.key];
@@ -299,114 +268,20 @@ const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navi
       />
 
       <View style={styles.tabsRow}>
-        {visibleRoutes.map((route) => (
+        {tabSlots.map((route, index) => {
+          if (!route) {
+            return <View key={`spacer-${index}`} style={styles.tabColumn} />;
+          }
+          return (
           <View
             key={route.key}
             style={[styles.tabColumn, route.name === 'create' && styles.centerTabColumn]}
           >
             {route.name === 'create' ? renderCenterPostTab(route) : renderTab(route)}
           </View>
-        ))}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="More navigation options"
-          accessibilityState={isMoreMenuRouteActive ? { selected: true } : {}}
-          onPress={() => setMoreMenuOpen(true)}
-          style={[styles.moreButton, styles.tabColumn]}
-          activeOpacity={0.7}
-        >
-          <Animated.View style={[styles.tabContent, styles.moreTabContent]}>
-            {isMoreMenuRouteActive && (
-              <Animated.View
-                style={[
-                  styles.tabGlow,
-                  { backgroundColor: 'rgba(255,111,174,0.20)' },
-                ]}
-              />
-            )}
-            <Menu
-              size={18}
-              color={isMoreMenuRouteActive ? flamingoMain : themeColors.neutral.textSecondary}
-              strokeWidth={isMoreMenuRouteActive ? 2.5 : 2.1}
-            />
-            <Text
-              style={[
-                styles.tabLabel,
-                {
-                  color: isMoreMenuRouteActive ? flamingoMain : themeColors.neutral.textSecondary,
-                  opacity: isMoreMenuRouteActive ? 1 : 0.7,
-                },
-              ]}
-              numberOfLines={1}
-              allowFontScaling={false}
-            >
-              More
-            </Text>
-          </Animated.View>
-        </TouchableOpacity>
+          );
+        })}
       </View>
-
-      <Modal
-        visible={moreMenuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMoreMenuOpen(false)}
-      >
-        <Pressable style={styles.sheetBackdrop} onPress={() => setMoreMenuOpen(false)}>
-          <Pressable
-            style={[
-              styles.sheetPanel,
-              {
-                paddingBottom: Math.max(16, insets.bottom + 12),
-                // Dark: use screen background (#0F172A), not neutral.card (#334155 slate), so the sheet matches the app chrome.
-                backgroundColor: isDarkMode
-                  ? themeColors.neutral.background
-                  : themeColors.neutral.surface,
-                borderTopColor: isDarkMode
-                  ? 'rgba(148, 163, 184, 0.2)'
-                  : themeColors.neutral.border,
-              },
-            ]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <Text style={[styles.sheetTitle, { color: themeColors.neutral.text }]}>More</Text>
-            {MORE_MENU_ITEMS.map((item) => {
-              const active =
-                item.kind === 'tab'
-                  ? currentRouteName === item.name
-                  : typeof pathname === 'string' && pathname.startsWith(item.path);
-              const key = item.kind === 'tab' ? item.name : item.path;
-              const { title, Icon } = item;
-              const rowBorder = isDarkMode
-                ? 'rgba(148, 163, 184, 0.12)'
-                : themeColors.neutral.borderLight;
-
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.sheetRow, { borderBottomColor: rowBorder }]}
-                  onPress={() => onMoreItemPress(item)}
-                  activeOpacity={0.7}
-                >
-                  <Icon
-                    size={22}
-                    color={active ? flamingoMain : themeColors.neutral.textSecondary}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
-                  <Text
-                    style={[
-                      styles.sheetRowLabel,
-                      { color: active ? flamingoMain : themeColors.neutral.text },
-                    ]}
-                  >
-                    {title}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 });

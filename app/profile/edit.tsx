@@ -46,6 +46,21 @@ import { computeAge } from '../../utils/ageGate';
 
 // Default avatar image - defined as constant to avoid require() issues in conditionals
 const DEFAULT_AVATAR = require('../../assets/images/default-avatar.png');
+const BIO_IDEAS = [
+  'I love creating and sharing real moments.',
+  'Tech, music, and chill conversations.',
+  'Big on growth, good vibes, and consistency.',
+  'Food spots, travel plans, and weekend adventures.',
+];
+const RELATIONSHIP_OPTIONS = ['single', 'in_relationship', 'married', 'complicated', 'prefer_not_to_say'] as const;
+type RelationshipStatus = typeof RELATIONSHIP_OPTIONS[number];
+const RELATIONSHIP_LABELS: Record<RelationshipStatus, string> = {
+  single: 'Single',
+  in_relationship: 'In relationship',
+  married: 'Married',
+  complicated: 'Complicated',
+  prefer_not_to_say: 'Prefer not to say',
+};
 
 // CDN cache purge utility - static require to avoid Metro bundler issues
 let cdnCachePurge: any = null;
@@ -178,8 +193,13 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [gender, setGender] = useState<'male' | 'female' | 'non_binary' | ''>('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [showDobPicker, setShowDobPicker] = useState(false);
+  const [relationshipStatus, setRelationshipStatus] = useState<RelationshipStatus>('single');
+  const [showRelationshipModal, setShowRelationshipModal] = useState(false);
+  const [showBioIdeas, setShowBioIdeas] = useState(false);
+  const [bioInputHeight, setBioInputHeight] = useState(64);
 
   
   const [newAvatarUri, setNewAvatarUri] = useState<string | null>(null);
@@ -253,6 +273,16 @@ export default function EditProfileScreen() {
         setBio(data.bio || '');
         setAvatarUrl(data.avatar_url || '');
         setSelectedInterests(data.interests || []);
+        setGender(
+          data.gender === 'male' || data.gender === 'female' || data.gender === 'non_binary'
+            ? data.gender
+            : ''
+        );
+        setRelationshipStatus(
+          RELATIONSHIP_OPTIONS.includes(data.relationship_status as RelationshipStatus)
+            ? (data.relationship_status as RelationshipStatus)
+            : 'single'
+        );
         if (data.date_of_birth) {
           setDateOfBirth(new Date(data.date_of_birth + 'T12:00:00'));
         } else if (data.age != null && typeof data.age === 'number' && data.age > 0 && data.age < 120) {
@@ -1003,6 +1033,8 @@ export default function EditProfileScreen() {
         full_name: fullName.trim(),
         username: username.trim().replace(/^@+/, ''), // Strip any @ symbols before saving
         bio: bio.trim(),
+        gender: gender || null,
+        relationship_status: relationshipStatus || 'single',
         avatar_url: newAvatarUrl,
         interests: selectedInterests,
         date_of_birth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : null,
@@ -1510,10 +1542,42 @@ export default function EditProfileScreen() {
             
             <View style={styles.appleFieldGroup}>
               <Text style={[styles.appleFieldLabel, { color: themeColors.neutral.text }]}>Bio</Text>
+              <Text style={[styles.appleBioHint, { color: themeColors.neutral.textSecondary }]}>
+                Hint: keep it short - what you enjoy, what you value, or your vibe.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowBioIdeas((prev) => !prev)}
+                style={styles.appleBioIdeasToggle}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.appleBioIdeasToggleText, { color: themeColors.primary.main }]}>
+                  {showBioIdeas ? 'Hide bio ideas' : 'Need ideas?'}
+                </Text>
+              </TouchableOpacity>
+              {showBioIdeas ? (
+                <View style={styles.appleBioIdeasWrap}>
+                  {BIO_IDEAS.map((idea) => (
+                    <TouchableOpacity
+                      key={idea}
+                      style={[
+                        styles.appleBioIdeaChip,
+                        { backgroundColor: themeColors.neutral.card, borderColor: themeColors.neutral.border },
+                      ]}
+                      onPress={() => setBio(idea)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.appleBioIdeaText, { color: themeColors.neutral.textSecondary }]} numberOfLines={2}>
+                        {idea}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
               <TextInput
                 style={[
                   styles.appleFieldInput,
                   styles.appleBioInput,
+                  { minHeight: Math.max(64, bioInputHeight) },
                   { 
                     color: themeColors.neutral.text,
                     backgroundColor: themeColors.neutral.card,
@@ -1525,8 +1589,12 @@ export default function EditProfileScreen() {
                 placeholder="Tell us about yourself"
                 placeholderTextColor={themeColors.neutral.subtext}
                 multiline
-                numberOfLines={3}
+                scrollEnabled={false}
                 maxLength={90}
+                onContentSizeChange={(event) => {
+                  const next = Math.ceil(event.nativeEvent.contentSize.height);
+                  setBioInputHeight(Math.min(140, Math.max(64, next + 18)));
+                }}
               />
               <View style={styles.appleCharacterCount}>
                 <Text style={[styles.appleCharacterText, { color: themeColors.neutral.subtext }]}>
@@ -1534,34 +1602,91 @@ export default function EditProfileScreen() {
                 </Text>
               </View>
             </View>
-            
-            
-            <View style={styles.appleFieldGroup}>
-              <Text style={[styles.appleFieldLabel, { color: themeColors.neutral.text }]}>Date of birth</Text>
-              <TouchableOpacity
-                style={[
-                  styles.appleFieldInput,
-                  styles.appleDropdown,
-                  {
-                    backgroundColor: themeColors.neutral.card,
-                    borderColor: themeColors.neutral.border,
-                  },
-                ]}
-                onPress={() => setShowDobPicker(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.appleDropdownButton}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <Calendar size={18} color={themeColors.neutral.subtext} style={{ marginRight: 8 }} />
-                    <Text style={[styles.appleDropdownText, { color: dateOfBirth ? themeColors.neutral.text : themeColors.neutral.subtext }]} numberOfLines={1}>
-                      {dateOfBirth
-                        ? dateOfBirth.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'Select date of birth'}
-                    </Text>
+
+            <View style={styles.appleFieldRow}>
+              <View style={[styles.appleFieldGroup, styles.appleFieldGroupHalfLeft]}>
+                <Text style={[styles.appleFieldLabel, { color: themeColors.neutral.text }]}>Date of birth</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.appleFieldInput,
+                    styles.appleDropdown,
+                    {
+                      backgroundColor: themeColors.neutral.card,
+                      borderColor: themeColors.neutral.border,
+                    },
+                  ]}
+                  onPress={() => setShowDobPicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.appleDropdownButton}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <Calendar size={18} color={themeColors.neutral.subtext} style={{ marginRight: 8 }} />
+                      <Text style={[styles.appleDropdownText, { color: dateOfBirth ? themeColors.neutral.text : themeColors.neutral.subtext }]} numberOfLines={1}>
+                        {dateOfBirth
+                          ? dateOfBirth.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'Select date'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.appleDropdownArrow, { color: themeColors.neutral.subtext }]}>▼</Text>
                   </View>
-                  <Text style={[styles.appleDropdownArrow, { color: themeColors.neutral.subtext }]}>▼</Text>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.appleFieldGroup, styles.appleFieldGroupHalfRight]}>
+                <Text style={[styles.appleFieldLabel, { color: themeColors.neutral.text }]}>Relationship</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.appleFieldInput,
+                    styles.appleDropdown,
+                    {
+                      backgroundColor: themeColors.neutral.card,
+                      borderColor: themeColors.neutral.border,
+                    },
+                  ]}
+                  onPress={() => setShowRelationshipModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.appleDropdownButton}>
+                    <Text style={[styles.appleDropdownText, { color: themeColors.neutral.text }]} numberOfLines={1}>
+                      {RELATIONSHIP_LABELS[relationshipStatus]}
+                    </Text>
+                    <Text style={[styles.appleDropdownArrow, { color: themeColors.neutral.subtext }]}>▼</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.appleFieldGroup}>
+              <Text style={[styles.appleFieldLabel, { color: themeColors.neutral.text }]}>Gender</Text>
+              <View style={styles.appleGenderRow}>
+                {([
+                  ['male', 'Male'],
+                  ['female', 'Female'],
+                  ['non_binary', 'Non-binary'],
+                ] as const).map(([value, label]) => (
+                  <TouchableOpacity
+                    key={value}
+                    onPress={() => setGender(value)}
+                    style={[
+                      styles.appleGenderChip,
+                      {
+                        backgroundColor: gender === value ? themeColors.primary.main : themeColors.neutral.card,
+                        borderColor: gender === value ? themeColors.primary.main : themeColors.neutral.border,
+                      },
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.appleGenderChipText,
+                        { color: gender === value ? '#FFFFFF' : themeColors.neutral.text },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             <View style={styles.appleFieldGroup}>
@@ -1732,6 +1857,42 @@ export default function EditProfileScreen() {
                     </View>
                   )}
                 </ScrollView>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {showRelationshipModal && (
+          <Modal transparent animationType="fade" visible={showRelationshipModal} onRequestClose={() => setShowRelationshipModal(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={[styles.smallModal, { backgroundColor: themeColors.neutral.card }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: themeColors.neutral.text }]}>Relationship status</Text>
+                  <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowRelationshipModal(false)}>
+                    <X size={20} color={themeColors.neutral.text} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalContent}>
+                  {RELATIONSHIP_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.modalOption,
+                        relationshipStatus === option
+                          ? { backgroundColor: themeColors.primary.main + '22' }
+                          : null,
+                      ]}
+                      onPress={() => {
+                        setRelationshipStatus(option);
+                        setShowRelationshipModal(false);
+                      }}
+                    >
+                      <Text style={[styles.modalOptionText, { color: themeColors.neutral.text }]}>
+                        {RELATIONSHIP_LABELS[option]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
           </Modal>
@@ -2069,7 +2230,7 @@ const styles = StyleSheet.create({
   },
   appleAvatarSection: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 18,
   },
   appleNoPhotoTag: {
     fontSize: 13,
@@ -2114,7 +2275,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   appleFieldGroup: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   businessSection: {
     marginBottom: 16,
@@ -2278,7 +2439,7 @@ const styles = StyleSheet.create({
   appleFieldRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 14,
     gap: 8, // Consistent spacing between fields
   },
   appleFieldGroupHalf: {
@@ -2314,18 +2475,48 @@ const styles = StyleSheet.create({
   },
   appleFieldInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    paddingVertical: 8,
+    fontSize: 15,
     backgroundColor: 'rgba(0,0,0,0.02)',
-    height: 44, // Fixed height to match dropdown
-    minHeight: 44,
-    maxHeight: 44,
+    minHeight: 40,
   },
   appleBioInput: {
-    minHeight: 60,
+    paddingTop: 10,
+    paddingBottom: 10,
     textAlignVertical: 'top',
+  },
+  appleBioHint: {
+    fontSize: 12,
+    marginBottom: 6,
+    lineHeight: 16,
+  },
+  appleBioIdeasToggle: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+    paddingVertical: 2,
+  },
+  appleBioIdeasToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  appleBioIdeasWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  appleBioIdeaChip: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    maxWidth: '100%',
+  },
+  appleBioIdeaText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   appleCharacterCount: {
     alignItems: 'flex-end',
@@ -2340,6 +2531,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: 4,
   },
+  appleGenderRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    gap: 8,
+  },
+  appleGenderChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  appleGenderChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   appleInterestChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -2353,15 +2560,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   appleSaveButton: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    paddingVertical: 14,
-    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+    minWidth: 170,
+    paddingHorizontal: 26,
+    paddingVertical: 11,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   appleSaveText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: 'white',
   },
@@ -2379,12 +2589,12 @@ const styles = StyleSheet.create({
   },
   appleDropdown: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    height: 44, // Fixed height to match input fields
+    height: 44,
     minHeight: 44,
     maxHeight: 44,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: 'rgba(0,0,0,0.02)',
     position: 'relative',
   },
@@ -2392,7 +2602,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: '100%', // Fill the dropdown container
+    flex: 1,
   },
   appleDropdownText: {
     fontSize: 16,

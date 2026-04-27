@@ -53,11 +53,27 @@ const dotenv = require('dotenv');
 // Check if this is a development build
 const isDev = process.env.NODE_ENV !== 'production';
 
+/** HTTPS origin used in shared links (must match EXPO_PUBLIC_SHARE_WEB_ORIGIN in shareLinks.ts). */
+function getShareWebAppLinking() {
+  let raw = process.env.EXPO_PUBLIC_SHARE_WEB_ORIGIN || 'https://www.nomlimingle.com';
+  raw = String(raw).trim().replace(/\/$/, '');
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  try {
+    const { hostname } = new URL(raw);
+    if (!hostname) throw new Error('no host');
+    return { hostname };
+  } catch {
+    return { hostname: 'www.nomlimingle.com' };
+  }
+}
+
+const shareWebAppLinking = getShareWebAppLinking();
+
 module.exports = {
   expo: {
     name: "Nomli",
     slug: "nomli-mingle",
-    version: "1.0.53",
+    version: "1.0.54",
     platforms: ['ios', 'android'],
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -79,7 +95,7 @@ module.exports = {
     },
     android: {
       package: "com.nomli.mingle2",
-      versionCode: 121,
+      versionCode: 122,
       googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
@@ -105,6 +121,16 @@ module.exports = {
       // So Nomli appears in the system share sheet (Photos, browser, etc.) — Android only.
       // iOS requires a separate Share Extension target in Xcode; URL schemes do not register as share targets.
       intentFilters: [
+        // App Links: same https URLs as shareLinks.ts → open in-app when installed (needs assetlinks.json on host).
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            { scheme: "https", host: shareWebAppLinking.hostname, pathPrefix: "/community/post" },
+            { scheme: "https", host: shareWebAppLinking.hostname, pathPrefix: "/video" },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
         {
           action: "SEND",
           category: ["DEFAULT"],
@@ -145,8 +171,10 @@ module.exports = {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.nomli.mingle2",
-      buildNumber: "139",
+      buildNumber: "142",
       deploymentTarget: "16.0",
+      // Universal Links for EXPO_PUBLIC_SHARE_WEB_ORIGIN — requires apple-app-site-association on that host.
+      associatedDomains: [`applinks:${shareWebAppLinking.hostname}`],
       privacyManifests: {
         NSPrivacyAccessedAPITypes: [
           {
@@ -250,6 +278,10 @@ module.exports = {
       // Supabase configuration (must match constants/Endpoints.ts)
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+
+      // RevenueCat public SDK keys (optional). When set, Creator Pro uses RevenueCat on native; coin packs stay on existing IAP.
+      REVENUECAT_IOS_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
+      REVENUECAT_ANDROID_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
       
       // Flutterwave payment configuration
       flutterwavePublicKey: process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY,

@@ -98,10 +98,17 @@ export const PostActions: React.FC<PostActionsProps> = ({
               activeOpacity={0.65}
             >
               {zapIcon}
-              {zapCount > 0 && (
-                <Text style={[styles.zapCount, { color: zapColor }]}>{formatCompact(zapCount)}</Text>
-              )}
             </TouchableOpacity>
+            {zapCount > 0 && (
+              <TouchableOpacity
+                onPress={onLikesModalPress}
+                style={styles.zapCountHit}
+                hitSlop={{ top: 12, bottom: 12, left: 10, right: 14 }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.zapCount, { color: zapColor }]}>{formatCompact(zapCount)}</Text>
+              </TouchableOpacity>
+            )}
             <LikeBurst
               visible={showLikeBurst}
               onComplete={onLikeBurstComplete}
@@ -238,7 +245,12 @@ const styles = StyleSheet.create({
   zapHit: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
+  },
+  zapCountHit: {
+    marginLeft: 4,
+    paddingVertical: 2,
+    paddingRight: 4,
   },
   zapCount: {
     fontFamily: FontFamily.bold,

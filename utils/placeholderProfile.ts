@@ -60,16 +60,16 @@ export const generatePlaceholderProfile = (userId: string): PlaceholderProfile |
   ];
   
   const bios = [
-    'Traveler • Photographer • Coffee enthusiast ☕',
-    'Living life one adventure at a time 🌍',
-    'Tech enthusiast • Foodie • Always exploring',
-    'Artist • Dreamer • Making memories ✨',
-    'Fitness lover • Nature enthusiast 🏃‍♂️',
-    'Creative soul • Bookworm 📚',
-    'Adventure seeker • Music lover 🎵',
-    'Fashion • Travel • Lifestyle',
-    'Coder • Gamer • Coffee addict',
-    'Wanderlust • Foodie • Life enthusiast',
+    'Building, creating, and sharing real moments.',
+    'Good energy, good people, and growth mindset.',
+    'Tech, food, and community events.',
+    'Art, ideas, and everyday inspiration.',
+    'Fitness, nature, and healthy routines.',
+    'Books, creativity, and calm weekends.',
+    'Music, stories, and positive vibes.',
+    'Style, travel, and culture.',
+    'Code, games, and coffee runs.',
+    'Exploring cities, food spots, and new hobbies.',
   ];
   
   const locations = [

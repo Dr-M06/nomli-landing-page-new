@@ -18,6 +18,7 @@ import {
   Dimensions,
   Linking,
   AppState,
+  DeviceEventEmitter,
   TouchableWithoutFeedback,
   Keyboard,
   StatusBar
@@ -70,11 +71,12 @@ import { OFFICIAL_ACCOUNT_ID } from '../../constants/ContactEmails';
 import { getUserDmPreference, ensurePrivacySchema } from '../../utils/privacySettings';
 import ExternalLinkModal from '../../components/ExternalLinkModal';
 // Gifts/credits removed post-pivot
+import CallButton from '../../components/CallButton';
 
 import { checkOnlineStatusMigration, applyOnlineStatusMigration } from '../../utils/applyOnlineStatusMigration';
 
 import { format } from '../../utils/dateFormatters';
-import { ChatBackgroundPattern } from '../../components/ChatBackgroundPattern';
+import ChatBackgroundPattern from '../../components/ChatBackgroundPattern';
 import { useTheme } from '../../contexts/ThemeContext';
 import { 
   checkPrivateMessageContent, 
@@ -89,6 +91,7 @@ import * as FileSystem from 'expo-file-system';
 import { badgeCounter } from '../../utils/badgeCounter';
 import { log, warn, error } from '../../utils/productionLogger';
 import { sendInstantReactionPush } from '../../utils/triggerProcessNotification';
+import { getOngoingCallSession, getOngoingCallSessionEventName, type OngoingCallSession } from '../../utils/ongoingCallSession';
 
 
 
@@ -594,11 +597,11 @@ const MessageInputContainer = React.memo(({
         <View style={{ paddingVertical: 10, paddingHorizontal: 12, backgroundColor: themeColors.surfaceVariant || 'rgba(0,0,0,0.06)', borderBottomWidth: 1, borderBottomColor: themeColors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 13, color: themeColors.textSecondary, flex: 1 }}>
             {sendBlockedByRecipient?.reason === 'not_mutual_follow'
-              ? 'Mutual follow required to message.'
+              ? 'You can send one first message. Wait for their reply to continue, or follow each other to chat freely.'
               : sendBlockedByRecipient?.reason === 'awaiting_reciprocity'
                 ? 'You sent the first message. Wait for them to reply to continue — or follow each other to chat freely.'
               : sendBlockedByRecipient?.reason === 'missing_context'
-                ? 'Messages must be started from “Reply privately” on a post.'
+                ? 'You can send one first message. Wait for their reply to continue, or follow each other to chat freely.'
                 : 'Direct messages are disabled'}
           </Text>
         </View>
@@ -1064,6 +1067,7 @@ export default function ChatScreen() {
   // Removed sending state for instant messaging experience
   const [refreshing, setRefreshing] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [ongoingCallSession, setOngoingCallSessionState] = useState<OngoingCallSession | null>(getOngoingCallSession());
   
   // Pull to refresh handler
   const onRefresh = useCallback(async () => {
@@ -1079,6 +1083,14 @@ export default function ChatScreen() {
       setRefreshing(false);
     }
   }, [id, refreshing]);
+
+  useEffect(() => {
+    const eventName = getOngoingCallSessionEventName();
+    const sub = DeviceEventEmitter.addListener(eventName, (next: OngoingCallSession | null) => {
+      setOngoingCallSessionState(next);
+    });
+    return () => sub.remove();
+  }, []);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -1169,6 +1181,7 @@ export default function ChatScreen() {
   const stopTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Separate timeout for stopping typing
   const typingChannelRef = useRef<any>(null);
   const typingHandlerRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
   // Deterministic conversation channel (shared by both users) for broadcast events like reactions.
   // This provides realtime reaction UI even if DB replication for reactions isn't enabled yet.
   const conversationChannelRef = useRef<any>(null);
@@ -2072,6 +2085,18 @@ export default function ChatScreen() {
     const channelName = `private_messages:${user.id}:${partnerId}`;
     if (__DEV__) log('[Chat] Channel:', channelName);
 
+    // Defensive cleanup: if a channel with the same topic exists from a prior mount,
+    // remove it before creating a new one. Otherwise Supabase can return a joined
+    // channel instance, and adding .on(...) handlers throws "after subscribe()".
+    try {
+      const existingChannels = (supabase as any).getChannels?.() || [];
+      existingChannels
+        .filter((ch: any) => ch?.topic === `realtime:${channelName}` || ch?.topic === channelName)
+        .forEach((ch: any) => {
+          supabase.removeChannel(ch).catch(() => {});
+        });
+    } catch (_) {}
+
     const channel = supabase.channel(channelName, {
       config: {
         // iOS-specific: Ensure WebSocket stays connected
@@ -2580,7 +2605,7 @@ export default function ChatScreen() {
       // Reset retry counters
       retryCountRef.current = 0;
       lastRetryTimeRef.current = 0;
-      channel.unsubscribe();
+      supabase.removeChannel(channel).catch(() => {});
       processedMessageIdsRef.current.clear();
       realtimeActiveRef.current = false;
     };
@@ -2944,8 +2969,14 @@ export default function ChatScreen() {
     setIsOtherUserOnline(isUserOnline(initialLastSeen));
     setLastSeen(initialLastSeen);
 
+    // Defensive cleanup so we never attach callbacks on an already-subscribed channel.
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+      presenceChannelRef.current = null;
+    }
+
     const channel = supabase
-      .channel(`presence_profile_${partnerId}`)
+      .channel(`presence_profile_${partnerId}_${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${partnerId}` },
@@ -2957,10 +2988,17 @@ export default function ChatScreen() {
       )
       .subscribe();
 
+    presenceChannelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      } else {
+        supabase.removeChannel(channel);
+      }
     };
-  }, [id, otherUser]);
+  }, [id, otherUser?.id, otherUser?.last_seen]);
   
   // Periodic refresh of message status (use messagesRef so interval is stable; deps omit messages)
   useEffect(() => {
@@ -3066,10 +3104,11 @@ export default function ChatScreen() {
     }
   };
   
-  // Post-pivot messaging rule:
-  // - Must be mutual followers
-  // - Must be started from context ("Reply privately" on a post)
-  // - (Optional) recipient can still disable DMs via privacy setting
+  // Non-dating messaging rule:
+  // - Non-mutual users can send one first message
+  // - Further outbound messages require recipient reciprocity
+  // - Mutual followers can chat freely
+  // - Recipient can still disable DMs via privacy setting
   const checkCanSendToRecipient = useCallback(async (recipientId: string): Promise<{ allowed: boolean; reason: 'not_mutual_follow' | 'missing_context' | 'awaiting_reciprocity' | 'dms_disabled' | null }> => {
     if (!user?.id) return { allowed: false, reason: 'dms_disabled' };
     const canBypass = user.id === OFFICIAL_ACCOUNT_ID;
@@ -3078,28 +3117,14 @@ export default function ChatScreen() {
     // Everyone can message the official/support handle (no context needed)
     if (recipientId === OFFICIAL_ACCOUNT_ID) return { allowed: true, reason: null };
 
-    const hasContext = !!contextPostId || !!contextStarterText;
     const gate = await evaluateDmGateWithLocalPersistence(user.id, recipientId);
-
-    // Allow messaging in existing/previous chats even without post context; preserve gate reasons (e.g. awaiting reply).
-    if (!hasContext) {
-      if (gate.allowed) return { allowed: true, reason: null };
-      return {
-        allowed: false,
-        reason: (gate.reason ?? 'missing_context') as
-          | 'not_mutual_follow'
-          | 'missing_context'
-          | 'awaiting_reciprocity',
-      };
-    }
-
-    if (!gate.allowed) return { allowed: false, reason: gate.reason ?? 'not_mutual_follow' };
+    if (!gate.allowed) return { allowed: false, reason: gate.reason ?? 'awaiting_reciprocity' };
 
     const allowDms = await getUserDmPreference(recipientId);
     if (!allowDms) return { allowed: false, reason: 'dms_disabled' };
 
     return { allowed: true, reason: null };
-  }, [user?.id, contextPostId, contextStarterText]);
+  }, [user?.id]);
 
   checkCanSendRef.current = checkCanSendToRecipient;
 
@@ -3144,18 +3169,18 @@ export default function ChatScreen() {
       // Continue if check fails (fail open)
     }
 
-    // Enforce post-pivot messaging guardrails
+    // Enforce non-dating DM guardrails
     const sendCheck = await checkCanSendToRecipient(id as string);
     if (!sendCheck.allowed) {
       if (sendCheck.reason === 'not_mutual_follow') {
-        Alert.alert('Mutual follow required', 'You can only message people who follow you back.');
+        Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
       } else if (sendCheck.reason === 'awaiting_reciprocity') {
         Alert.alert(
           'Waiting for a reply',
           'You already sent the first message. They need to reply before you can send more — or follow each other to chat freely.',
         );
       } else if (sendCheck.reason === 'missing_context') {
-        Alert.alert('Context required', 'Chats must be started from “Reply privately” on a post.');
+        Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
       } else {
         Alert.alert('Direct Messages Disabled', 'This user has disabled direct messages.');
       }
@@ -3252,14 +3277,14 @@ export default function ChatScreen() {
     const sendCheck = await checkCanSendToRecipient(id as string);
     if (!sendCheck.allowed) {
       if (sendCheck.reason === 'not_mutual_follow') {
-        Alert.alert('Mutual follow required', 'You can only message people who follow you back.');
+        Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
       } else if (sendCheck.reason === 'awaiting_reciprocity') {
         Alert.alert(
           'Waiting for a reply',
           'You already sent the first message. They need to reply before you can send more — or follow each other to chat freely.',
         );
       } else if (sendCheck.reason === 'missing_context') {
-        Alert.alert('Context required', 'Chats must be started from “Reply privately” on a post.');
+        Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
       } else {
         Alert.alert('Direct Messages Disabled', 'This user has disabled direct messages.');
       }
@@ -3534,11 +3559,11 @@ export default function ChatScreen() {
       const sendCheck = await checkCanSendToRecipient(id as string);
       if (!sendCheck.allowed) {
         if (sendCheck.reason === 'not_mutual_follow') {
-          Alert.alert('Mutual follow required', 'You can only message people who follow you back.');
+          Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
         } else if (sendCheck.reason === 'awaiting_reciprocity') {
-          Alert.alert('Awaiting reply', 'You already sent a message request. Wait for them to reply before sending again.');
+          Alert.alert('Waiting for a reply', 'You already sent the first message. They need to reply before you can send more — or follow each other to chat freely.');
         } else if (sendCheck.reason === 'missing_context') {
-          Alert.alert('Context required', 'Chats must be started from “Reply privately” on a post.');
+          Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
         } else {
           Alert.alert('Direct Messages Disabled', 'This user has disabled direct messages.');
         }
@@ -3566,14 +3591,14 @@ export default function ChatScreen() {
       const sendCheck = await checkCanSendToRecipient(id as string);
       if (!sendCheck.allowed) {
         if (sendCheck.reason === 'not_mutual_follow') {
-          Alert.alert('Mutual follow required', 'You can only message people who follow you back.');
+          Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
         } else if (sendCheck.reason === 'awaiting_reciprocity') {
           Alert.alert(
             'Waiting for a reply',
             'You already sent the first message. They need to reply before you can send more — or follow each other to chat freely.',
           );
         } else if (sendCheck.reason === 'missing_context') {
-          Alert.alert('Context required', 'Chats must be started from “Reply privately” on a post.');
+          Alert.alert('Waiting for a reply', 'You can send one message first. Send another after they reply, or follow each other to chat freely.');
         } else {
           Alert.alert('Direct Messages Disabled', 'This user has disabled direct messages.');
         }
@@ -4099,7 +4124,19 @@ export default function ChatScreen() {
   
   const renderHeaderRight = () => {
     log('Rendering header with chat ID:', id);
-    return <View style={{ flexDirection: 'row', alignItems: 'center' }} />;
+    if (!id || Array.isArray(id)) {
+      return <View style={{ flexDirection: 'row', alignItems: 'center' }} />;
+    }
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {!isSupportChat && !ongoingCallSession ? (
+          <CallButton
+            chatId={id}
+            recipientName={otherUser?.full_name || otherUser?.username || undefined}
+          />
+        ) : null}
+      </View>
+    );
   };
   
 
@@ -4698,13 +4735,13 @@ export default function ChatScreen() {
                       <View style={[
                         styles.tickContainer,
                         { 
-                          backgroundColor: item.read ? 'rgba(79, 195, 247, 0.2)' : 'rgba(255, 255, 255, 0.15)',
-                          shadowColor: item.read ? '#4FC3F7' : '#000',
+                          backgroundColor: item.read ? 'rgba(255, 111, 174, 0.26)' : 'rgba(255, 255, 255, 0.15)',
+                          shadowColor: item.read ? '#FF6FAE' : '#000',
                         }
                       ]}>
                         <CheckCircle 
                           size={14} 
-                          color={item.read ? '#4FC3F7' : '#FFFFFF'} 
+                          color={item.read ? '#FFD1E6' : '#FFFFFF'} 
                           strokeWidth={2.5}
                         />
                       </View>
@@ -5571,18 +5608,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   messageBubble: {
-    paddingHorizontal: Spacing.md + 2,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: BorderRadius.lg,
-    maxWidth: '75%',
+    paddingHorizontal: Spacing.md + 1,
+    paddingVertical: Spacing.sm + 1,
+    borderRadius: 18,
+    maxWidth: '80%',
     minWidth: 60,
-    ...Shadow.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   userMessageBubble: {
-    borderBottomRightRadius: BorderRadius.xs,
+    borderBottomRightRadius: 8,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   otherMessageBubble: {
-    borderBottomLeftRadius: BorderRadius.xs,
+    borderBottomLeftRadius: 8,
+    borderColor: 'rgba(148,163,184,0.35)',
   },
   tempMessageBubble: {
     opacity: 0.8,
@@ -5779,6 +5818,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.pill,
+    backgroundColor: 'rgba(255,111,174,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,174,0.38)',
   },
   themeToggle: {
     padding: Spacing.sm,

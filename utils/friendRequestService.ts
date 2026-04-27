@@ -155,6 +155,19 @@ export const acceptFriendRequest = async (requestId: string): Promise<boolean> =
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const edgeErrorMessage = String(
+          (errorData as any)?.error ??
+          (errorData as any)?.message ??
+          ''
+        ).toLowerCase();
+
+        // Idempotent accept: if another client/process already accepted this request,
+        // treat it as success so UI does not show a false failure.
+        if (edgeErrorMessage.includes('already accepted')) {
+          log('[FriendRequest] Request already accepted (idempotent success)');
+          return true;
+        }
+
         error('[FriendRequest] Edge Function error:', errorData);
         return false;
       }

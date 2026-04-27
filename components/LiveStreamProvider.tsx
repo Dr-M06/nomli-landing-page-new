@@ -11,7 +11,19 @@ import { sendPushNotificationToUsers } from '../utils/pushNotificationService';
 import GuestInvitationNotification from './GuestInvitationNotification';
 import { acceptGuestInvitation, declineGuestInvitation, LiveStreamInvitation } from '../utils/guestService';
 import { requestThrottler } from '../utils/requestThrottler';
-import { initializeLivestreamEngine, getLivestreamEngine } from '../utils/agoraLivestreamEngine';
+import { initializeLivestreamEngine, getLivestreamEngine, releaseLivestreamEngine } from '../utils/agoraLivestreamEngine';
+import { isKicked as checkIsKicked } from '../utils/moderationService';
+import { refreshAuthSession } from '../utils/supabase';
+import {
+  subscribeToRemoteStream,
+  unsubscribeFromRemoteStream,
+  safeEngineOperation,
+  hasConfigChanged,
+  getVideoEncoderConfigForQuality,
+  getAdaptiveDebounceDelay,
+} from '../utils/livestreamNetworkResilience';
+import { getStreamTypeForQuality, getPoorNetworkConfig } from '../utils/poorNetworkOptimizer';
+import { getVideoSubscriptionDelay, NetworkQuality, getBroadcasterVideoConfig } from '../utils/livestreamStability';
 import { log, warn, error } from '../utils/productionLogger';
 
 /**
@@ -86,6 +98,14 @@ const buildLiveBroadcastJoinOptions = async (
 const HIGH_STREAM_TYPE = 0;
 const LOW_STREAM_TYPE = 1;
 const LIVE_DATA_SAVER_KEY = 'live_data_saver_mode_v1';
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const normalizeUuid = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') return null;
+  return UUID_REGEX.test(trimmed) ? trimmed : null;
+};
 
 export interface LiveStream {
   id: string;
@@ -297,6 +317,8 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
   const isReconnectingRef = useRef(false); // Prevent concurrent reconnection attempts
+  const lastManualReconnectAtRef = useRef(0); // Prevent reconnect thrashing
+  const manualReconnectCooldownMs = 6000;
   const lastConnectionStateRef = useRef<string>('DISCONNECTED'); // Track last state to detect rapid changes
   const disconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Timeout for delayed reconnection
   const connectionStateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Debounce rapid state changes
@@ -444,7 +466,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       
       // Step 5: Release engine via module-level release function (ensures module-level engine is reset)
       try {
-        const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
         await releaseLivestreamEngine();
         log('✅ [RELEASE] Engine released via module release function');
       } catch (e) {
@@ -459,7 +480,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       
       // Step 6: Reset audio session
       try {
-        const { Audio } = await import('expo-av');
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           playsInSilentModeIOS: false,
@@ -1463,7 +1483,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         };
         
         // Only apply if config actually changed (DRY)
-        const { hasConfigChanged, safeEngineOperation } = await import('../utils/livestreamNetworkResilience');
         if (!hasConfigChanged(lastQualityConfigRef.current, config)) {
           return; // Config unchanged, skip update
         }
@@ -1489,7 +1508,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         );
       } catch (adaptiveError) {
         // Silently ignore adaptive quality errors - fallback to DRY utility
-        const { getVideoEncoderConfigForQuality, hasConfigChanged, safeEngineOperation } = await import('../utils/livestreamNetworkResilience');
         const config = getVideoEncoderConfigForQuality(quality);
         
         // Only apply if config actually changed (DRY)
@@ -1527,6 +1545,13 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       log('⚠️ [RECONNECT] Reconnection already in progress, skipping...');
       return;
     }
+
+    const now = Date.now();
+    if (now - lastManualReconnectAtRef.current < manualReconnectCooldownMs) {
+      log('⚠️ [RECONNECT] Cooldown active, skipping manual reconnect');
+      return;
+    }
+    lastManualReconnectAtRef.current = now;
     
     const stream = currentStream;
     const streaming = isStreaming;
@@ -1753,6 +1778,12 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         );
       }
     }
+    finally {
+      // Keep a small guard window to avoid immediate duplicate attempts from state churn.
+      setTimeout(() => {
+        isReconnectingRef.current = false;
+      }, 1500);
+    }
   }, [currentStream, isStreaming, isJoinedAsViewer]);
 
   const initializeStreamEngine = async (appIdOverride?: string) => {
@@ -1796,7 +1827,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         newAppId: appId.substring(0, 8) + '...'
       });
       try {
-        const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
         await releaseLivestreamEngine();
         streamEngineRef.current = null;
         engineAppIdRef.current = null;
@@ -1940,7 +1970,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
                 await streamEngine.enableRemoteVideo(true);
               }
               // Use DRY subscription helper
-              const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
               const success = await subscribeToRemoteStream(streamEngine, broadcasterUid, {
                 streamType: 0, // HIGH_STREAM so video shows immediately
                 operationName: 'instantSubscriptionOnJoin',
@@ -2002,7 +2031,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
                 }
                 
                 // Use DRY subscription helper (try LOW first, then HIGH)
-                const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
                 const streamType = attempt === 1 ? 1 : 0;
                 const success = await subscribeToRemoteStream(streamEngine, remoteUid, {
                   streamType,
@@ -2060,7 +2088,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             }
             
             // Use DRY subscription helper (HIGH for all so video shows)
-            const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
             const streamType = 0; // HIGH for all so video shows
             const success = await subscribeToRemoteStream(streamEngine, uid, {
               streamType,
@@ -2179,7 +2206,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             }
             
             // Use DRY subscription helper
-            const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
             const streamType = 0; // HIGH so video shows
             const success = await subscribeToRemoteStream(streamEngine, remoteUid, {
               streamType,
@@ -2261,7 +2287,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             try {
               log(`📹 [LIVE_STREAM] 🚀 Video ${state === 1 ? 'STARTING' : 'DECODING'} - ensuring subscription for UID ${uid}`);
               // Use DRY subscription helper
-              const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
               await subscribeToRemoteStream(streamEngine, uid, {
                 streamType: 0, // HIGH so video shows
                 operationName: `ensureSubscription(${uid}, state:${state})`,
@@ -2304,7 +2329,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             }
             
             // Use DRY subscription helper
-            const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
             const streamType = 0; // HIGH so video shows
             const success = await subscribeToRemoteStream(streamEngine, uid, {
               streamType,
@@ -2325,7 +2349,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         if (state === 4) {
           try {
             log(`📹 [LIVE_STREAM] Video FROZEN for UID ${uid}, attempting to resubscribe...`);
-            const { unsubscribeFromRemoteStream, subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
             // Unsubscribe first, then resubscribe
             await unsubscribeFromRemoteStream(streamEngine, uid, true, false);
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -2368,7 +2391,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         // Ensure video is subscribed and unmuted when first frame is decoded
         try {
           // Use DRY subscription helper
-          const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
           await subscribeToRemoteStream(streamEngine, uid, {
             streamType: 0,
             operationName: `onUserVideoStateChanged(${uid})`,
@@ -2496,8 +2518,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         // 🌍 POOR NETWORK: Viewer adaptive stream type - start conservative, upgrade when network improves
         const broadcasterUid = 1000;
         if (remoteUid === broadcasterUid && !isStreamingRef.current && streamEngineRef.current?.setRemoteVideoStreamType) {
-          const { getStreamTypeForQuality } = await import('../utils/poorNetworkOptimizer');
-          const { getAdaptiveDebounceDelay, safeEngineOperation } = await import('../utils/livestreamNetworkResilience');
           
           // Use poor network optimizer to determine stream type (conservative approach)
           const desiredStreamType = getStreamTypeForQuality(rxQuality);
@@ -2661,7 +2681,7 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
                   isReconnectingRef.current = false;
                 }
               }, 3000); // Increased to 3 seconds to allow state to stabilize
-            } else if (state === 1 || state === 5) { // DISCONNECTED or FAILED
+            } else if (state === 1 || (state === 5 && reason === 9)) { // DISCONNECTED or recoverable FAILED (token expired)
               // Only trigger our own reconnection if:
               // 1. Not already reconnecting (Agora SDK might handle it)
               // 2. We have an active stream/viewer session
@@ -2801,7 +2821,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       // Request camera and microphone permissions first (iOS requires this)
       try {
         const { Camera } = await import('expo-camera');
-        const { Audio } = await import('expo-av');
         
         log('📹 Requesting camera permission...');
         const cameraPermission = await Camera.requestCameraPermissionsAsync();
@@ -3098,7 +3117,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
           // 🌍 POOR NETWORK OPTIMIZER: Start with conservative quality for poor African networks
           // Automatically adjusts for Nigeria's varying network conditions
           try {
-            const { getPoorNetworkConfig } = await import('../utils/poorNetworkOptimizer');
             
             // Start with conservative quality (level 3 = Fair) to ensure reliability on poor networks
             const dataSaverOn = liveDataSaverEnabledRef.current;
@@ -3134,7 +3152,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             warn('⚠️ [ADAPTIVE] Error setting adaptive quality, falling back to defaults:', adaptiveError);
             // Fallback to original stable config
             try {
-              const { getBroadcasterVideoConfig } = await import('../utils/livestreamStability');
               const videoConfig = getBroadcasterVideoConfig();
               
               const encoderConfig = {
@@ -3385,7 +3402,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             warn('⚠️ [STREAM] Re-initializing livestream engine with bootstrap App ID...');
             
             try {
-              const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
               await releaseLivestreamEngine();
               streamEngineRef.current = null;
               engineAppIdRef.current = null;
@@ -3490,7 +3506,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       if (tokenAppId && engineAppIdRef.current !== tokenAppId) {
         warn('⚠️ [STREAM] Pre-join App ID mismatch - re-initializing engine with token App ID');
         try {
-          const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
           await releaseLivestreamEngine();
           streamEngineRef.current = null;
           engineAppIdRef.current = null;
@@ -3565,7 +3580,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         if (broadcasterJoinResult === -7 && joinAttempts < maxJoinAttempts) {
           warn('⚠️ [STREAM] Join failed with -7 (ERR_NOT_INITIALIZED) - re-initializing engine and retrying...');
           try {
-            const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
             await releaseLivestreamEngine();
             streamEngineRef.current = null;
             engineAppIdRef.current = null;
@@ -4172,8 +4186,7 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         log('👁️ Proceeding as anonymous viewer (no authenticated user)');
       } else {
         // Check if user has been kicked from this stream BEFORE allowing join
-        const { isKicked: checkKicked } = require('../utils/moderationService');
-        const kicked = await checkKicked(streamId, user.id);
+        const kicked = await checkIsKicked(streamId, user.id);
         if (kicked) {
           log('🚫 [VIEWER] User has been kicked from this stream, preventing join');
           Alert.alert(
@@ -4191,8 +4204,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       // Single API call to get all data needed to join
       // Uses Redis caching (backend) + client cache
       // ============================================
-      const { useLiveBootstrap } = await import('../hooks/useLiveBootstrap');
-      
       // Use bootstrap API to get all data in one call
       log('📡 [BOOTSTRAP] Fetching bootstrap data for viewer join...');
       
@@ -4224,7 +4235,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
             // Session expired or expiring soon - try to refresh FIRST
             log('⚠️ [BOOTSTRAP] Session expired or expiring soon, attempting refresh BEFORE API call...');
             try {
-              const { refreshAuthSession } = await import('../utils/supabase');
               const refreshed = await refreshAuthSession();
               if (refreshed) {
                 const { data: { session: newSession } } = await supabase.auth.getSession();
@@ -4256,7 +4266,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
           warn('⚠️ [BOOTSTRAP] Session error:', sessionError);
           // Try to refresh session if it exists but is expired
           try {
-            const { refreshAuthSession } = await import('../utils/supabase');
             const refreshed = await refreshAuthSession();
             if (refreshed) {
               const { data: { session: newSession } } = await supabase.auth.getSession();
@@ -4714,7 +4723,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
           // Re-initialize engine if error -7 occurred
           if (joinResult === -7) {
             log('🔄 [VIEWER] Error -7 detected, re-initializing engine...');
-            const { releaseLivestreamEngine } = await import('../utils/agoraLivestreamEngine');
             try {
               await releaseLivestreamEngine();
             } catch (e) {
@@ -4791,9 +4799,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
               log('✅ [VIEWER] enableRemoteVideo(true) called');
             }
             // 🌍 POOR NETWORK: Start with LOW stream for conservative approach, upgrade later if network improves
-            const { subscribeToRemoteStream } = await import('../utils/livestreamNetworkResilience');
-            const { getStreamTypeForQuality } = await import('../utils/poorNetworkOptimizer');
-            
             // Start conservative (Fair = 3) - use LOW stream initially
             const initialStreamType = getStreamTypeForQuality(3);
             await subscribeToRemoteStream(streamEngineRef.current, broadcasterUid, {
@@ -5075,8 +5080,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
         
         // Retry subscription using safe engine operation (DRY - handles errors gracefully)
         livestreamLog(`🔄 [VIEWER] Periodic retry ${subscriptionRetryCount}/${maxSubscriptionRetries}: Attempting to subscribe to broadcaster video...`);
-        const { safeEngineOperation } = await import('../utils/livestreamNetworkResilience');
-        
         await Promise.all([
           safeEngineOperation(
             streamEngineRef.current,
@@ -5200,7 +5203,6 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       // STEP 2: Additional video subscription check after delay (backup)
       // This ensures video is subscribed even if immediate subscription failed
       // Based on documentation: delay video by 1-1.2 seconds
-      const { getVideoSubscriptionDelay, getAudienceLowStreamConfig, NetworkQuality } = await import('../utils/livestreamStability');
       const startQuality = liveDataSaverEnabledRef.current ? NetworkQuality.POOR : NetworkQuality.GOOD;
       const videoDelay = getVideoSubscriptionDelay(startQuality);
       
@@ -5358,92 +5360,99 @@ export const LiveStreamProvider: React.FC<LiveStreamProviderProps> = ({ children
       }, 2000);
 
       // Add viewer to database immediately (if stream ID available)
-      const finalStreamId = bootstrapData.streamId || streamId;
+      const rawFinalStreamId = bootstrapData?.streamId || streamId;
+      const finalStreamId = normalizeUuid(rawFinalStreamId);
       log('🎯 [LIVE_STREAM] 🚀 Adding viewer to database...');
-      log('🎯 [LIVE_STREAM] 🚀 Stream ID:', finalStreamId);
+      log('🎯 [LIVE_STREAM] 🚀 Stream ID:', finalStreamId ?? rawFinalStreamId);
       log('🎯 [LIVE_STREAM] 🚀 User ID:', user?.id);
       log('🎯 [LIVE_STREAM] 🚀 Viewer UID:', viewerUid);
-      
-      // Add viewer to database (this should trigger the count update)
-      log('🎯 [LIVE_STREAM] 🚀 Calling addViewerToDatabase...');
-      await addViewerToDatabase(finalStreamId, viewerUid);
-      
-      // Force immediate viewer count refresh
-      log('🎯 [LIVE_STREAM] 💪 FORCE REFRESH: Refreshing viewer count immediately...');
-      await forceRefreshViewerCount();
-      
-      // Immediate fallback: set viewer count to at least 1
-      log('🎯 [LIVE_STREAM] 💪 IMMEDIATE FALLBACK: Setting viewer count to 1...');
-      setViewerCount(1);
-      
-      // Also update the database directly without user authentication
-      try {
-        log('🎯 [LIVE_STREAM] 💪 AUTH-FREE FALLBACK: Updating viewer count without auth...');
-        const { data: currentStreamData, error: fetchError } = await supabase
-          .from('live_streams')
-          .select('viewer_count')
-          .eq('id', finalStreamId)
-          .maybeSingle();
-          
-        if (!fetchError && currentStreamData) {
-          const newCount = (currentStreamData.viewer_count || 0) + 1;
-          log('🎯 [LIVE_STREAM] 💪 AUTH-FREE: Updating count from', currentStreamData.viewer_count, 'to', newCount);
-          
-          const { error: updateError } = await supabase
+
+      if (!finalStreamId) {
+        warn('⚠️ [LIVE_STREAM] Skipping viewer DB/count fallback: invalid stream UUID', {
+          rawFinalStreamId,
+        });
+      } else {
+        // Add viewer to database (this should trigger the count update)
+        log('🎯 [LIVE_STREAM] 🚀 Calling addViewerToDatabase...');
+        await addViewerToDatabase(finalStreamId, viewerUid);
+        
+        // Force immediate viewer count refresh
+        log('🎯 [LIVE_STREAM] 💪 FORCE REFRESH: Refreshing viewer count immediately...');
+        await forceRefreshViewerCount();
+        
+        // Immediate fallback: set viewer count to at least 1
+        log('🎯 [LIVE_STREAM] 💪 IMMEDIATE FALLBACK: Setting viewer count to 1...');
+        setViewerCount(1);
+        
+        // Also update the database directly without user authentication
+        try {
+          log('🎯 [LIVE_STREAM] 💪 AUTH-FREE FALLBACK: Updating viewer count without auth...');
+          const { data: currentStreamData, error: fetchError } = await supabase
             .from('live_streams')
-            .update({ 
-              viewer_count: newCount,
-              updated_at: new Date().toISOString() // Keep stream visible
-            })
-            .eq('id', finalStreamId);
+            .select('viewer_count')
+            .eq('id', finalStreamId)
+            .maybeSingle();
             
-          if (updateError) {
-            error('🎯 [LIVE_STREAM] ❌ AUTH-FREE: Failed to update count:', updateError);
-          } else {
-            log('🎯 [LIVE_STREAM] ✅ AUTH-FREE: Count updated successfully to:', newCount);
-          }
-        }
-      } catch (authFreeError) {
-        error('🎯 [LIVE_STREAM] ❌ AUTH-FREE: Error in auth-free update:', authFreeError);
-      }
-      
-      // Also manually update viewer count as immediate fallback
-      try {
-        log('🎯 [LIVE_STREAM] 💪 FALLBACK: Manually incrementing viewer count...');
-        const { data: currentStreamData, error: fetchError } = await supabase
-          .from('live_streams')
-          .select('viewer_count')
-          .eq('id', finalStreamId)
-          .maybeSingle();
-          
-        if (fetchError || !currentStreamData) {
-          error('🎯 [LIVE_STREAM] ❌ FALLBACK: Failed to fetch current count:', fetchError);
-        } else {
-          const newCount = (currentStreamData.viewer_count || 0) + 1;
-          log('🎯 [LIVE_STREAM] 💪 FALLBACK: Updating count from', currentStreamData.viewer_count, 'to', newCount);
-          
-          const { error: updateError } = await supabase
-            .from('live_streams')
-            .update({ 
-              viewer_count: newCount,
-              updated_at: new Date().toISOString() // Keep stream visible
-            })
-            .eq('id', finalStreamId);
+          if (!fetchError && currentStreamData) {
+            const newCount = (currentStreamData.viewer_count || 0) + 1;
+            log('🎯 [LIVE_STREAM] 💪 AUTH-FREE: Updating count from', currentStreamData.viewer_count, 'to', newCount);
             
-          if (updateError) {
-            error('🎯 [LIVE_STREAM] ❌ FALLBACK: Failed to update count:', updateError);
-          } else {
-            log('🎯 [LIVE_STREAM] ✅ FALLBACK: Count updated successfully to:', newCount);
-            setViewerCount(newCount);
-            
-            // Update inactivity timer based on viewer count
-            if (currentStreamIdRef.current) {
-              resetInactivityTimer(currentStreamIdRef.current, newCount);
+            const { error: updateError } = await supabase
+              .from('live_streams')
+              .update({ 
+                viewer_count: newCount,
+                updated_at: new Date().toISOString() // Keep stream visible
+              })
+              .eq('id', finalStreamId);
+              
+            if (updateError) {
+              error('🎯 [LIVE_STREAM] ❌ AUTH-FREE: Failed to update count:', updateError);
+            } else {
+              log('🎯 [LIVE_STREAM] ✅ AUTH-FREE: Count updated successfully to:', newCount);
             }
           }
+        } catch (authFreeError) {
+          error('🎯 [LIVE_STREAM] ❌ AUTH-FREE: Error in auth-free update:', authFreeError);
         }
-      } catch (fallbackError) {
-        error('🎯 [LIVE_STREAM] ❌ FALLBACK: Error in fallback update:', fallbackError);
+        
+        // Also manually update viewer count as immediate fallback
+        try {
+          log('🎯 [LIVE_STREAM] 💪 FALLBACK: Manually incrementing viewer count...');
+          const { data: currentStreamData, error: fetchError } = await supabase
+            .from('live_streams')
+            .select('viewer_count')
+            .eq('id', finalStreamId)
+            .maybeSingle();
+            
+          if (fetchError || !currentStreamData) {
+            error('🎯 [LIVE_STREAM] ❌ FALLBACK: Failed to fetch current count:', fetchError);
+          } else {
+            const newCount = (currentStreamData.viewer_count || 0) + 1;
+            log('🎯 [LIVE_STREAM] 💪 FALLBACK: Updating count from', currentStreamData.viewer_count, 'to', newCount);
+            
+            const { error: updateError } = await supabase
+              .from('live_streams')
+              .update({ 
+                viewer_count: newCount,
+                updated_at: new Date().toISOString() // Keep stream visible
+              })
+              .eq('id', finalStreamId);
+              
+            if (updateError) {
+              error('🎯 [LIVE_STREAM] ❌ FALLBACK: Failed to update count:', updateError);
+            } else {
+              log('🎯 [LIVE_STREAM] ✅ FALLBACK: Count updated successfully to:', newCount);
+              setViewerCount(newCount);
+              
+              // Update inactivity timer based on viewer count
+              if (currentStreamIdRef.current) {
+                resetInactivityTimer(currentStreamIdRef.current, newCount);
+              }
+            }
+          }
+        } catch (fallbackError) {
+          error('🎯 [LIVE_STREAM] ❌ FALLBACK: Error in fallback update:', fallbackError);
+        }
       }
 
       log('👁️ Joined stream as viewer successfully');

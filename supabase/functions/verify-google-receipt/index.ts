@@ -199,13 +199,19 @@ serve(async (req) => {
     if (creatorPlan) {
       const sub = await verifyGoogleSubscription(accessToken, PACKAGE_NAME, productId, purchaseToken);
       // paymentState: 0=pending, 1=received, 2=free trial, 3=pending deferred
+      const expMsEarly = parseInt(sub.expiryTimeMillis, 10);
+      const hasFutureExpiry =
+        !Number.isNaN(expMsEarly) && expMsEarly > Date.now();
+      // Play sometimes returns paymentState 0 while expiry is already valid (tests / regional billing).
       if (sub.paymentState !== 1 && sub.paymentState !== 2) {
-        return new Response(
-          JSON.stringify({ success: false, error: `Subscription payment state: ${sub.paymentState}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        if (!(sub.paymentState === 0 && hasFutureExpiry)) {
+          return new Response(
+            JSON.stringify({ success: false, error: `Subscription payment state: ${sub.paymentState}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
-      const expMs = parseInt(sub.expiryTimeMillis, 10);
+      const expMs = expMsEarly;
       if (Number.isNaN(expMs) || expMs <= 0) {
         return new Response(
           JSON.stringify({ success: false, error: 'Invalid subscription expiry from Google' }),

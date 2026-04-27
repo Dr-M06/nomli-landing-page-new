@@ -236,8 +236,14 @@ export default function SignupSuccessScreen() {
   }, []);
 
   const handleContinueToProfile = () => {
-    log('[SignupSuccess] User clicked continue – following old logic: go to sign-in then app');
-    // Old logic: after creating account, go through sign-in screen (signin then redirects to app)
+    log('[SignupSuccess] User clicked continue');
+    // If signup already produced an authenticated session, go straight to profile setup.
+    // This avoids confusing auto-redirect chains through sign-in.
+    if (user?.id) {
+      router.replace('/profile/edit');
+      return;
+    }
+    // Fallback for flows where signup requires explicit sign-in first.
     router.replace('/auth/signin');
   };
 
@@ -369,7 +375,7 @@ export default function SignupSuccessScreen() {
               },
             ]}
           >
-            <Text style={styles.title}>Welcome! 🎉</Text>
+            <Text style={styles.title}>Welcome to Nomli</Text>
           </Animated.View>
 
           {/* Subtitle */}
@@ -382,7 +388,7 @@ export default function SignupSuccessScreen() {
               },
             ]}
           >
-            <Text style={styles.subtitle}>Your account has been created{'\n'}Let's set up your profile</Text>
+            <Text style={styles.subtitle}>Your account is ready.{'\n'}Set up your vibe profile.</Text>
           </Animated.View>
 
           {/* Continue Button (Glassmorphism style) */}
@@ -410,7 +416,7 @@ export default function SignupSuccessScreen() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                 >
-                  <Text style={styles.buttonText}>Continue</Text>
+                  <Text style={styles.buttonText}>Set Up Profile</Text>
                 </LinearGradient>
               </BlurView>
             </TouchableOpacity>
@@ -461,7 +467,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl * 2,
+    paddingTop: Spacing.lg,
   },
   particle: {
     position: 'absolute',
@@ -476,29 +482,29 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   circleContainer: {
-    marginBottom: Spacing.xl * 2,
+    marginBottom: Spacing.xl,
   },
   circleGlow: {
     position: 'absolute',
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: Colors.success.main,
+    backgroundColor: Colors.primary.main,
     opacity: 0.3,
-    shadowColor: Colors.success.main,
+    shadowColor: Colors.primary.main,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 24,
     elevation: 24,
   },
   successCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.success.main,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.success.main,
+    shadowColor: Colors.primary.main,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -512,59 +518,59 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   title: {
-    fontSize: 42,
+    fontSize: 32,
     fontFamily: FontFamily.bold,
     color: '#FFFFFF',
-    letterSpacing: -1,
+    letterSpacing: -0.6,
     textAlign: 'center',
   },
   subtitleContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.xl * 2,
-    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
   subtitle: {
     fontSize: 18,
     fontFamily: FontFamily.regular,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.72)',
     textAlign: 'center',
-    lineHeight: 26,
-    letterSpacing: 0.3,
+    lineHeight: 29,
+    letterSpacing: 0.1,
   },
   buttonContainer: {
     width: '100%',
-    maxWidth: 200,
-    marginTop: Spacing.xl,
+    maxWidth: 180,
+    marginTop: Spacing.md,
     alignSelf: 'center',
   },
   button: {
-    borderRadius: 30,
+    borderRadius: 24,
     overflow: 'hidden',
     shadowColor: Colors.primary.main,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.24,
+    shadowRadius: 7,
+    elevation: 6,
   },
   buttonBlur: {
-    borderRadius: 30,
+    borderRadius: 24,
     overflow: 'hidden',
   },
   buttonGradient: {
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 42,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FontFamily.semiBold,
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   bottomAccent: {
     position: 'absolute',

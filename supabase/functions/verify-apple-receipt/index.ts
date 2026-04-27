@@ -13,6 +13,41 @@ interface VerifyReceiptRequest {
   packageId?: string; // Optional - will be looked up if not provided
 }
 
+/**
+ * Auto-renewable subscriptions are often in `latest_receipt_info`; `in_app` alone misses them.
+ * Clients may send `transaction_id` or `original_transaction_id` as transactionId.
+ */
+function findAppleReceiptTransaction(
+  verificationResult: any,
+  productId: string,
+  transactionId: string
+): { tx: Record<string, unknown>; canonicalRef: string } | null {
+  const inApp = verificationResult.receipt?.in_app || [];
+  const latest = verificationResult.latest_receipt_info || [];
+  const pool = [...latest, ...inApp];
+  const want = String(transactionId);
+
+  const idMatches = (t: any) =>
+    String(t.transaction_id) === want ||
+    String(t.original_transaction_id) === want;
+
+  let tx = pool.find((t: any) => t.product_id === productId && idMatches(t));
+  if (tx) {
+    return { tx, canonicalRef: String(tx.transaction_id ?? transactionId) };
+  }
+
+  const forProduct = pool.filter((t: any) => t.product_id === productId);
+  if (forProduct.length === 0) return null;
+
+  forProduct.sort((a: any, b: any) => {
+    const ea = parseInt(String(a.expires_date_ms || a.purchase_date_ms || 0), 10);
+    const eb = parseInt(String(b.expires_date_ms || b.purchase_date_ms || 0), 10);
+    return eb - ea;
+  });
+  tx = forProduct[0];
+  return { tx, canonicalRef: String(tx.transaction_id ?? transactionId) };
+}
+
 serve(async (req) => {
   // Log immediately - even before CORS check
   console.log('🔔 [verify-apple-receipt] Function invoked at:', new Date().toISOString());
@@ -197,14 +232,14 @@ serve(async (req) => {
       );
     }
 
-    // Check if transaction exists in receipt
-    const receiptTransactions = verificationResult.receipt?.in_app || [];
-    const transaction = receiptTransactions.find(
-      (tx: any) => String(tx.transaction_id) === String(transactionId) && tx.product_id === productId
-    );
-
-    if (!transaction) {
-      console.error('Transaction not found in receipt');
+    const found = findAppleReceiptTransaction(verificationResult, productId, transactionId);
+    if (!found) {
+      console.error('Transaction not found in receipt (latest_receipt_info + in_app)', {
+        productId,
+        transactionId,
+        inAppLen: (verificationResult.receipt?.in_app || []).length,
+        latestLen: (verificationResult.latest_receipt_info || []).length,
+      });
       return new Response(
         JSON.stringify({ success: false, error: 'Transaction not found in receipt' }),
         {
@@ -213,14 +248,18 @@ serve(async (req) => {
         }
       );
     }
+    const transaction = found.tx;
+    const canonicalTransactionId = found.canonicalRef;
 
     // Idempotency: any prior row for this Apple transaction (tokens or Creator Pro)
-    const { data: existingTx } = await supabaseClient
+    const refIds = [...new Set([String(transactionId), canonicalTransactionId].filter(Boolean))];
+    const { data: existingRows } = await supabaseClient
       .from('wallet_transactions')
       .select('id, transaction_type')
       .eq('user_id', userId)
-      .eq('reference_id', String(transactionId))
-      .maybeSingle();
+      .in('reference_id', refIds)
+      .limit(1);
+    const existingTx = existingRows?.[0];
 
     if (existingTx) {
       const t = (existingTx as { transaction_type?: string }).transaction_type;
@@ -300,7 +339,7 @@ serve(async (req) => {
         user_id: userId,
         amount: 0,
         transaction_type: 'creator_pro_apple',
-        reference_id: String(transactionId),
+        reference_id: canonicalTransactionId,
         description: `Creator Pro (Apple): ${creatorPlan.name || productId} until ${expiresIso}`,
         balance_after: 0,
       });
@@ -312,7 +351,7 @@ serve(async (req) => {
           p_user_id: userId,
           p_amount: totalTokens,
           p_transaction_type: 'bonus',
-          p_reference_id: `creator_pro_apple:${transactionId}`,
+          p_reference_id: `creator_pro_apple:${canonicalTransactionId}`,
           p_description: `Creator Pro monthly tokens (${creatorPlan.name || productId})`,
         });
         if (wErr) {
@@ -407,7 +446,7 @@ serve(async (req) => {
         user_id: userId,
         amount: Math.round(Number(totalTokens)),
         transaction_type: 'purchase',
-        reference_id: String(transactionId),
+        reference_id: canonicalTransactionId,
         description: `Token purchase: ${totalTokens} tokens (Apple IAP)`,
         balance_after: Math.round(Number(newBalance)),
       });
@@ -431,7 +470,7 @@ serve(async (req) => {
         total_tokens: totalTokens,
         price_usd: tokenPackage.price_usd,
         payment_method: 'apple_iap',
-        payment_id: transactionId, // Use transaction_id as payment_id
+        payment_id: canonicalTransactionId,
         status: 'completed',
         completed_at: new Date().toISOString(),
       });

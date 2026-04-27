@@ -143,7 +143,7 @@ export default function SignInScreen() {
             if (!hasNavigated.current) {
               log('[SignIn] User already logged in with valid session, redirecting to main app');
               hasNavigated.current = true;
-              router.replace('/(tabs)/community');
+              router.replace('/(tabs)/discovery');
             }
           } else {
             // Session is invalid or expired - don't redirect, let user sign in
@@ -345,7 +345,7 @@ export default function SignInScreen() {
                   }
                   
                   log('Biometric sign-in successful, navigating to main app');
-                  router.replace('/(tabs)/community');
+                  router.replace('/(tabs)/discovery');
                   return;
                 } else if (reSignInResult && typeof reSignInResult === 'object' && 'requiresMFA' in reSignInResult) {
                   // Still requires TOTP - proceed with verification
@@ -608,7 +608,7 @@ export default function SignInScreen() {
             router.replace('/profile/edit');
           } else {
             // Existing user - go to main app
-            router.replace('/(tabs)/community');
+            router.replace('/(tabs)/discovery');
           }
         },
         (error) => {
@@ -735,7 +735,7 @@ export default function SignInScreen() {
         
         // Navigate to main app - use specific tab to avoid navigation issues
         log('Navigating to main app after successful signin');
-        router.replace('/(tabs)/community');
+        router.replace('/(tabs)/discovery');
       } else {
         // Error is handled by the useAuth hook
         log('Sign in failed');

@@ -16,10 +16,12 @@ import {
   Alert,
   Modal,
   DeviceEventEmitter,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Settings, Edit, MapPin, Calendar, Bookmark, Image as ImageIcon, MessageSquare, FileText, Trash2, Square, Type, Users, CalendarDays, Clock, Bell, Play, X, Heart, Wallet, CreditCard, AlertTriangle, Eye, Grid3X3 as Grid3x3 } from 'lucide-react-native';
+import { captureRef } from 'react-native-view-shot';
+import { Settings, Edit, MapPin, Calendar, Bookmark, Image as ImageIcon, MessageSquare, FileText, Trash2, Square, Type, Users, CalendarDays, Clock, Bell, Play, X, Heart, Wallet, CreditCard, AlertTriangle, Eye, Grid3X3 as Grid3x3, QrCode, Share2, ScanLine, Plus, CircleDollarSign, Music2 } from 'lucide-react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase, Profile as ProfileType } from '../../utils/supabase';
@@ -36,9 +38,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
 import EnhancedAvatar from '../../components/EnhancedAvatar';
 import VerifiedBadge from '../../components/VerifiedBadge';
+import CreatorProAuthorBadge from '../../components/CreatorProAuthorBadge';
 import AppWatermark from '../../components/AppWatermark';
-import UserBadgesList from '../../components/UserBadgesList';
-import { getUserBadges, UserBadgeData } from '../../utils/badgeService';
 
 import { getBookmarkedMessages, removeBookmark } from '../../utils/countryChat';
 import { getBookmarkedPosts, unbookmarkPost, getUserPosts, Post } from '../../utils/communityUtils';
@@ -227,11 +228,11 @@ export default function ProfileScreen() {
     const userSeed = seed || user?.id || 'default';
     return `https://api.dicebear.com/9.x/${style}/png?seed=${userSeed}&size=120`;
   };
-  
+
   const isProfileVerified = useCallback((targetProfile: Partial<ProfileType> | null) => {
     return isVerifiedEntity(targetProfile);
   }, []);
-
+  
   // Helper function to get the correct avatar URL
   const getAvatarUrl = (avatarUrl?: string | null) => {
     if (!avatarUrl) return null;
@@ -560,9 +561,6 @@ export default function ProfileScreen() {
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
   const [followersRefreshTrigger, setFollowersRefreshTrigger] = useState(0);
   
-  // Badges state
-  const [userBadges, setUserBadges] = useState<UserBadgeData[]>([]);
-
   // Debounce ref for profile updates to prevent excessive reloads
   const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProfileUpdateRef = useRef<number>(0);
@@ -573,6 +571,7 @@ export default function ProfileScreen() {
   const [showRedemptionModal, setShowRedemptionModal] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
   const [redemptionModalLoading, setRedemptionModalLoading] = useState(false);
+  const [showInviteQrModal, setShowInviteQrModal] = useState(false);
   // Deleted-event UI removed along with Events feature
 
   // Load wallet data
@@ -613,17 +612,6 @@ export default function ProfileScreen() {
     if (profile?.id) {
       refreshFollowersData();
       loadWallet();
-      // Load user badges
-      const loadBadges = async () => {
-        try {
-          const badges = await getUserBadges(profile.id);
-          setUserBadges(badges);
-        } catch (error) {
-          error('[ProfileScreen] Error loading badges:', error);
-          setUserBadges([]);
-        }
-      };
-      loadBadges();
       // Fix triggers (test function removed for security)
       fixFollowersTriggers();
     }
@@ -700,6 +688,16 @@ export default function ProfileScreen() {
     if (!user?.id) return;
     
     log('[ProfileScreen] Setting up real-time subscription for profile updates');
+
+    // Defensive cleanup for stale topic instances (fast remount/HMR).
+    try {
+      const existingChannels = (supabase as any).getChannels?.() || [];
+      existingChannels
+        .filter((ch: any) => ch?.topic === 'realtime:profile_updates' || ch?.topic === 'profile_updates')
+        .forEach((ch: any) => {
+          supabase.removeChannel(ch).catch(() => {});
+        });
+    } catch (_) {}
     
     const profileSubscription = supabase
       .channel('profile_updates')
@@ -778,7 +776,7 @@ export default function ProfileScreen() {
         profileUpdateTimeoutRef.current = null;
       }
       try {
-        supabase.removeChannel(profileSubscription);
+        supabase.removeChannel(profileSubscription).catch(() => {});
       } catch (e) {
         // Ignore cleanup errors
       }
@@ -997,6 +995,10 @@ export default function ProfileScreen() {
     router.push('/settings');
   };
 
+  const handleMusicHub = () => {
+    router.push('/music');
+  };
+
   const handleTestNotifications = () => {
     router.push('/notification-simple-test');
   };
@@ -1004,6 +1006,40 @@ export default function ProfileScreen() {
   const handleWalletPress = () => {
     // Open wallet modal - wallet is now unlocked for users to see their tokens
     setShowWalletModal(true);
+  };
+
+  const handleCreatorPress = () => {
+    router.push('/creator');
+  };
+
+  const profileInviteUrl = `nomlimingle://profile/${encodeURIComponent(
+    String(profile?.id || user?.id || '')
+  )}`;
+  const profileInviteQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(
+    profileInviteUrl
+  )}`;
+  const inviteShareCardRef = useRef<View | null>(null);
+  const inviteDisplayName = getSafeDisplayName(profile?.username, profile?.full_name) || 'Nomli User';
+
+  const handleShareProfileInvite = async () => {
+    try {
+      if (inviteShareCardRef.current) {
+        const imageUri = await captureRef(inviteShareCardRef, {
+          format: 'png',
+          quality: 1,
+          result: 'tmpfile',
+        });
+        await Share.share({
+          title: `@${inviteDisplayName} on Nomli`,
+          message: 'Scan my profile QR on Nomli',
+          url: imageUri,
+        });
+        return;
+      }
+      await Share.share({ message: 'Scan my profile QR on Nomli' });
+    } catch {
+      // ignore
+    }
   };
 
   const handleRedemptionPress = () => {
@@ -1670,24 +1706,29 @@ export default function ProfileScreen() {
             <TouchableOpacity style={[styles.iconButton, themeStyles.card]} onPress={handleSettings}>
               <Settings size={16} color={themeColors.neutral.text} />
             </TouchableOpacity>
-            
+            <TouchableOpacity style={[styles.iconButton, themeStyles.card]} onPress={handleMusicHub}>
+              <Music2 size={16} color={themeColors.neutral.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.iconButton, themeStyles.card]} onPress={() => setShowInviteQrModal(true)}>
+              <QrCode size={16} color={themeColors.neutral.text} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.headerRight}>
             <WalletButton
               onPress={handleWalletPress}
               showBalance={true}
               size="small"
+              variant="minimal"
               style={styles.walletButton}
             />
           </View>
-          
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Edit size={14} color="white" style={styles.editIcon} />
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Profile information */}
         <View style={styles.profileInfo}>
-          <TouchableOpacity activeOpacity={0.8}>
+          <View style={styles.avatarWrap}>
+            <TouchableOpacity activeOpacity={0.8}>
             <EnhancedAvatar
               avatarUrl={profile?.avatar_url}
               userId={profile?.id}
@@ -1696,9 +1737,15 @@ export default function ProfileScreen() {
               size={60}
               isDarkMode={isDarkMode}
               showBorder={true}
+              showVerifiedBadge={false}
               showBadges={false}
             />
-          </TouchableOpacity>
+            </TouchableOpacity>
+            <CreatorProAuthorBadge creatorProUntil={profile?.creator_pro_until} style={styles.avatarProBadge} />
+            <TouchableOpacity style={styles.avatarPlusBtn} onPress={handleEditProfile} activeOpacity={0.85}>
+              <Plus size={14} color="#FFFFFF" strokeWidth={2.8} />
+            </TouchableOpacity>
+          </View>
           
           <View style={styles.nameContainer}>
             <View style={styles.nameAndBadgesRow}>
@@ -1707,9 +1754,6 @@ export default function ProfileScreen() {
               </Text>
               {isProfileVerified(profile) && (
                 <VerifiedBadge size="medium" showText={false} style={styles.verifiedBadgeContainer} />
-              )}
-              {userBadges && userBadges.length > 0 && (
-                <UserBadgesList badges={userBadges} size="small" />
               )}
             </View>
           </View>
@@ -1734,6 +1778,15 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
+
+          <TouchableOpacity
+            style={[styles.creatorInlinePill, themeStyles.card]}
+            onPress={handleCreatorPress}
+            activeOpacity={0.85}
+          >
+            <CircleDollarSign size={12} color="#F472B6" />
+            <Text style={styles.creatorInlinePillText}>Creator Studio</Text>
+          </TouchableOpacity>
 
            {/* Follow Stats Card */}
            {profile?.id && (
@@ -1760,9 +1813,6 @@ export default function ProfileScreen() {
               <Text style={[styles.countryText, themeStyles.text]}>
                 📍 {profile.country}
               </Text>
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedText}>✓ Verified</Text>
-              </View>
             </View>
           )}
           
@@ -1921,6 +1971,80 @@ export default function ProfileScreen() {
         </Modal>
       )}
 
+      <Modal
+        visible={showInviteQrModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowInviteQrModal(false)}
+      >
+        <View style={styles.inviteQrOverlay}>
+          <View style={[styles.inviteQrCard, { backgroundColor: themeColors.neutral.card, borderColor: themeColors.neutral.border }]}>
+            <View style={styles.inviteQrHandle} />
+            <Text style={[styles.inviteQrTitle, { color: themeColors.neutral.text }]}>Invite Profile</Text>
+            <View ref={inviteShareCardRef} collapsable={false} style={styles.inviteShareCard}>
+              <View style={styles.inviteBrandPill}>
+                <Image source={require('../../assets/images/icon.png')} style={styles.inviteBrandLogo} contentFit="cover" />
+                <Text style={styles.inviteBrandText}>Nomli Mingle</Text>
+              </View>
+              <View style={styles.inviteShareProfileRow}>
+                <EnhancedAvatar
+                  avatarUrl={profile?.avatar_url}
+                  userId={profile?.id}
+                  fullName={profile?.full_name}
+                  username={profile?.username}
+                  size={38}
+                  isDarkMode={isDarkMode}
+                  showBorder
+                  showVerifiedBadge={false}
+                  showBadges={false}
+                  enableZoom={false}
+                />
+                <View style={styles.inviteShareProfileTextWrap}>
+                  <Text style={[styles.inviteShareName, { color: themeColors.neutral.text }]} numberOfLines={1}>
+                    {inviteDisplayName}
+                  </Text>
+                  <Text style={[styles.inviteShareUsername, { color: themeColors.neutral.subtext }]} numberOfLines={1}>
+                    @{profile?.username || 'nomli'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.inviteQrImageWrap}>
+                <Image source={{ uri: profileInviteQrUrl }} style={styles.inviteQrImage} contentFit="contain" />
+                <View style={styles.inviteQrCenterLogoWrap}>
+                  <Image source={require('../../assets/images/icon.png')} style={styles.inviteQrCenterLogo} contentFit="cover" />
+                </View>
+                <View style={styles.inviteQrWatermark}>
+                  <Text style={styles.inviteQrWatermarkText}>Nomli Mingle</Text>
+                </View>
+              </View>
+            </View>
+            <Text style={[styles.inviteQrHint, { color: themeColors.neutral.subtext }]}>
+              Scan to open profile in Nomli app
+            </Text>
+            <View style={styles.inviteQrActions}>
+              <TouchableOpacity
+                style={[styles.inviteQrBtn, styles.inviteQrBtnSecondary]}
+                onPress={() => {
+                  setShowInviteQrModal(false);
+                  router.push('/scan/profile-qr');
+                }}
+              >
+                <ScanLine size={14} color="#fff" />
+                <Text style={styles.inviteQrBtnSecondaryText}>Scan QR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.inviteQrBtn, styles.inviteQrBtnPrimary]} onPress={handleShareProfileInvite}>
+                <Share2 size={14} color="#fff" />
+                <Text style={styles.inviteQrBtnPrimaryText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setShowInviteQrModal(false)} style={styles.inviteQrClose}>
+              <Text style={[styles.inviteQrCloseText, { color: themeColors.neutral.subtext }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
     </>
   );
@@ -1948,47 +2072,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 24,
+    paddingTop: 14,
+    paddingBottom: 6,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   walletButton: {
     marginLeft: 0,
+    transform: [{ scale: 0.9 }],
+  },
+  headerRight: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary.main,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    ...Shadow.sm,
-  },
-  editIcon: {
-    marginRight: Spacing.xs,
-  },
-  editText: {
-    color: 'white',
-    fontFamily: FontFamily.medium,
-    fontSize: FontSizes.caption,
-  },
   profileInfo: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
+    marginTop: 2,
+  },
+  avatarWrap: {
+    position: 'relative',
+    marginBottom: 6,
+  },
+  avatarProBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    zIndex: 4,
+  },
+  avatarPlusBtn: {
+    position: 'absolute',
+    right: -6,
+    top: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0D1730',
+    ...Shadow.sm,
   },
   followStatsCard: {
     marginHorizontal: 16,
@@ -2015,14 +2152,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
   },
+  verifiedBadgeContainer: {
+    marginLeft: 0,
+  },
   name: {
     fontSize: 15,
     fontFamily: FontFamily.bold,
     color: Colors.neutral.text,
     fontWeight: '700',
-  },
-  verifiedBadgeContainer: {
-    marginLeft: 0,
   },
   ageMaritalContainer: {
     flexDirection: 'row',
@@ -2061,6 +2198,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 4,
   },
+  creatorInlinePill: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 8,
+    backgroundColor: 'rgba(244,114,182,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(244,114,182,0.45)',
+  },
+  creatorInlinePillText: {
+    color: '#FBCFE8',
+    fontSize: 11,
+    fontFamily: FontFamily.bold,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
   locationText: {
     fontSize: 12,
     fontFamily: FontFamily.regular,
@@ -2089,17 +2246,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.caption,
     fontFamily: FontFamily.medium,
     color: Colors.neutral.text,
-  },
-  verifiedBadge: {
-    backgroundColor: Colors.success.main,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.pill,
-  },
-  verifiedText: {
-    fontSize: 10,
-    fontFamily: FontFamily.bold,
-    color: 'white',
   },
   bioContainer: {
     alignItems: 'center',
@@ -2774,5 +2920,197 @@ const styles = StyleSheet.create({
   deletedModalButtonText: {
     fontSize: FontSizes.body,
     fontFamily: FontFamily.semibold,
+  },
+  inviteQrOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  inviteQrCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 18,
+  },
+  inviteQrHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 10,
+  },
+  inviteQrTitle: {
+    fontSize: 18,
+    fontFamily: FontFamily.bold,
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  inviteShareCard: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderRadius: 18,
+    backgroundColor: 'rgba(6,15,22,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(132,255,217,0.14)',
+    marginBottom: 8,
+  },
+  inviteBrandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginBottom: 10,
+  },
+  inviteBrandLogo: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  inviteBrandText: {
+    color: '#EFFFF8',
+    fontSize: 11,
+    fontFamily: FontFamily.semibold,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  inviteShareProfileRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  inviteShareProfileTextWrap: {
+    flex: 1,
+  },
+  inviteShareName: {
+    fontSize: 14,
+    fontFamily: FontFamily.bold,
+    fontWeight: '700',
+  },
+  inviteShareUsername: {
+    marginTop: 1,
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
+    fontWeight: '500',
+  },
+  inviteQrImageWrap: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    marginBottom: 10,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  inviteQrImage: {
+    width: 220,
+    height: 220,
+    borderRadius: 10,
+  },
+  inviteQrCenterLogoWrap: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '50%',
+    marginTop: -18,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  inviteQrCenterLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  inviteQrWatermark: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 12,
+    alignItems: 'center',
+  },
+  inviteQrWatermarkText: {
+    color: 'rgba(15,23,42,0.45)',
+    fontSize: 11,
+    fontFamily: FontFamily.bold,
+    letterSpacing: 0.35,
+  },
+  inviteQrHint: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 12,
+    opacity: 0.85,
+  },
+  inviteQrActions: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 10,
+  },
+  inviteQrBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  inviteQrBtnPrimary: {
+    backgroundColor: Colors.primary.main,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  inviteQrBtnPrimaryText: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: FontFamily.semibold,
+  },
+  inviteQrBtnSecondary: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  inviteQrBtnSecondaryText: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: FontFamily.semibold,
+  },
+  inviteQrClose: {
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  inviteQrCloseText: {
+    fontSize: 13,
+    fontFamily: FontFamily.medium,
   },
 });

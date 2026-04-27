@@ -82,7 +82,7 @@ export default function SignUpScreen() {
             if (!hasNavigated.current) {
               log('[SignUp] User already exists with valid session, redirecting to community');
               hasNavigated.current = true;
-              router.replace('/(tabs)/community');
+              router.replace('/(tabs)/discovery');
             }
           } else {
             // Session is invalid or expired - don't redirect, let user sign up
@@ -169,7 +169,7 @@ export default function SignUpScreen() {
             router.replace('/profile/edit');
           } else {
             // Existing user (already has account) - go to main app
-            router.replace('/(tabs)/community');
+            router.replace('/(tabs)/discovery');
           }
         },
         (error) => {
