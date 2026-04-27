@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { ChevronLeft, Pause, Play, Upload, ShieldCheck, UserCircle2, Music4 } from "lucide-react"
 import { AudioSlicer } from "@/components/AudioSlicer"
 
@@ -179,7 +178,6 @@ async function authedFetch(path: string, init: RequestInit = {}, requireAuth = f
 }
 
 export default function MusicPage() {
-  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabKey>("discover")
   const [genreFilter, setGenreFilter] = useState("All")
 
@@ -374,11 +372,12 @@ export default function MusicPage() {
   }, [])
 
   useEffect(() => {
-    const tab = searchParams.get("tab")
+    if (typeof window === "undefined") return
+    const tab = new URLSearchParams(window.location.search).get("tab")
     if (tab === "submit" || tab === "dashboard" || tab === "admin" || tab === "discover") {
       setActiveTab(tab)
     }
-  }, [searchParams])
+  }, [])
 
   useEffect(() => {
     if (activeTab === "dashboard") void loadMySubmissions()

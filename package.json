@@ -3,7 +3,8 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "build": "npx @cloudflare/next-on-pages@1",
+    "build": "next build",
+    "build:cf": "npx @cloudflare/next-on-pages@1",
     "build:next": "next build",
     "dev": "next dev",
     "lint": "eslint .",
@@ -75,5 +76,6 @@
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "npm@11.12.1"
 }

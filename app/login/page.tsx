@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion"
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Mail } from "lucide-react"
@@ -53,8 +53,7 @@ export default function LoginPage() {
   const { scrollYProgress } = useScroll()
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const nextPath = searchParams.get("next") || "/music?tab=submit"
+  const [nextPath, setNextPath] = useState("/music?tab=submit")
 
   const [email, setEmail] = useState("")
   const [otpCode, setOtpCode] = useState("")
@@ -62,6 +61,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const next = params.get("next")
+    if (next) setNextPath(next)
+  }, [])
 
   useEffect(() => {
     // Keep page client-only and validate envs early.
