@@ -28,7 +28,7 @@ export function StructuredData() {
         sameAs: [
           "https://www.facebook.com/people/Nomli-Mingle/61578108320450/",
           "https://www.tiktok.com/@nomli_mingle",
-          "https://x.com/nomlimingle",
+          "https://x.com/nomlimingl20270?s=11",
           "https://www.instagram.com/nomli_minglehq/",
           "https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en",
         ],

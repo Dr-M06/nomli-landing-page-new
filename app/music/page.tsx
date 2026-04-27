@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ChevronLeft, Pause, Play, Upload, ShieldCheck, UserCircle2, Music4 } from "lucide-react"
+import { ChevronLeft, Pause, Play, Upload, ShieldCheck, UserCircle2, Music4, Shuffle, Repeat, Repeat1, SkipBack, SkipForward } from "lucide-react"
 import { AudioSlicer } from "@/components/AudioSlicer"
 
 type Song = {
@@ -213,11 +213,15 @@ export default function MusicPage() {
   const [queueLoading, setQueueLoading] = useState(false)
   const [adminActionBusyId, setAdminActionBusyId] = useState("")
   const [deleteSongBusyId, setDeleteSongBusyId] = useState("")
+  const [editSongBusyId, setEditSongBusyId] = useState("")
 
   const [activeSongId, setActiveSongId] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackMs, setPlaybackMs] = useState(0)
   const [durationMs, setDurationMs] = useState(0)
+  const [shuffleEnabled, setShuffleEnabled] = useState(false)
+  const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("all")
+  const [playHistory, setPlayHistory] = useState<string[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -394,8 +398,11 @@ export default function MusicPage() {
   const progressPct = durationMs > 0 ? Math.min(100, (playbackMs / durationMs) * 100) : 0
   const elapsedSec = Math.max(0, Math.floor(playbackMs / 1000))
   const totalSec = Math.max(1, Math.round((durationMs || (activeSong?.duration_sec ?? 15) * 1000) / 1000))
+  const activeGenre = activeSong ? deriveGenre(activeSong).toUpperCase() : ""
+  const heroLabel = activeSong ? (activeGenre === "OTHER" ? "TRENDING NOW" : `${activeGenre} NOW`) : "NOMLI MUSIC"
+  const heroSubLabel = activeSong ? `${activeSong.artist} · Live Discover` : "Live Discover"
 
-  const playSong = async (song: Song) => {
+  const playSong = async (song: Song, options?: { fromHistory?: boolean; triedIds?: Set<string> }) => {
     const audio = audioRef.current
     if (!audio) return
     if (activeSongId === song.id) {
@@ -409,6 +416,9 @@ export default function MusicPage() {
       return
     }
     try {
+      if (activeSongId && activeSongId !== song.id && !options?.fromHistory) {
+        setPlayHistory((prev) => [...prev.slice(-30), activeSongId])
+      }
       audio.pause()
       audio.src = song.url
       audio.currentTime = 0
@@ -417,10 +427,99 @@ export default function MusicPage() {
       setActiveSongId(song.id)
       await audio.play()
       setIsPlaying(true)
+      setDiscoverError("")
     } catch {
-      setDiscoverError("Playback failed for this track.")
+      const triedIds = new Set(options?.triedIds || [])
+      triedIds.add(song.id)
+      const fallbackSong =
+        filteredSongs.find((candidate) => !triedIds.has(candidate.id)) ||
+        songs.find((candidate) => !triedIds.has(candidate.id))
+
+      if (fallbackSong) {
+        await playSong(fallbackSong, { fromHistory: true, triedIds })
+        return
+      }
+
+      setDiscoverError("Playback failed. Some track URLs may be unavailable (403).")
       setIsPlaying(false)
     }
+  }
+
+  const playPreviousTrack = async () => {
+    if (!filteredSongs.length) return
+    const audio = audioRef.current
+    if (audio && audio.currentTime > 4 && activeSongId) {
+      audio.currentTime = 0
+      setPlaybackMs(0)
+      return
+    }
+
+    const lastHistoryId = playHistory[playHistory.length - 1]
+    if (lastHistoryId) {
+      const previousSong = filteredSongs.find((song) => song.id === lastHistoryId) || songs.find((song) => song.id === lastHistoryId)
+      if (previousSong) {
+        setPlayHistory((prev) => prev.slice(0, -1))
+        await playSong(previousSong, { fromHistory: true })
+        return
+      }
+    }
+
+    if (!activeSongId) return
+    const currentIndex = filteredSongs.findIndex((song) => song.id === activeSongId)
+    if (currentIndex < 0) return
+    const prevIndex = (currentIndex - 1 + filteredSongs.length) % filteredSongs.length
+    const previous = filteredSongs[prevIndex]
+    if (previous) await playSong(previous)
+  }
+
+  const playNextTrack = async () => {
+    if (!filteredSongs.length) return
+    if (!activeSongId) {
+      await playSong(filteredSongs[0])
+      return
+    }
+
+    if (repeatMode === "one") {
+      const audio = audioRef.current
+      if (audio && activeSongId) {
+        audio.currentTime = 0
+        setPlaybackMs(0)
+        try {
+          await audio.play()
+          setIsPlaying(true)
+        } catch {
+          setIsPlaying(false)
+        }
+      }
+      return
+    }
+
+    const currentIndex = filteredSongs.findIndex((song) => song.id === activeSongId)
+    if (currentIndex < 0) return
+
+    if (shuffleEnabled && filteredSongs.length > 1) {
+      const candidates = filteredSongs.filter((song) => song.id !== activeSongId)
+      const randomSong = candidates[Math.floor(Math.random() * candidates.length)]
+      if (randomSong) await playSong(randomSong)
+      return
+    }
+
+    const nextIndex = currentIndex + 1
+    const nextSong = filteredSongs[nextIndex]
+    if (nextSong) {
+      await playSong(nextSong)
+      return
+    }
+
+    if (repeatMode === "all") {
+      const firstSong = filteredSongs[0]
+      if (firstSong) await playSong(firstSong)
+      return
+    }
+
+    const audio = audioRef.current
+    if (audio) audio.pause()
+    setIsPlaying(false)
   }
 
   const toPreviewSong = (item: Submission): Song => ({
@@ -472,35 +571,25 @@ export default function MusicPage() {
 
     const onEnded = () => {
       setPlaybackMs(0)
-      if (!filteredSongs.length || !activeSongId) {
-        setIsPlaying(false)
-        return
-      }
-      const currentIndex = filteredSongs.findIndex((song) => song.id === activeSongId)
-      if (currentIndex < 0) {
-        setIsPlaying(false)
-        return
-      }
-      const nextIndex = (currentIndex + 1) % filteredSongs.length
-      const nextSong = filteredSongs[nextIndex]
-      if (!nextSong) {
-        setIsPlaying(false)
-        return
-      }
-      void playSong(nextSong)
+      void playNextTrack()
     }
 
     audio.addEventListener("ended", onEnded)
     return () => {
       audio.removeEventListener("ended", onEnded)
     }
-  }, [activeSongId, filteredSongs])
+  }, [activeSongId, filteredSongs, shuffleEnabled, repeatMode])
 
   useEffect(() => {
     return () => {
       if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
     }
   }, [submitFilePreviewUrl])
+
+  useEffect(() => {
+    if (!songs.length || activeSongId) return
+    setActiveSongId(songs[0].id)
+  }, [songs, activeSongId])
 
   const handleSubmitTrack = async () => {
     if (!userId) {
@@ -670,6 +759,42 @@ export default function MusicPage() {
     }
   }
 
+  const adminEditSong = async (song: Song) => {
+    const nextTitle = window.prompt("Edit track title", song.title)?.trim()
+    if (!nextTitle) return
+    const nextArtist = window.prompt("Edit artist name", song.artist)?.trim()
+    if (!nextArtist) return
+    const nextGenre = window.prompt("Edit genre", song.genre || "Other")?.trim() || "Other"
+    const nextDurationRaw = window.prompt("Edit duration (seconds)", String(song.duration_sec || 15))?.trim()
+    const nextDuration = Number(nextDurationRaw)
+    if (!Number.isFinite(nextDuration) || nextDuration <= 0) {
+      alert("Duration must be a valid number of seconds.")
+      return
+    }
+
+    setEditSongBusyId(song.id)
+    try {
+      await authedFetch(`/rest/v1/app_songs?id=eq.${encodeURIComponent(song.id)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          title: nextTitle,
+          artist: nextArtist,
+          genre: nextGenre,
+          duration_sec: Math.round(nextDuration),
+        }),
+      }, true)
+      await loadDiscover()
+    } catch (err: any) {
+      alert(err?.message || "Could not update song.")
+    } finally {
+      setEditSongBusyId("")
+    }
+  }
+
   const renderDiscover = () => (
     <>
       <div className="mt-3 px-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -687,50 +812,157 @@ export default function MusicPage() {
         ))}
       </div>
       <section className="px-3 pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold tracking-tight">Fresh Drops</h2>
-          <span className="text-[11px] font-semibold text-[#D6526A]">Live</span>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-[#201820]/60">
-          {discoverLoading ? <p className="p-5 text-center text-sm text-white/50">Loading tracks...</p> : null}
-          {!discoverLoading && discoverError ? <p className="p-5 text-center text-sm text-red-300">{discoverError}</p> : null}
+        <div className="rounded-[1.4rem] border border-white/10 bg-[#16121d] p-3 sm:p-4">
+          {discoverLoading ? <p className="p-5 text-center text-sm text-[#2f2f4b]">Loading tracks...</p> : null}
+          {!discoverLoading && discoverError ? <p className="p-5 text-center text-sm text-red-700">{discoverError}</p> : null}
           {!discoverLoading && !discoverError && filteredSongs.length === 0 ? (
-            <p className="p-5 text-center text-sm text-white/50">No tracks found.</p>
+            <p className="p-5 text-center text-sm text-[#494969]">No tracks found.</p>
           ) : null}
           {!discoverLoading && !discoverError && filteredSongs.length > 0 ? (
-            <div>
-              {filteredSongs.map((song, idx) => {
-                const playing = activeSongId === song.id && isPlaying
-                return (
+            <div className="grid grid-cols-1 md:grid-cols-[0.78fr_1.22fr] gap-3">
+              <div className="rounded-[1.3rem] bg-gradient-to-b from-[#1f1c45] to-[#13152f] p-4 text-white min-h-[295px]">
+                <p className="text-xs text-white/75 mb-3">Now playing</p>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="h-24 rounded-xl bg-gradient-to-br from-[#2f2c62] to-[#1c1d43] flex items-center justify-center">
+                    <Music4 className="h-8 w-8 text-white/80" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold truncate">{activeSong?.title || "Select a track"}</p>
+                  <p className="text-xs text-white/65 truncate">{activeSong?.artist || "Nomli Music"}</p>
+                  <div className="mt-3 h-1.5 rounded-full bg-white/15 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#a78bfa] to-[#22d3ee]" style={{ width: `${progressPct}%` }} />
+                  </div>
+                  <div className="mt-3 flex items-end gap-1 h-6">
+                    {[0, 1, 2, 3, 4, 5, 6].map((bar) => (
+                      <span
+                        key={bar}
+                        className={`w-1 rounded-full bg-gradient-to-t from-[#7dd3fc] to-[#c4b5fd] ${
+                          isPlaying ? "animate-[music-wave_850ms_ease-in-out_infinite]" : ""
+                        }`}
+                        style={{
+                          height: isPlaying ? undefined : "8px",
+                          opacity: isPlaying ? 0.95 : 0.55,
+                          animationDelay: `${bar * 90}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-white/60">
+                    <span>{fmt(elapsedSec)}</span>
+                    <span>{fmt(totalSec)}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void playPreviousTrack()
+                      }}
+                      className="h-9 w-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center"
+                    >
+                      <SkipBack className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => activeSong && void playSong(activeSong)}
+                      className="h-9 w-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center"
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void playNextTrack()
+                      }}
+                      className="h-9 w-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center"
+                    >
+                      <SkipForward className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShuffleEnabled((prev) => !prev)}
+                      className={`h-6 px-2 rounded-full border text-[9px] font-medium inline-flex items-center gap-1 ${
+                        shuffleEnabled ? "border-cyan-300/70 bg-cyan-300/12 text-cyan-100" : "border-white/20 text-white/60"
+                      }`}
+                    >
+                      <Shuffle className="h-2.5 w-2.5" />
+                      Shuffle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRepeatMode((prev) => (prev === "off" ? "all" : prev === "all" ? "one" : "off"))
+                      }
+                      className={`h-6 px-2 rounded-full border text-[9px] font-medium inline-flex items-center gap-1 ${
+                        repeatMode !== "off" ? "border-violet-300/70 bg-violet-300/12 text-violet-100" : "border-white/20 text-white/60"
+                      }`}
+                    >
+                      {repeatMode === "one" ? <Repeat1 className="h-2.5 w-2.5" /> : <Repeat className="h-2.5 w-2.5" />}
+                      {repeatMode === "off" ? "Repeat Off" : repeatMode === "all" ? "Repeat All" : "Repeat One"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.3rem] bg-gradient-to-b from-[#1f1c45] to-[#13152f] p-4 sm:p-5 min-h-[295px] text-white">
+                <div className="relative rounded-xl h-24 sm:h-28 p-4 mb-4 flex flex-col justify-end overflow-hidden bg-[length:200%_200%] animate-[hero-gradient_8s_ease-in-out_infinite] bg-gradient-to-r from-[#3f3a82] via-[#33528f] to-[#2a4f78]">
+                  <div className="absolute -top-10 -right-8 w-28 h-28 rounded-full bg-white/15 blur-2xl animate-[hero-orb_6s_ease-in-out_infinite]" />
+                  <div className="absolute -bottom-8 left-8 w-24 h-24 rounded-full bg-cyan-300/15 blur-2xl animate-[hero-orb_7s_ease-in-out_infinite_0.5s]" />
+                  <p className="relative text-xl sm:text-2xl font-bold leading-none animate-[hero-text_700ms_ease-out]">{heroLabel}</p>
+                  <p className="relative text-xs text-white/80 mt-1 animate-[hero-text_900ms_ease-out]">{heroSubLabel}</p>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm sm:text-base font-semibold text-white">Trending right now</h2>
                   <button
-                    key={song.id}
                     type="button"
-                    onClick={() => void playSong(song)}
-                    className="w-full text-left px-3 py-2.5 flex items-center gap-3 active:bg-white/5"
-                    style={{ borderBottom: idx === filteredSongs.length - 1 ? "none" : "1px solid rgba(255,255,255,0.07)" }}
+                    onClick={() => {
+                      if (filteredSongs.length > 0) void playSong(filteredSongs[0])
+                    }}
+                    className="text-xs text-white/75 hover:text-white"
                   >
-                    <div className="h-10 w-10 rounded-lg bg-[#271F26] relative overflow-hidden flex items-center justify-center text-lg shrink-0">
-                      🎵
-                      {playing ? (
-                        <div className="absolute inset-0 bg-black/55 flex items-end justify-center gap-[2px] pb-2">
-                          <span className="w-[3px] h-2 bg-[#E07A8F] rounded animate-[eq_0.7s_ease-in-out_infinite_alternate]" />
-                          <span className="w-[3px] h-4 bg-[#E07A8F] rounded animate-[eq_0.7s_ease-in-out_infinite_alternate] [animation-delay:0.18s]" />
-                          <span className="w-[3px] h-3 bg-[#E07A8F] rounded animate-[eq_0.7s_ease-in-out_infinite_alternate] [animation-delay:0.36s]" />
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`truncate text-[13px] font-semibold ${playing ? "text-[#E07A8F]" : "text-white"}`}>{song.title}</p>
-                      <p className="truncate text-[11px] text-white/50 mt-0.5">
-                        {song.artist} · {deriveGenre(song)} · {song.duration_sec || 15}s
-                      </p>
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-[#D6526A]/90 flex items-center justify-center shrink-0">
-                      {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
-                    </div>
+                    Play all
                   </button>
-                )
-              })}
+                </div>
+                <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {filteredSongs.map((song, index) => {
+                    const active = song.id === activeSongId
+                    return (
+                      <button
+                        key={song.id}
+                        type="button"
+                        onClick={() => void playSong(song)}
+                        className={`w-full rounded-lg px-3 py-2 text-left transition-colors border ${
+                          active ? "bg-white/10 border-white/30" : "bg-transparent border-transparent hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-white/45 w-5">{String(index + 1).padStart(2, "0")}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-semibold text-white truncate">{song.title}</p>
+                            <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {active ? (
+                              <span className="flex items-end gap-[2px] h-3" aria-hidden="true">
+                                {[0, 1, 2].map((i) => (
+                                  <span
+                                    key={i}
+                                    className={`w-[2px] rounded-full bg-[#7dd3fc] ${
+                                      isPlaying ? "animate-[music-wave_850ms_ease-in-out_infinite]" : ""
+                                    }`}
+                                    style={{ height: isPlaying ? undefined : "6px", animationDelay: `${i * 120}ms` }}
+                                  />
+                                ))}
+                              </span>
+                            ) : null}
+                            <span className="text-[11px] text-white/55">{fmt(song.duration_sec || 15)}</span>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
@@ -745,14 +977,18 @@ export default function MusicPage() {
           <Upload className="h-4 w-4 text-[#E07A8F]" />
           <h2 className="text-sm font-semibold">Submit Track</h2>
         </div>
-        <p className="mt-2 text-xs text-white/60">Upload your song for review. Approved tracks appear in Nomli Music.</p>
+        <p className="mt-2 text-xs text-white/60">
+          To upload music, you must have a Nomli Mingle app account. If approved, your track is added to our in-app music library.
+        </p>
         <p className="mt-2 text-[11px] text-amber-200/80">
           Only upload tracks you created or have full legal rights to use and distribute.
         </p>
         {!authChecked ? <p className="mt-3 text-sm text-white/50">Checking login...</p> : null}
         {authChecked && !userId ? (
           <div className="mt-4 rounded-lg border border-white/10 p-3">
-            <p className="text-sm text-white/70">Login with your Nomli Mingle account to upload music.</p>
+            <p className="text-sm text-white/70">
+              Login with your Nomli Mingle app account to upload music. Approved tracks are added to Nomli in-app music.
+            </p>
             <Link
               href="/login?next=%2Fmusic%3Ftab%3Dsubmit"
               className="inline-flex mt-3 rounded-md bg-[#D6526A] px-3 py-2 text-xs font-semibold"
@@ -1048,6 +1284,14 @@ export default function MusicPage() {
                 </div>
                 <button
                   type="button"
+                  disabled={editSongBusyId === song.id || deleteSongBusyId === song.id}
+                  onClick={() => void adminEditSong(song)}
+                  className="rounded-md border border-white/20 px-3 py-1.5 text-xs font-semibold text-white/80 disabled:opacity-60"
+                >
+                  {editSongBusyId === song.id ? "Saving..." : "Edit"}
+                </button>
+                <button
+                  type="button"
                   disabled={deleteSongBusyId === song.id}
                   onClick={() => void adminDeleteSong(song)}
                   className="rounded-md bg-red-600/80 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
@@ -1064,7 +1308,7 @@ export default function MusicPage() {
 
   return (
     <main className="min-h-screen bg-[#0E0B0D] text-[#F5EEF0] pb-10">
-      <div className="mx-auto w-full max-w-[880px] min-h-screen pb-36 border-x border-white/5 bg-[#0E0B0D]">
+      <div className="mx-auto w-full max-w-[880px] min-h-screen pb-36 bg-[#0E0B0D]">
       <header className="sticky top-0 z-20 h-[54px] flex items-center justify-between px-4 border-b border-white/10 bg-[#0E0B0D]/90 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[#D6526A] shadow-[0_0_8px_#D6526A]" />
@@ -1101,42 +1345,59 @@ export default function MusicPage() {
       {activeTab === "dashboard" ? renderDashboard() : null}
       {activeTab === "admin" ? renderAdmin() : null}
 
-      <div className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[880px] bottom-0 z-30 px-2 pb-2 transition-transform duration-300 ${activeSong ? "translate-y-0" : "translate-y-full"}`}>
-        {activeSong ? (
-          <div className="rounded-2xl border border-[#D6526A]/25 bg-[#1C161A]/95 backdrop-blur-xl p-3">
-            <div className="h-[2px] bg-white/10 rounded mb-2 overflow-hidden">
-              <div className="h-full bg-[#D6526A] rounded transition-all duration-100" style={{ width: `${progressPct}%` }} />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-lg bg-[#271F26] flex items-center justify-center text-lg ${isPlaying ? "animate-spin [animation-duration:2.4s]" : ""}`}>
-                <Music4 className="h-4 w-4 text-[#E07A8F]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-[13px] font-semibold">{activeSong.title}</p>
-                <p className="truncate text-[11px] text-white/55 italic">{activeSong.artist}</p>
-                <p className="text-[10px] text-white/35 mt-0.5">
-                  {fmt(elapsedSec)} · {fmt(totalSec)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void playSong(activeSong)}
-                className="h-11 w-11 rounded-full bg-[#D6526A] flex items-center justify-center shadow-[0_3px_14px_rgba(214,82,106,0.4)]"
-              >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
       <style jsx>{`
-        @keyframes eq {
+        @keyframes music-wave {
           from {
-            transform: scaleY(0.3);
+            height: 6px;
+            transform: translateY(0);
+          }
+          25% {
+            height: 16px;
+            transform: translateY(-1px);
+          }
+          50% {
+            height: 10px;
+            transform: translateY(0);
+          }
+          75% {
+            height: 20px;
+            transform: translateY(-1px);
           }
           to {
-            transform: scaleY(1);
+            height: 6px;
+            transform: translateY(0);
+          }
+        }
+        @keyframes hero-gradient {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        @keyframes hero-orb {
+          0%,
+          100% {
+            transform: translate3d(0, 0, 0) scale(1);
+            opacity: 0.45;
+          }
+          50% {
+            transform: translate3d(-8px, 6px, 0) scale(1.12);
+            opacity: 0.8;
+          }
+        }
+        @keyframes hero-text {
+          0% {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>

@@ -78,8 +78,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@nomlimingle",
-    creator: "@nomlimingle",
+    site: "@nomlimingl20270",
+    creator: "@nomlimingl20270",
     title: "Nomli Mingle - Beyond Borders. Beyond Limits.",
     description:
       "Nomli Mingle — dating, livestreaming, chat, and communities. Connect with people who share your interests.",
