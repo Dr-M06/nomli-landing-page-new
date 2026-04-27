@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Pre-commit: Checking for build artifacts..."
+
+# Check for build artifacts
+ARTIFACTS=$(git diff --cached --name-only | grep -E '\.(apk|aab|ipa)$|/build/|\.app$|\.xcarchive$')
+
+if [ ! -z "$ARTIFACTS" ]; then
+    echo "❌ ERROR: Build artifacts detected in commit!"
+    echo "The following files should not be committed:"
+    echo "$ARTIFACTS"
+    echo ""
+    echo "🧹 Run cleanup script to remove them:"
+    echo "  npm run clean-artifacts"
+    echo ""
+    echo "💡 Build artifacts are generated automatically and shouldn't be in Git."
+    exit 1
+fi
+
+echo "✅ Pre-commit: No build artifacts found"

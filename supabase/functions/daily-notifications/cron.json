@@ -1,0 +1,4 @@
+{
+  "cron": "0 9 * * *",
+  "description": "Send daily email notifications to users at 9 AM UTC"
+}

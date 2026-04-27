@@ -1,0 +1,4 @@
+{
+  "cron": "*/5 * * * *",
+  "description": "Keep Redis and Edge Functions warm - runs every 5 minutes"
+}

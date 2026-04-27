@@ -1,0 +1,21 @@
+# Cloudflare Worker Configuration
+# Copy this to wrangler.toml and fill in your KV namespace ID
+
+name = "nomli-cache"
+main = "cloudflare-cache-worker.js"  # Worker source at repo root (no duplicate .ts)
+compatibility_date = "2024-01-01"
+
+# KV Namespace Binding
+# Get namespace ID from: Cloudflare Dashboard → Workers & Pages → KV
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_KV_NAMESPACE_ID_HERE"  # Replace with your actual namespace ID
+
+# Optional: Custom domain
+# routes = [
+#   { pattern = "cache.yourdomain.com", custom_domain = true }
+# ]
+
+# Optional: Environment variables
+# [vars]
+# ENVIRONMENT = "production"

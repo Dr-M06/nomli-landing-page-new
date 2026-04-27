@@ -1,0 +1,4 @@
+{
+  "cron": "0 */6 * * *",
+  "description": "Cleanup expired stories (24 hours) - runs every 6 hours"
+}

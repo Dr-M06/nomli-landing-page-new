@@ -1,0 +1,46 @@
+# Git attributes for Nomli Mingle
+
+# Ensure consistent line endings
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp3 binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# iOS specific
+*.pbxproj text merge=union
+*.plist text
+*.strings text
+
+# Android specific
+*.gradle text
+*.xml text
+*.properties text
+
+# JavaScript/TypeScript
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.json text
+
+# Configuration files
+*.env* text
+*.md text
+*.yml text
+*.yaml text
+
+# Expo specific
+app.config.js text
+metro.config.js text
+babel.config.js text
