@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Header } from "@/components/header"
+import { Header } from "@/components/Header"
 import { Footer } from "@/components/footer"
 import { StoreButtons } from "@/components/store-buttons"
 import { Globe2, Radio, Users2, ShieldCheck } from "lucide-react"

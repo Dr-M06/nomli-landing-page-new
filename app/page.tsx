@@ -1,4 +1,4 @@
-import { Header } from "@/components/header"
+import { Header } from "@/components/Header"
 import { HeroSection } from "@/components/hero-section"
 import { NomliMusicSection } from "@/components/nomli-music-section"
 import { CreatorMonetizationSection } from "@/components/creator-monetization-section"
