@@ -56,6 +56,7 @@ export default function ArtistPage() {
   const [profileYoutube, setProfileYoutube] = useState("")
   const [profileSpotify, setProfileSpotify] = useState("")
   const [isOfficialAccount, setIsOfficialAccount] = useState(false)
+  const [isBioModalOpen, setIsBioModalOpen] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [activeSongId, setActiveSongId] = useState<string | null>(null)
@@ -196,6 +197,9 @@ export default function ArtistPage() {
     return artistSlug.replace(/-/g, " ")
   }, [songs, artistNameHint, artistSlug])
 
+  const profileBioText = profileBio || "No artist bio yet. Creator details will appear here once added."
+  const mobileBioPreview = profileBioText.length > 140 ? `${profileBioText.slice(0, 140).trim()}...` : profileBioText
+
   const handlePlaySong = async (song: SongRow) => {
     const audio = audioRef.current
     if (!audio || !song.url) return
@@ -312,41 +316,53 @@ export default function ArtistPage() {
           Back to music
         </Link>
 
-        <section className="mt-4 rounded-3xl border border-white/10 bg-gradient-to-br from-[#14122f] via-[#1c3d7a] to-[#102140] p-5 sm:p-7 overflow-hidden relative shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
+        <section className="mt-4 mx-auto w-full max-w-[760px] rounded-2xl border border-white/10 bg-gradient-to-br from-[#14122f] via-[#1c3d7a] to-[#102140] p-3.5 sm:p-6 overflow-hidden relative shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
           <div className="absolute -top-12 -right-10 h-40 w-40 rounded-full bg-cyan-300/15 blur-3xl" />
           <div className="absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-violet-300/15 blur-3xl" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_10%,rgba(255,255,255,0.14),transparent_42%)]" />
-          <div className="relative flex items-start gap-4">
-            <Link href="/profile" className="shrink-0 group">
+          <div className="relative flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <Link href="/profile" className="shrink-0 group self-center sm:self-start">
               {profileAvatar || songs[0]?.cover_url ? (
                 <img
                   src={profileAvatar || songs[0]?.cover_url || ""}
                   alt={artistName}
-                  className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border border-white/25 group-hover:border-white/50 transition-colors"
+                  className="h-14 w-14 sm:h-24 sm:w-24 rounded-full object-cover border border-white/25 group-hover:border-white/50 transition-colors"
                 />
               ) : (
-                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border border-white/25 bg-white/10 flex items-center justify-center text-2xl font-semibold group-hover:border-white/50 transition-colors">
+                <div className="h-14 w-14 sm:h-24 sm:w-24 rounded-full border border-white/25 bg-white/10 flex items-center justify-center text-lg sm:text-2xl font-semibold group-hover:border-white/50 transition-colors">
                   {(artistName || "A").slice(0, 1).toUpperCase()}
                 </div>
               )}
             </Link>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide text-white/70">Artist</p>
-              <Link href="/profile" className="inline-block hover:opacity-90 transition-opacity">
-                <h1 className="text-2xl sm:text-4xl font-bold truncate">{artistName}</h1>
+            <div className="min-w-0 flex-1 w-full text-center sm:text-left">
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-white/70">Artist</p>
+              <Link href="/profile" className="inline-block hover:opacity-90 transition-opacity max-w-full">
+                <h1 className="text-[30px] sm:text-4xl font-bold leading-tight truncate">{artistName}</h1>
               </Link>
-              <p className="text-sm text-white/80 mt-1">{profileUsername ? `@${profileUsername}` : "Nomli creator"}</p>
+              <p className="text-[15px] sm:text-sm text-white/80 mt-1 break-all">{profileUsername ? `@${profileUsername}` : "Nomli creator"}</p>
               {isOfficialAccount ? <p className="text-[11px] text-[#ffbfd0] mt-0.5">Official account</p> : null}
-              <p className="text-sm text-white/75 mt-3 max-w-2xl leading-relaxed">
-                {profileBio || "No artist bio yet. Creator details will appear here once added."}
+              <p className="hidden sm:block text-sm text-white/80 mt-3 leading-relaxed">
+                {profileBioText}
               </p>
-              <div className="mt-3 flex items-center gap-2">
+              <p className="sm:hidden text-sm text-white/80 mt-3 leading-relaxed">
+                {mobileBioPreview}
+              </p>
+              {profileBioText.length > 140 ? (
+                <button
+                  type="button"
+                  onClick={() => setIsBioModalOpen(true)}
+                  className="sm:hidden mt-1.5 text-xs font-medium text-cyan-200 underline underline-offset-2"
+                >
+                  Read more
+                </button>
+              ) : null}
+              <div className="mt-4 flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-2">
                 {profileYoutube ? (
                   <a
                     href={profileYoutube}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full border border-red-300/35 bg-red-300/10 px-3 py-1 text-xs font-medium text-red-100"
+                    className="rounded-full border border-red-300/35 bg-red-300/10 px-3 py-1.5 text-xs font-medium text-red-100"
                   >
                     YouTube
                   </a>
@@ -356,7 +372,7 @@ export default function ArtistPage() {
                     href={profileSpotify}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100"
+                    className="rounded-full border border-emerald-300/35 bg-emerald-300/10 px-3 py-1.5 text-xs font-medium text-emerald-100"
                   >
                     Spotify
                   </a>
@@ -364,7 +380,7 @@ export default function ArtistPage() {
                 <button
                   type="button"
                   onClick={() => setEditing((v) => !v)}
-                  className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white"
+                  className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium text-white"
                 >
                   {editing ? "Close edit" : "Edit profile"}
                 </button>
@@ -372,6 +388,32 @@ export default function ArtistPage() {
             </div>
           </div>
         </section>
+
+        {isBioModalOpen ? (
+          <div
+            className="sm:hidden fixed inset-0 z-[80] bg-[#06060d]/86 backdrop-blur-sm flex items-center justify-center px-4"
+            onClick={() => setIsBioModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#141328] shadow-[0_18px_60px_rgba(0,0,0,0.55)] p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <p className="text-sm font-semibold text-white truncate">About {artistName}</p>
+                <button
+                  type="button"
+                  onClick={() => setIsBioModalOpen(false)}
+                  className="shrink-0 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] text-white"
+                >
+                  Close
+                </button>
+              </div>
+              <p className="max-h-[52vh] overflow-y-auto pr-1 text-sm text-white/85 leading-relaxed">
+                {profileBioText}
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         {editing ? (
           <section className="mt-4 rounded-2xl border border-white/10 bg-[#171222] p-4 sm:p-5 space-y-2.5">

@@ -33,6 +33,7 @@ function formatTime(totalSeconds: number) {
 export function NomliMusicSection() {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: "-80px" })
+  const isSectionVisible = useInView(ref, { margin: "-20% 0px -20% 0px" })
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [songs, setSongs] = useState<Song[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
@@ -114,6 +115,15 @@ export function NomliMusicSection() {
       void audio.play().catch(() => setIsPlaying(false))
     }
   }, [activeIndex, songs, isPlaying])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (!isSectionVisible && isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    }
+  }, [isSectionVisible, isPlaying])
 
   const activeSong = songs[activeIndex] || null
   const previewSongs = useMemo(() => songs.slice(0, 3), [songs])
