@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Info } from "lucide-react";
 
-const STORAGE_KEY = "nomli-web-wallet-popup-dismissed";
+const STORAGE_KEY = "nomli-web-wallet-popup-seen";
 const SHOW_DELAY_MS = 2500;
 
 export default function WebWalletPopup() {
@@ -12,12 +12,20 @@ export default function WebWalletPopup() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const wasDismissed = sessionStorage.getItem(STORAGE_KEY);
-    if (wasDismissed) {
+    const wasSeen = localStorage.getItem(STORAGE_KEY);
+    if (wasSeen) {
       setDismissed(true);
       return;
     }
-    const t = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
+    const t = setTimeout(() => {
+      setVisible(true);
+      try {
+        // Mark as seen on first show so it does not reappear on later visits.
+        localStorage.setItem(STORAGE_KEY, "1");
+      } catch {
+        // ignore
+      }
+    }, SHOW_DELAY_MS);
     return () => clearTimeout(t);
   }, []);
 
@@ -25,7 +33,7 @@ export default function WebWalletPopup() {
     setDismissed(true);
     setVisible(false);
     try {
-      sessionStorage.setItem(STORAGE_KEY, "1");
+      localStorage.setItem(STORAGE_KEY, "1");
     } catch {
       // ignore
     }

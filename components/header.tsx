@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,14 +9,38 @@ import Image from "next/image"
 import Link from "next/link"
 
 export function Header() {
+  const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  useEffect(() => {
+    const refreshLoginState = () => {
+      const token = localStorage.getItem("nomli_supabase_access_token")
+      setIsLoggedIn(Boolean(token))
+    }
+    refreshLoginState()
+    window.addEventListener("storage", refreshLoginState)
+    window.addEventListener("focus", refreshLoginState)
+    return () => {
+      window.removeEventListener("storage", refreshLoginState)
+      window.removeEventListener("focus", refreshLoginState)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem("nomli_supabase_access_token")
+    localStorage.removeItem("nomli_supabase_refresh_token")
+    setIsLoggedIn(false)
+    setIsMobileMenuOpen(false)
+    router.push("/")
+  }
 
   const scrollToDownload = () => {
     document.getElementById("download")?.scrollIntoView({ behavior: "smooth" })
@@ -74,6 +99,27 @@ export function Header() {
             >
               Wallet
             </a>
+            <Link href="/music" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Music
+            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link href="/music?tab=submit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Music Upload
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Login
+              </Link>
+            )}
             <Button
               size="sm"
               className="bg-foreground hover:bg-foreground/90 text-background rounded-full px-5"
@@ -125,6 +171,31 @@ export function Header() {
               >
                 Wallet
               </a>
+              <Link href="/music" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                Music
+              </Link>
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    href="/music?tab=submit"
+                    className="text-xl font-medium text-foreground"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Music Upload
+                  </Link>
+                  <button
+                    type="button"
+                    className="text-left text-xl font-medium text-foreground"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              )}
               <Button
                 className="w-full rounded-full bg-foreground text-background"
                 onClick={scrollToDownload}

@@ -30,12 +30,10 @@ export async function hasInfluencerApplication(userId: string): Promise<boolean>
 }
 
 /**
- * Get the appropriate redirect path after authentication
- * @param userId - Firebase Auth UID
- * @returns "/influencer/dashboard" if user has applied, "/influencer" otherwise
+ * Post-auth redirect for the public landing experience.
+ * Influencer onboarding route has been retired.
  */
-export async function getPostAuthRedirect(userId: string): Promise<string> {
-  const hasApplied = await hasInfluencerApplication(userId)
-  return hasApplied ? "/influencer/dashboard" : "/influencer"
+export async function getPostAuthRedirect(_userId: string): Promise<string> {
+  return "/"
 }
 

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 
-export default function LegacyInfluencerAuthRedirect() {
+export default function AuthRedirectPage() {
   redirect("/login")
 }
-

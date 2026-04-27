@@ -83,7 +83,7 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     const auth = getAuthInstance()
     if (!auth) {
-      router.push("/influencer/auth")
+      router.push("/")
       return
     }
 
@@ -92,7 +92,7 @@ export default function InfluencerDashboard() {
         setUserId(user.uid)
         setUser(user)
       } else {
-        router.push("/influencer/auth")
+        router.push("/")
       }
     })
 
@@ -639,13 +639,13 @@ export default function InfluencerDashboard() {
                 hello@nomli.cc
               </a>
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <Link href="/influencer">
+                <Link href="/">
                   <motion.button
                     className="px-8 py-3 rounded-full bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Program Info
+                    Home
                   </motion.button>
                 </Link>
                 <Link href="/">

@@ -26,6 +26,28 @@ yarn-error.log*
 # Local env files
 .env*.local
 .env
+.env.*
+!.env.example
+!.env*.example
+
+# Secrets / credentials
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+*credentials*.json
+*service-account*.json
+firebase-adminsdk*.json
+google-services*.json
+GoogleService-Info*.plist
+
+# Local tooling and exports
+.cursor/
+.DS_Store?
+*.zip
+*.tar
+*.tgz
 
 # Vercel
 .vercel

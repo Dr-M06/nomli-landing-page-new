@@ -94,9 +94,9 @@ function ResetPasswordForm() {
     try {
       await confirmPasswordReset(auth, actionCode, password)
       setSuccess(true)
-      // Redirect to login after 3 seconds
+      // Redirect home after 3 seconds (influencer login retired)
       setTimeout(() => {
-        router.push("/influencer/auth")
+        router.push("/")
       }, 3000)
     } catch (error: any) {
       console.error("Password reset error:", error)
@@ -154,13 +154,13 @@ function ResetPasswordForm() {
                   <p className="text-white/60 mb-6">
                     Your password has been reset. Redirecting to login page...
                   </p>
-                  <Link href="/influencer/auth">
+                  <Link href="/">
                     <motion.button
                       className="px-6 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      Go to Login
+                      Go Home
                     </motion.button>
                   </Link>
                 </motion.div>
@@ -277,13 +277,13 @@ export default function ResetPasswordPage() {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0a0a0f]/80 border-b border-white/5">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/influencer/auth">
+            <Link href="/">
               <motion.div
                 className="flex items-center gap-3 text-white/70 hover:text-white transition-colors"
                 whileHover={{ x: -4 }}
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span className="font-medium">Back to Login</span>
+                <span className="font-medium">Back to Home</span>
               </motion.div>
             </Link>
             <div className="flex items-center gap-3">

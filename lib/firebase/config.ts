@@ -32,11 +32,8 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 See FIREBASE_SETUP.md for detailed instructions.
 `
   console.error(errorMessage)
-  
-  // Don't throw error, but log it clearly
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Firebase environment variables are required in production")
-  }
+  // Do not throw at module load time; allow build/deploy to continue.
+  // Legacy Firebase routes will return graceful config errors at runtime.
 }
 
 const firebaseConfig = {
@@ -66,9 +63,7 @@ if (getApps().length === 0) {
     }
   } catch (error: any) {
     console.error("❌ Firebase initialization error:", error.message)
-    if (process.env.NODE_ENV === "production") {
-      throw error
-    }
+    // Avoid hard-failing build/runtime bootstrap when Firebase is optional.
   }
 } else {
   app = getApps()[0]
