@@ -1,5 +1,57 @@
+import type { Metadata } from "next"
 import SocialFeed from "@/components/social/social-feed"
-import { getLandingFeedPosts, type LandingPost } from "@/lib/nomli-posts"
+import { getLandingFeedPosts, getLandingPostById, type LandingPost } from "@/lib/nomli-posts"
+
+type SocialPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+const SHARE_WEB_ORIGIN = (process.env.NEXT_PUBLIC_SHARE_WEB_ORIGIN || "https://www.nomlimingle.com").replace(/\/$/, "")
+
+export async function generateMetadata({ searchParams }: SocialPageProps): Promise<Metadata> {
+  const params = searchParams ? await searchParams : {}
+  const postIdParam = params?.postId
+  const postId = Array.isArray(postIdParam) ? postIdParam[0] : postIdParam
+  const fallbackImage = `${SHARE_WEB_ORIGIN}/icon.png`
+  const fallbackUrl = `${SHARE_WEB_ORIGIN}/social`
+
+  if (!postId) {
+    return {
+      title: "Nomli Social",
+      description: "Real people. Real moments. No filter.",
+      openGraph: {
+        title: "Nomli Social",
+        description: "Real people. Real moments. No filter.",
+        url: fallbackUrl,
+        images: [{ url: fallbackImage }],
+      },
+    }
+  }
+
+  const post = await getLandingPostById(postId)
+  const text = String(post?.content || "").trim()
+  const description = text || `Post by @${post?.displayName || "nomli"} on Nomli Social`
+  const title = post?.displayName ? `@${post.displayName} on Nomli Social` : "Nomli Social Post"
+  const image = post?.previewImage || post?.profile?.avatar_url || fallbackImage
+  const pageUrl = `${SHARE_WEB_ORIGIN}/social?postId=${encodeURIComponent(postId)}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      images: [{ url: image }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  }
+}
 
 function getPreviewPosts(): LandingPost[] {
   return [

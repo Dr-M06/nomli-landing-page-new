@@ -82,8 +82,7 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({})
 
-  const deepLinkBase = useMemo(() => "nomlimingle://community/post/", [])
-  const legacyDeepLinkBase = useMemo(() => "nomlimingle://post/", [])
+  const communityHomeDeepLinkBase = useMemo(() => "nomlimingle://community", [])
   const canonicalWebOrigin = useMemo(() => "https://www.nomlimingle.com", [])
   const appStoreUrl = useMemo(() => "https://apps.apple.com/app/nomli-mingle/id123456789", [])
   const playStoreUrl = useMemo(
@@ -176,13 +175,12 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
     (postId: string) => {
       if (typeof window === "undefined") return
       const encodedPostId = encodeURIComponent(postId)
-      const deepLink = `${deepLinkBase}${encodedPostId}`
-      const legacyDeepLink = `${legacyDeepLinkBase}${encodedPostId}`
+      const deepLink = `${communityHomeDeepLinkBase}?postId=${encodedPostId}`
       const ua = window.navigator.userAgent || ""
       const isAndroid = /Android/i.test(ua)
       const isIOS = /iPhone|iPad|iPod/i.test(ua)
-      const universalPostUrl = `${canonicalWebOrigin}/community/post/${encodedPostId}`
-      const localPostUrl = `${window.location.origin}/community/post/${encodedPostId}`
+      const universalPostUrl = `${canonicalWebOrigin}/social?postId=${encodedPostId}`
+      const localPostUrl = `${window.location.origin}/social?postId=${encodedPostId}`
       const fallbackUrl = isIOS ? appStoreUrl : isAndroid ? playStoreUrl : universalPostUrl
 
       const start = Date.now()
@@ -190,32 +188,26 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
         if (Date.now() - start < 1800) window.location.href = fallbackUrl
       }, 1400)
       if (isAndroid) {
-        // Try direct scheme first so app can resolve exact post route immediately.
+        // Route to app community/home feed with post context.
         window.location.href = deepLink
         window.setTimeout(() => {
-          window.location.href = legacyDeepLink
-        }, 280)
-        window.setTimeout(() => {
-          const intentUrl = `intent://community/post/${encodedPostId}#Intent;scheme=nomlimingle;package=com.nomli.mingle2;S.browser_fallback_url=${encodeURIComponent(
+          const intentUrl = `intent://community?postId=${encodedPostId}#Intent;scheme=nomlimingle;package=com.nomli.mingle2;S.browser_fallback_url=${encodeURIComponent(
             universalPostUrl
           )};end`
           window.location.href = intentUrl
-        }, 560)
+        }, 360)
       } else if (isIOS) {
-        // iOS: try both app routes, then universal link, then App Store fallback timer.
+        // iOS: deep-link to app feed first, then universal fallback.
         window.location.href = deepLink
         window.setTimeout(() => {
-          window.location.href = legacyDeepLink
-        }, 280)
-        window.setTimeout(() => {
           window.location.href = universalPostUrl
-        }, 700)
+        }, 650)
       } else {
         window.location.href = localPostUrl
       }
       window.setTimeout(() => window.clearTimeout(timer), 2000)
     },
-    [appStoreUrl, canonicalWebOrigin, deepLinkBase, legacyDeepLinkBase, playStoreUrl]
+    [appStoreUrl, canonicalWebOrigin, communityHomeDeepLinkBase, playStoreUrl]
   )
 
   const loadMore = useCallback(async () => {
@@ -303,21 +295,23 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
 
   const handleShare = async (post: LandingPost) => {
     const postId = post.id
+    const encodedPostId = encodeURIComponent(postId)
+    const deepLinkUrl = `${communityHomeDeepLinkBase}?postId=${encodedPostId}`
     const shareUrl =
       typeof window !== "undefined"
-        ? `${window.location.origin}/community/post/${encodeURIComponent(postId)}`
-        : `/community/post/${encodeURIComponent(postId)}`
+        ? `${canonicalWebOrigin}/social?postId=${encodeURIComponent(postId)}`
+        : `/social?postId=${encodeURIComponent(postId)}`
     const rawContent = (post.content || "").trim()
     const excerpt = rawContent.length > 180 ? `${rawContent.slice(0, 177)}...` : rawContent
     const shareText = excerpt || `Watch @${post.displayName}'s post on Nomli`
-    const shareMessage = `${shareText}\n\n${shareUrl}`
+    const shareMessage = `${shareText}\n\nOpen in app: ${deepLinkUrl}\nWeb fallback: ${shareUrl}`
 
     try {
       if (navigator.share) {
         await navigator.share({
           title: `@${post.displayName} on Nomli`,
-          text: shareText,
-          url: shareUrl,
+          text: shareMessage,
+          url: deepLinkUrl,
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareMessage)

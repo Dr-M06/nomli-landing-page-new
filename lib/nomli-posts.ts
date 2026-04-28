@@ -251,3 +251,50 @@ export async function getLandingFeedPosts(limit = 20, videoOnly = false): Promis
   const page = await getLandingFeedPostsPage(limit, null, videoOnly)
   return page.items
 }
+
+export async function getLandingPostById(postId: string): Promise<LandingPost | null> {
+  const cleanId = String(postId || "").trim()
+  if (!cleanId) return null
+  const rows = await supabaseFetch(
+    `posts?id=eq.${encodeURIComponent(cleanId)}&select=*,likes:post_reactions(count),comments:post_comments(count)&limit=1`
+  )
+  if (!Array.isArray(rows) || rows.length === 0) return null
+  const post = rows[0] as NomliPost
+
+  let profile: NomliProfile | null = null
+  if (post.user_id) {
+    const profileRows = await supabaseFetch(
+      `profiles?id=eq.${encodeURIComponent(post.user_id)}&select=id,username,full_name,avatar_url&limit=1`
+    )
+    if (Array.isArray(profileRows) && profileRows[0]) {
+      profile = profileRows[0] as NomliProfile
+    }
+  }
+
+  const displayName = profile?.username || profile?.full_name || "Nomli user"
+  const likesFromPost =
+    toNumber(post.likes_count, NaN) ||
+    toNumber(post.like_count, NaN) ||
+    toNumber(post.lc, NaN) ||
+    0
+  const commentsFromPost =
+    toNumber(post.comments_count, NaN) ||
+    toNumber(post.comment_count, NaN) ||
+    toNumber(post.cc, NaN) ||
+    0
+  const sharesFromPost = toNumber(post.shares_count, NaN) || toNumber(post.share_count, NaN) || 0
+  const embeddedLikes = Array.isArray(post.likes) ? toNumber(post.likes[0]?.count, 0) : toNumber((post.likes as any)?.count, 0)
+  const embeddedComments = Array.isArray(post.comments)
+    ? toNumber(post.comments[0]?.count, 0)
+    : toNumber((post.comments as any)?.count, 0)
+
+  return {
+    ...post,
+    likes_count: Math.max(likesFromPost, embeddedLikes),
+    comments_count: Math.max(commentsFromPost, embeddedComments),
+    shares_count: Math.max(0, sharesFromPost),
+    profile,
+    previewImage: pickPreviewImage(post),
+    displayName,
+  }
+}
