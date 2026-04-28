@@ -65,13 +65,7 @@ export function Header() {
             <span className="text-base font-bold text-foreground">Nomli Mingle</span>
           </motion.a>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              About
-            </Link>
-            <Link href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQ
-            </Link>
+          <nav className="hidden lg:flex items-center gap-8">
             <a
               href="https://wallet.nomlimingle.com"
               target="_blank"
@@ -80,22 +74,31 @@ export function Header() {
             >
               Wallet
             </a>
+            <Link href="/social" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Social
+            </Link>
             <Link href="/music" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Music
             </Link>
+            {isLoggedIn && (
+              <Link href="/music?tab=submit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Music Upload
+              </Link>
+            )}
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              About
+            </Link>
+            <Link href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              FAQ
+            </Link>
             {isLoggedIn ? (
-              <>
-                <Link href="/music?tab=submit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Music Upload
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Logout
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Logout
+              </button>
             ) : (
               <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Login
@@ -107,7 +110,7 @@ export function Header() {
           </nav>
 
           <motion.button
-            className="md:hidden text-foreground p-2"
+            className="lg:hidden text-foreground p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             whileTap={{ scale: 0.95 }}
           >
@@ -119,49 +122,77 @@ export function Header() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 glass pt-24 px-6 md:hidden"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
+            className="fixed top-16 right-3 z-40 w-[min(320px,calc(100vw-1.5rem))] lg:hidden"
           >
-            <nav className="flex flex-col gap-6">
-              <Link href="/about" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
-                About
-              </Link>
-              <Link href="#faq" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
-                FAQ
-              </Link>
+            <nav className="flex max-h-[70dvh] flex-col gap-2 overflow-y-auto rounded-2xl border border-white/15 bg-gradient-to-b from-[#111a3a]/95 to-[#0a122b]/95 px-4 py-3 shadow-[0_20px_60px_rgba(6,10,28,0.5)] backdrop-blur-md">
               <a
                 href="https://wallet.nomlimingle.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xl font-medium text-foreground"
+                className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Wallet
               </a>
-              <Link href="/music" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link
+                href="/social"
+                className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Social
+              </Link>
+              <Link
+                href="/music"
+                className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Music
               </Link>
+              {isLoggedIn && (
+                <Link
+                  href="/music?tab=submit"
+                  className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Music Upload
+                </Link>
+              )}
+              <Link
+                href="/about"
+                className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                About
+              </Link>
+              <Link
+                href="#faq"
+                className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                FAQ
+              </Link>
               {isLoggedIn ? (
-                <>
-                  <Link
-                    href="/music?tab=submit"
-                    className="text-xl font-medium text-foreground"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Music Upload
-                  </Link>
-                  <button type="button" className="text-left text-xl font-medium text-foreground" onClick={handleLogout}>
-                    Logout
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className="rounded-lg px-2 py-1.5 text-left text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
               ) : (
-                <Link href="/login" className="text-xl font-medium text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                <Link
+                  href="/login"
+                  className="rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   Login
                 </Link>
               )}
-              <Button className="w-full rounded-full bg-foreground text-background" onClick={scrollToDownload}>
+              <Button className="mt-2 w-full rounded-full bg-white py-2 text-sm text-black hover:bg-white/90" onClick={scrollToDownload}>
                 Download
               </Button>
             </nav>

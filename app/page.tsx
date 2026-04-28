@@ -2,6 +2,7 @@ import { Header } from "@/components/Header"
 import { HeroSection } from "@/components/hero-section"
 import { NomliMusicSection } from "@/components/nomli-music-section"
 import { CreatorMonetizationSection } from "@/components/creator-monetization-section"
+import { SocialShowcaseSection } from "@/components/social-showcase-section"
 import { FeaturesSection } from "@/components/features-section"
 import { FaqSection } from "@/components/faq-section"
 import { DownloadCta } from "@/components/download-cta"
@@ -18,6 +19,7 @@ export default function Home() {
       <HeroSection />
       <NomliMusicSection />
       <CreatorMonetizationSection />
+      <SocialShowcaseSection videoUrl="/promo%20video.mp4" />
       <FeaturesSection />
       <FaqSection />
       <DownloadCta />

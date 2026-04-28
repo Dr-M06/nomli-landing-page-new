@@ -2,7 +2,7 @@
 
 import { motion, useInView } from "framer-motion"
 import { useRef } from "react"
-import { Video, MessageSquare, Users, Heart, Shield } from "lucide-react"
+import { Video, MessageSquare, Music, Heart, Shield } from "lucide-react"
 
 const features = [
   {
@@ -21,9 +21,9 @@ const features = [
     description: "Rich messaging, voice and video calls. Media that auto-expires.",
   },
   {
-    icon: Users,
-    title: "Communities",
-    description: "Events, interests, and meetups. Find your people.",
+    icon: Music,
+    title: "Creators & Music",
+    description: "Discover creators, stream music, and connect with people who match your vibe.",
   },
   {
     icon: Shield,

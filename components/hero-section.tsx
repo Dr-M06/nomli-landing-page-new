@@ -40,14 +40,6 @@ export function HeroSection() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="text-left lg:text-left max-w-xl mx-auto lg:mx-0"
             >
-            <motion.span
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.5 }}
-              className="inline-flex sm:hidden items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] tracking-wide text-white/80 mb-4"
-            >
-              Mobile-first social app
-            </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}

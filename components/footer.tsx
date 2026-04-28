@@ -104,7 +104,18 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-xs text-[#999]">© {new Date().getFullYear()} Nomli Mingle.</p>
+          <p className="text-xs text-[#999]">
+            © {new Date().getFullYear()} Nomli Mingle. Parent company:{" "}
+            <a
+              href="https://nomli.cc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Nomli Tech Limited
+            </a>
+            .
+          </p>
         </div>
       </div>
 
