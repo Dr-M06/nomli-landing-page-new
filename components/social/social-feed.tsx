@@ -315,6 +315,12 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareMessage)
+        if (typeof window !== "undefined") {
+          window.alert("Share text copied. Paste to share.")
+        }
+      } else if (typeof window !== "undefined") {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`
+        window.open(waUrl, "_blank", "noopener,noreferrer")
       }
       setCounts((prev) => {
         const current = prev[postId]
@@ -328,7 +334,11 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
         }
       })
     } catch {
-      // ignore user-cancelled share
+      // If native share is unavailable/cancelled, still provide a fallback path.
+      if (typeof window !== "undefined") {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`
+        window.open(waUrl, "_blank", "noopener,noreferrer")
+      }
     }
   }
 
