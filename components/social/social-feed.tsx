@@ -83,6 +83,7 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({})
 
   const communityHomeDeepLinkBase = useMemo(() => "nomlimingle://community", [])
+  const communityPostDeepLinkBase = useMemo(() => "nomlimingle://community/post/", [])
   const canonicalWebOrigin = useMemo(() => "https://www.nomlimingle.com", [])
   const appStoreUrl = useMemo(() => "https://apps.apple.com/app/nomli-mingle/id123456789", [])
   const playStoreUrl = useMemo(
@@ -175,7 +176,7 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
     (postId: string) => {
       if (typeof window === "undefined") return
       const encodedPostId = encodeURIComponent(postId)
-      const deepLink = `${communityHomeDeepLinkBase}?postId=${encodedPostId}`
+      const deepLink = communityHomeDeepLinkBase
       const ua = window.navigator.userAgent || ""
       const isAndroid = /Android/i.test(ua)
       const isIOS = /iPhone|iPad|iPod/i.test(ua)
@@ -191,7 +192,7 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
         // Route to app community/home feed with post context.
         window.location.href = deepLink
         window.setTimeout(() => {
-          const intentUrl = `intent://community?postId=${encodedPostId}#Intent;scheme=nomlimingle;package=com.nomli.mingle2;S.browser_fallback_url=${encodeURIComponent(
+          const intentUrl = `intent://community#Intent;scheme=nomlimingle;package=com.nomli.mingle2;S.browser_fallback_url=${encodeURIComponent(
             universalPostUrl
           )};end`
           window.location.href = intentUrl
@@ -296,11 +297,11 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
   const handleShare = async (post: LandingPost) => {
     const postId = post.id
     const encodedPostId = encodeURIComponent(postId)
-    const deepLinkUrl = `${communityHomeDeepLinkBase}?postId=${encodedPostId}`
+    const deepLinkUrl = `${communityPostDeepLinkBase}${encodedPostId}`
     const shareUrl =
       typeof window !== "undefined"
-        ? `${canonicalWebOrigin}/social?postId=${encodeURIComponent(postId)}`
-        : `/social?postId=${encodeURIComponent(postId)}`
+        ? `${canonicalWebOrigin}/community/post/${encodeURIComponent(postId)}`
+        : `/community/post/${encodeURIComponent(postId)}`
     const rawContent = (post.content || "").trim()
     const excerpt = rawContent.length > 180 ? `${rawContent.slice(0, 177)}...` : rawContent
     const shareText = excerpt || `Watch @${post.displayName}'s post on Nomli`
@@ -311,7 +312,7 @@ export default function SocialFeed({ posts }: SocialFeedProps) {
         await navigator.share({
           title: `@${post.displayName} on Nomli`,
           text: shareMessage,
-          url: deepLinkUrl,
+          url: shareUrl,
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareMessage)
