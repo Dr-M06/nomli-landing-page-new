@@ -396,9 +396,6 @@ export default function MusicPage() {
       const avatar = String(me?.user_metadata?.avatar_url || me?.user_metadata?.picture || "")
       setProfileName(name)
       setProfileAvatarUrl(avatar)
-      if (!submitArtist || submitArtist === "Nomli Mingle User") setSubmitArtist(name)
-      if (!submitArtistUsername) setSubmitArtistUsername(name.toLowerCase().replace(/\s+/g, ""))
-      if (!submitArtistAvatarUrl && avatar) setSubmitArtistAvatarUrl(avatar)
 
       const profileRows = await authedFetch(
         `/rest/v1/profiles?id=eq.${encodeURIComponent(
@@ -415,30 +412,71 @@ export default function MusicPage() {
       )
       if (profileAvatar) {
         setProfileAvatarUrl(profileAvatar)
-        if (!submitArtistAvatarUrl) setSubmitArtistAvatarUrl(profileAvatar)
       }
       const profileDisplayName = String(profile?.display_name || profile?.full_name || "")
-      if (profileDisplayName && (!submitArtist || submitArtist === "Nomli Mingle User")) {
-        setSubmitArtist(profileDisplayName)
+      if (profileDisplayName) {
+        setProfileName(profileDisplayName)
       }
-      const profileUsername = String(profile?.username || "")
-      if (profileUsername && !submitArtistUsername) {
-        setSubmitArtistUsername(profileUsername.replace(/^@/, ""))
+
+      /** Music identity: latest submission — never copy mobile profile / auth avatar into artist fields. */
+      let lastSub: {
+        artist?: string
+        artist_username?: string | null
+        artist_bio?: string | null
+        artist_avatar_url?: string | null
+        artist_youtube_url?: string | null
+        artist_spotify_url?: string | null
+      } | null = null
+      try {
+        const subRows = await authedFetch(
+          `/rest/v1/app_song_submissions?submitted_by=eq.${encodeURIComponent(
+            String(me.id)
+          )}&select=artist,artist_username,artist_bio,artist_avatar_url,artist_youtube_url,artist_spotify_url&order=created_at.desc&limit=1`,
+          {},
+          true
+        )
+        lastSub = Array.isArray(subRows) && subRows[0] ? subRows[0] : null
+      } catch {
+        lastSub = null
       }
-      const profileMusicBio = String(profile?.music_bio || profile?.bio || "")
-      const profileMusicYoutube = String(profile?.music_youtube_url || profile?.youtube_url || "")
-      const profileMusicSpotify = String(profile?.music_spotify_url || profile?.spotify_url || "")
-      if (profileMusicBio && !submitArtistBio) setSubmitArtistBio(profileMusicBio)
-      if (profileMusicYoutube && !submitArtistYoutubeUrl) setSubmitArtistYoutubeUrl(profileMusicYoutube)
-      if (profileMusicSpotify && !submitArtistSpotifyUrl) setSubmitArtistSpotifyUrl(profileMusicSpotify)
-      const savedProfileReady = Boolean(
-        profileUsername ||
-          profileAvatar ||
-          profileMusicBio ||
-          profileMusicYoutube ||
-          profileMusicSpotify
+
+      if (lastSub) {
+        const a = String(lastSub.artist || "").trim()
+        if (a) setSubmitArtist(a)
+        setSubmitArtistUsername(String(lastSub.artist_username || "").replace(/^@/, "").trim())
+        setSubmitArtistBio(String(lastSub.artist_bio || "").trim())
+        setSubmitArtistAvatarUrl(String(lastSub.artist_avatar_url || "").trim())
+        setSubmitArtistYoutubeUrl(String(lastSub.artist_youtube_url || "").trim())
+        setSubmitArtistSpotifyUrl(String(lastSub.artist_spotify_url || "").trim())
+      } else {
+        setSubmitArtist("Nomli Mingle User")
+        setSubmitArtistUsername("")
+        setSubmitArtistBio("")
+        setSubmitArtistAvatarUrl("")
+        setSubmitArtistYoutubeUrl("")
+        setSubmitArtistSpotifyUrl("")
+        /** Optional defaults from music-only profile columns (not mobile bio/links). */
+        const profileMusicBio = String(profile?.music_bio || "").trim()
+        const profileMusicYoutube = String(profile?.music_youtube_url || "").trim()
+        const profileMusicSpotify = String(profile?.music_spotify_url || "").trim()
+        if (profileMusicBio) setSubmitArtistBio(profileMusicBio)
+        if (profileMusicYoutube) setSubmitArtistYoutubeUrl(profileMusicYoutube)
+        if (profileMusicSpotify) setSubmitArtistSpotifyUrl(profileMusicSpotify)
+      }
+
+      const profileMusicBio = String(profile?.music_bio || "").trim()
+      const profileMusicYoutube = String(profile?.music_youtube_url || "").trim()
+      const profileMusicSpotify = String(profile?.music_spotify_url || "").trim()
+      const savedFromSubmission = Boolean(
+        lastSub &&
+          (String(lastSub.artist_username || "").trim() ||
+            String(lastSub.artist_avatar_url || "").trim() ||
+            String(lastSub.artist_bio || "").trim() ||
+            String(lastSub.artist_youtube_url || "").trim() ||
+            String(lastSub.artist_spotify_url || "").trim())
       )
-      setHasSavedMusicProfile(savedProfileReady)
+      const savedFromMusicProfileCols = Boolean(profileMusicBio || profileMusicYoutube || profileMusicSpotify)
+      setHasSavedMusicProfile(savedFromSubmission || savedFromMusicProfileCols)
     } catch {
       // Keep unauthenticated fallback experience.
     } finally {
@@ -955,13 +993,21 @@ export default function MusicPage() {
       }
 
       setSubmitTitle("")
-      if (!hasSavedMusicProfile) {
-        setSubmitArtistBio("")
-        setSubmitArtistUsername("")
-        setSubmitArtistAvatarUrl(profileAvatarUrl || "")
-        setSubmitArtistYoutubeUrl("")
-        setSubmitArtistSpotifyUrl("")
-      }
+      setSubmitArtist(submissionPayload.artist.trim() || submitArtist)
+      setSubmitArtistBio(submissionPayload.artist_bio?.trim() || "")
+      setSubmitArtistUsername(String(submissionPayload.artist_username || "").replace(/^@/, "").trim())
+      setSubmitArtistAvatarUrl(submissionPayload.artist_avatar_url?.trim() || "")
+      setSubmitArtistYoutubeUrl(submissionPayload.artist_youtube_url?.trim() || "")
+      setSubmitArtistSpotifyUrl(submissionPayload.artist_spotify_url?.trim() || "")
+      setHasSavedMusicProfile(
+        Boolean(
+          submissionPayload.artist_username ||
+            submissionPayload.artist_avatar_url ||
+            submissionPayload.artist_bio ||
+            submissionPayload.artist_youtube_url ||
+            submissionPayload.artist_spotify_url
+        )
+      )
       setSubmitFile(null)
       if (submitFilePreviewUrl) URL.revokeObjectURL(submitFilePreviewUrl)
       setSubmitFilePreviewUrl(null)
@@ -1664,7 +1710,9 @@ export default function MusicPage() {
               </button>
             </div>
             <div className="rounded-md border border-white/10 bg-[#141014] px-3 py-2.5">
-              <p className="text-[11px] text-white/55 mb-2">Auto-fetched from your Nomli account</p>
+              <p className="text-[11px] text-white/55 mb-2">
+                Your Nomli account (chat / app profile). Artist name below is your music identity only.
+              </p>
               <div className="flex items-center gap-2.5">
                 {profileAvatarUrl ? (
                   <img

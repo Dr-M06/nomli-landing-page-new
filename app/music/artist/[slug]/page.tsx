@@ -152,6 +152,10 @@ export default function ArtistPage() {
         setIsOfficialAccount(false)
       }
 
+      const trackBio = String(profileRow?.artist_bio || "").trim()
+      const trackYoutube = String(profileRow?.artist_youtube_url || "").trim()
+      const trackSpotify = String(profileRow?.artist_spotify_url || "").trim()
+
       const pageArtistUsername = String(profileRow?.artist_username || "")
         .trim()
         .replace(/^@/, "")
@@ -198,32 +202,60 @@ export default function ArtistPage() {
 
       const profileDisplayName = String(p?.display_name || p?.full_name || "").trim()
       const profileUser = String(p?.username || "").trim().replace(/^@/, "").toLowerCase()
-      const profileAvatarUrl = String(
-        p?.avatar_url || p?.photo_url || p?.profile_image_url || p?.image_url || ""
-      ).trim()
-      const profileMusicBio = String(p?.music_bio || p?.bio || "").trim()
-      const profileMusicYoutube = String(p?.music_youtube_url || p?.youtube_url || "").trim()
-      const profileMusicSpotify = String(p?.music_spotify_url || p?.spotify_url || "").trim()
+      /** Music-only columns — do not use mobile `bio` / `youtube_url` / `spotify_url` / avatar here. */
+      const profileMusicBio = String(p?.music_bio || "").trim()
+      const profileMusicYoutube = String(p?.music_youtube_url || "").trim()
+      const profileMusicSpotify = String(p?.music_spotify_url || "").trim()
       const profileIsAdmin = Boolean(p?.is_admin || String(p?.role || "").toLowerCase() === "admin")
 
       const ownsByName =
         Boolean(profileDisplayName) && currentArtistName === profileDisplayName.toLowerCase()
       const ownsByUsername = Boolean(profileUser) && Boolean(pageArtistUsername) && profileUser === pageArtistUsername
-      const looksLikeOwnPage = ownsByName || ownsByUsername || (profileIsAdmin && isNomliOfficialPage)
+
+      let ownsBySubmission = false
+      try {
+        const subsRes = await fetch(
+          `${PUBLIC_SUPABASE_URL}/rest/v1/app_song_submissions?submitted_by=eq.${encodeURIComponent(
+            String(me.id)
+          )}&select=artist,artist_username`,
+          {
+            headers: {
+              apikey: PUBLIC_SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        const subs = (await subsRes.json().catch(() => [])) as { artist?: string; artist_username?: string | null }[]
+        const norm = (s: string) => s.trim().toLowerCase()
+        const ca = norm(currentArtistName)
+        const pu = norm(pageArtistUsername)
+        ownsBySubmission =
+          Array.isArray(subs) &&
+          subs.some((row) => {
+            const a = norm(String(row?.artist || ""))
+            const u = norm(String(row?.artist_username || "").replace(/^@/, ""))
+            return (ca && a === ca) || (pu && u === pu)
+          })
+      } catch {
+        ownsBySubmission = false
+      }
+
+      const looksLikeOwnPage =
+        ownsByName ||
+        ownsByUsername ||
+        ownsBySubmission ||
+        (profileIsAdmin && isNomliOfficialPage)
 
       setCanEditProfile(looksLikeOwnPage)
 
       if (looksLikeOwnPage) {
-        if (profileAvatarUrl) setProfileAvatar(profileAvatarUrl)
-        if (profileMusicBio) setProfileBio(profileMusicBio)
-        if (profileMusicYoutube) setProfileYoutube(profileMusicYoutube)
-        if (profileMusicSpotify) setProfileSpotify(profileMusicSpotify)
-        if (profileIsAdmin) {
+        /** Fill gaps only from music-specific profile columns (never mobile bio/social/avatar). */
+        if (profileMusicBio && !trackBio) setProfileBio(profileMusicBio)
+        if (profileMusicYoutube && !trackYoutube) setProfileYoutube(profileMusicYoutube)
+        if (profileMusicSpotify && !trackSpotify) setProfileSpotify(profileMusicSpotify)
+        if (profileIsAdmin && isNomliOfficialPage) {
           setProfileUsername("nomlimingleofficial")
           setIsOfficialAccount(true)
-        } else if (profileUser) {
-          setProfileUsername(profileUser)
-          setIsOfficialAccount(profileUser === "nomlimingleofficial")
         }
       }
     } catch {
