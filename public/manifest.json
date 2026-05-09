@@ -1,11 +1,11 @@
 {
-  "name": "Nomli Mingle - Beyond Borders. Beyond Limits.",
+  "name": "Nomli Mingle — Social, dating & livestreams",
   "short_name": "Nomli Mingle",
-  "description": "A new way to connect — livestream, chat, create, meet people with shared interests, and build real communities.",
+  "description": "Social feed, Connect dating, livestreams, and chat in one app. Free on iOS and Android.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#8b5cf6",
+  "background_color": "#f7f6f3",
+  "theme_color": "#FF6FAE",
   "orientation": "portrait-primary",
   "icons": [
     {

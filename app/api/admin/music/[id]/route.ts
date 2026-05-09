@@ -5,17 +5,10 @@ import {
   getSongById,
   hasSupabaseAdmin,
 } from "@/lib/supabase-admin"
+import { canProxyMusicAdminToEdge } from "@/lib/music-admin-edge"
+import { proxyMusicAdminEdge } from "@/lib/music-admin-edge-proxy"
 
 const MUSIC_BUCKET = "app-music"
-
-function supabaseMissing() {
-  return NextResponse.json(
-    {
-      error: "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
-    },
-    { status: 500 }
-  )
-}
 
 function extractStoragePath(publicUrl: string | null | undefined): string | null {
   if (!publicUrl) return null
@@ -29,11 +22,34 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  if (!hasSupabaseAdmin) return supabaseMissing()
-
   const { id } = await context.params
   if (!id) {
     return NextResponse.json({ error: "Missing song id" }, { status: 400 })
+  }
+
+  if (!hasSupabaseAdmin) {
+    if (canProxyMusicAdminToEdge()) {
+      const proxied = await proxyMusicAdminEdge(request, {
+        method: "DELETE",
+        searchParams: `id=${encodeURIComponent(id)}`,
+      })
+      if (proxied) return proxied
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Sign in for Edge admin deletes, or set SUPABASE_SERVICE_ROLE_KEY on the server.",
+        },
+        { status: 401 }
+      )
+    }
+    return NextResponse.json(
+      {
+        success: false,
+        code: "service_role_required",
+        error: "Deletes require SUPABASE_SERVICE_ROLE_KEY or deployed admin-music Edge Function + signed-in admin.",
+      },
+      { status: 503 }
+    )
   }
 
   let song: { id: string; url: string | null; cover_url: string | null } | null = null

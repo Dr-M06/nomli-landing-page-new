@@ -1,4 +1,0 @@
-{
-  "cron": "0 */4 * * *",
-  "description": "Boost engagement for low-performing videos - runs every 4 hours to boost videos with <10 views (realistic growth)"
-}

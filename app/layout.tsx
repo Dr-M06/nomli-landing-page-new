@@ -1,48 +1,59 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Fraunces, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { StructuredData } from "./structured-data"
+import { SoothingPageLoader } from "@/components/soothing-page-loader"
+import { getSiteUrl } from "@/lib/site"
 import "./globals.css"
+
+const siteUrl = getSiteUrl()
+const defaultTitle = "Nomli Mingle — Social, dating & livestreams in one app"
+const defaultDescription =
+  "Nomli Mingle brings your social feed, Connect dating, and livestreams into one home row. Free on iOS and Android — join your crew on Nomli."
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 })
 
+const displaySerif = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+})
+
 export const metadata: Metadata = {
   title: {
-    default: "Nomli Mingle - Beyond Borders. Beyond Limits.",
+    default: defaultTitle,
     template: "%s | Nomli Mingle",
   },
-  description:
-    "Nomli Mingle — dating, livestreaming, chat, and communities in one app. Connect with people who share your interests. Available on Android and iOS.",
+  description: defaultDescription,
   keywords: [
+    "Nomli Mingle",
+    "nomli",
     "social app",
+    "social dating app",
     "livestream app",
     "video chat",
     "community app",
     "social networking",
-    "video calls",
-    "social media platform",
     "meet new people",
-    "events discovery",
     "online communities",
-    "livestreaming platform",
+    "livestreaming",
     "group chat",
-    "voice calls",
-    "android social app",
-    "dating",
+    "Android social app",
+    "iOS social app",
+    "dating app",
   ],
-  authors: [{ name: "Nomli Mingle Team", url: "https://nomlimingle.com" }],
+  authors: [{ name: "Nomli Mingle", url: siteUrl }],
   creator: "Nomli Mingle",
   publisher: "Nomli Mingle",
   applicationName: "Nomli Mingle",
   category: "Social Networking",
   classification: "Social Media",
-  metadataBase: new URL("https://nomlimingle.com"),
+  metadataBase: new URL(siteUrl),
   alternates: {
-    canonical: "https://nomlimingle.com",
+    canonical: "/",
   },
   robots: {
     index: true,
@@ -55,23 +66,22 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: "your-google-verification-code", // Add your Google Search Console verification code
-  },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://nomlimingle.com",
-    title: "Nomli Mingle - Beyond Borders. Beyond Limits.",
-    description:
-      "Nomli Mingle — dating, livestreaming, chat, and communities. Connect with people who share your interests.",
+    url: siteUrl,
+    title: defaultTitle,
+    description: defaultDescription,
     siteName: "Nomli Mingle",
     images: [
       {
-        url: "https://nomlimingle.com/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Nomli Mingle - Social networking app for livestreaming, video calls, and community building",
+        alt: "Nomli Mingle — social, dating, and livestreams in one app",
         type: "image/png",
       },
     ],
@@ -80,13 +90,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@nomlimingl20270",
     creator: "@nomlimingl20270",
-    title: "Nomli Mingle - Beyond Borders. Beyond Limits.",
-    description:
-      "Nomli Mingle — dating, livestreaming, chat, and communities. Connect with people who share your interests.",
-    images: {
-      url: "https://nomlimingle.com/twitter-image.png",
-      alt: "Nomli Mingle - Social networking app for livestreaming, video calls, and community building",
-    },
+    title: defaultTitle,
+    description: defaultDescription,
+    images: ["/twitter-image.png"],
   },
   icons: {
     icon: [
@@ -145,18 +151,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        <meta name="theme-color" content="#8b5cf6" />
+        <meta name="theme-color" content="#FF6FAE" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased overflow-x-hidden`}>
+      <body className={`${inter.variable} ${displaySerif.variable} font-sans antialiased overflow-x-hidden`}>
         <StructuredData />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg">
           Skip to main content
         </a>
+        <SoothingPageLoader />
         {children}
         <Analytics />
       </body>

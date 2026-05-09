@@ -21,8 +21,8 @@ const roadmapSections = [
     id: "acceptance",
     icon: FileText,
     title: "Acceptance of Terms",
-    color: "#8b5cf6",
-    gradient: "from-violet-500 to-purple-600",
+    color: "#9333ea",
+    gradient: "from-violet-600 to-purple-600",
     content: `By accessing or using Nomli Mingle, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.`,
     status: "required",
   },
@@ -30,8 +30,8 @@ const roadmapSections = [
     id: "eligibility",
     icon: Users,
     title: "Eligibility",
-    color: "#06b6d4",
-    gradient: "from-cyan-500 to-blue-600",
+    color: "#0891b2",
+    gradient: "from-cyan-600 to-sky-600",
     content: `You must be at least 13 years old to use Nomli Mingle. Users under 18 require parental consent. We reserve the right to terminate accounts that violate age restrictions.`,
     status: "required",
   },
@@ -39,8 +39,8 @@ const roadmapSections = [
     id: "account",
     icon: Shield,
     title: "Account Responsibilities",
-    color: "#10b981",
-    gradient: "from-emerald-500 to-green-600",
+    color: "#059669",
+    gradient: "from-emerald-600 to-teal-600",
     content: `You are responsible for safeguarding your account credentials and for any activities under your account. Notify us immediately of any unauthorized access.`,
     status: "required",
   },
@@ -48,8 +48,8 @@ const roadmapSections = [
     id: "conduct",
     icon: MessageSquare,
     title: "User Conduct",
-    color: "#f59e0b",
-    gradient: "from-amber-500 to-orange-600",
+    color: "#d97706",
+    gradient: "from-amber-600 to-orange-600",
     content: `No harmful, threatening, or discriminatory content. No harassment, spam, or illegal activities. Respect other users and the community.`,
     status: "important",
   },
@@ -57,8 +57,8 @@ const roadmapSections = [
     id: "intellectual",
     icon: Scale,
     title: "Intellectual Property",
-    color: "#ec4899",
-    gradient: "from-pink-500 to-rose-600",
+    color: "#db2777",
+    gradient: "from-pink-600 to-rose-600",
     content: `The Service is owned by Nomli Mingle and protected by international copyright laws. User-generated content remains yours, but you grant us a license to display it on the platform.`,
     status: "important",
   },
@@ -66,8 +66,8 @@ const roadmapSections = [
     id: "termination",
     icon: AlertTriangle,
     title: "Termination",
-    color: "#ef4444",
-    gradient: "from-red-500 to-rose-600",
+    color: "#dc2626",
+    gradient: "from-red-600 to-rose-600",
     content: `We may terminate or suspend your account for conduct that violates these Terms. Upon termination, your right to use the Service will cease immediately.`,
     status: "warning",
   },
@@ -75,8 +75,8 @@ const roadmapSections = [
     id: "changes",
     icon: RefreshCw,
     title: "Changes to Terms",
-    color: "#6366f1",
-    gradient: "from-indigo-500 to-violet-600",
+    color: "#4f46e5",
+    gradient: "from-indigo-600 to-violet-600",
     content: `We reserve the right to modify these terms at any time. We will notify users of any material changes via email or through the app.`,
     status: "info",
   },
@@ -84,9 +84,9 @@ const roadmapSections = [
     id: "contact",
     icon: Mail,
     title: "Contact Us",
-    color: "#14b8a6",
-    gradient: "from-teal-500 to-cyan-600",
-    content: `Questions about these Terms? Reach out at hello@nomli.cc. Our support team typically responds within 24-48 hours.`,
+    color: "#0d9488",
+    gradient: "from-teal-600 to-cyan-600",
+    content: `Questions about these Terms? Reach out at support@nomlimingle.com. Our team typically responds within 24–48 hours.`,
     status: "complete",
   },
 ]
@@ -107,92 +107,79 @@ function RoadmapNode({
       transition={{ duration: 0.6, delay: index * 0.1 }}
       className="relative"
     >
-      {/* Connector Line / Rope */}
       {!isLast && (
-        <div className="absolute left-1/2 top-full -translate-x-1/2 w-1 h-24 md:h-32">
-          {/* Animated rope/connection */}
+        <div className="absolute top-full left-1/2 hidden h-28 w-px -translate-x-1/2 md:block md:h-36">
           <motion.div
-            className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-transparent rounded-full"
+            className="absolute inset-0 rounded-full bg-gradient-to-b from-neutral-300 via-neutral-200 to-transparent"
             initial={{ scaleY: 0 }}
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
             style={{ transformOrigin: "top" }}
           />
-          {/* Animated dots along the rope */}
           <motion.div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white/30"
-            animate={{ y: [0, 80, 0] }}
+            className="absolute top-0 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-fuchsia-400/80"
+            animate={{ y: [0, 88, 0] }}
             transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: index * 0.2 }}
           />
         </div>
       )}
 
-      {/* Main Card */}
-      <div className={`flex items-center gap-4 md:gap-8 ${isLeft ? "flex-row" : "flex-row-reverse"} md:flex-row`}>
-        {/* Content Card */}
+      <div className={`flex items-center gap-4 md:gap-10 ${isLeft ? "flex-row" : "flex-row-reverse"} md:flex-row`}>
         <motion.div
-          className={`flex-1 max-w-md ${isLeft ? "md:text-right" : "md:text-left"} text-left`}
+          className={`max-w-md flex-1 ${isLeft ? "md:text-right" : "md:text-left"} text-left`}
           whileHover={{ scale: 1.02 }}
         >
           <motion.div
-            className="p-6 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-sm relative overflow-hidden group"
-            whileHover={{ borderColor: `${section.color}40` }}
+            className="group relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+            whileHover={{ borderColor: `${section.color}55` }}
           >
-            {/* Glow effect */}
             <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               style={{
-                background: `radial-gradient(circle at ${isLeft ? "100%" : "0%"} 50%, ${section.color}15 0%, transparent 70%)`,
+                background: `radial-gradient(circle at ${isLeft ? "100%" : "0%"} 40%, ${section.color}12 0%, transparent 65%)`,
               }}
             />
 
-            {/* Mobile icon (shown on small screens) */}
-            <div className="md:hidden flex items-center gap-3 mb-4">
+            <div className="mb-4 flex items-center gap-3 md:hidden">
               <div
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${section.gradient} flex items-center justify-center`}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${section.gradient}`}
               >
-                <section.icon className="w-5 h-5 text-white" />
+                <section.icon className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xs font-bold text-white/40">0{index + 1}</span>
+              <span className="text-xs font-semibold text-neutral-400">0{index + 1}</span>
             </div>
 
             <div className="relative">
-              <h3 className="text-xl font-bold text-white mb-3">{section.title}</h3>
-              <p className="text-white/60 leading-relaxed text-sm">{section.content}</p>
+              <h3 className="mb-3 font-serif text-xl font-medium tracking-tight text-neutral-950">{section.title}</h3>
+              <p className="text-sm leading-relaxed text-neutral-600">{section.content}</p>
             </div>
 
-            {/* Status indicator */}
             <div className={`mt-4 flex items-center gap-2 ${isLeft ? "md:justify-end" : "md:justify-start"}`}>
-              <CheckCircle2 className="w-4 h-4" style={{ color: section.color }} />
-              <span className="text-xs font-medium text-white/40 uppercase tracking-wider">{section.status}</span>
+              <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: section.color }} />
+              <span className="text-xs font-semibold tracking-wider text-neutral-500 uppercase">{section.status}</span>
             </div>
           </motion.div>
         </motion.div>
 
-        {/* Center Node */}
-        <motion.div className="relative z-10 hidden md:flex flex-col items-center" whileHover={{ scale: 1.1 }}>
-          {/* Outer glow ring */}
+        <motion.div className="relative z-10 hidden flex-col items-center md:flex" whileHover={{ scale: 1.1 }}>
           <motion.div
-            className={`absolute inset-0 rounded-full bg-gradient-to-br ${section.gradient} blur-xl opacity-50`}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+            className={`absolute inset-0 rounded-full bg-gradient-to-br ${section.gradient} opacity-40 blur-xl`}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.25, 0.45, 0.25] }}
             transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
           />
 
-          {/* Node circle */}
           <div
-            className={`relative w-16 h-16 rounded-full bg-gradient-to-br ${section.gradient} flex items-center justify-center shadow-lg`}
-            style={{ boxShadow: `0 0 30px ${section.color}40` }}
+            className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br ${section.gradient} shadow-lg`}
+            style={{ boxShadow: `0 12px 32px ${section.color}35` }}
           >
-            <section.icon className="w-7 h-7 text-white" />
+            <section.icon className="h-7 w-7 text-white" />
           </div>
 
-          {/* Step number */}
-          <span className="mt-2 text-xs font-bold text-white/40">0{index + 1}</span>
+          <span className="mt-2 text-xs font-semibold text-neutral-400">0{index + 1}</span>
         </motion.div>
 
-        {/* Empty space for alignment */}
-        <div className="flex-1 max-w-md hidden md:block" />
+        <div className="hidden max-w-md flex-1 md:block" />
       </div>
     </motion.div>
   )
@@ -204,130 +191,126 @@ export default function TermsPage() {
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
-      {/* Progress Bar */}
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[#f7f6f3] text-neutral-900">
       <motion.div
-        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-50"
+        className="fixed top-0 left-0 z-50 h-0.5 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-fuchsia-500"
         style={{ width: progressWidth }}
       />
 
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[120px] animate-pulse delay-1000" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute top-[18%] left-[-6%] h-[400px] w-[400px] rounded-full bg-fuchsia-400/11 blur-[95px]" />
+        <div className="absolute right-[-4%] bottom-[14%] h-[360px] w-[360px] rounded-full bg-pink-400/10 blur-[85px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:72px_72px] opacity-50" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0a0a0f]/80 border-b border-white/5">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <motion.div
-                className="flex items-center gap-3 text-white/70 hover:text-white transition-colors"
-                whileHover={{ x: -4 }}
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="font-medium">Back to Home</span>
-              </motion.div>
-            </Link>
-            <span className="text-sm text-white/50">Last updated: December 2025</span>
-          </div>
+      <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-[#f7f6f3]/90 backdrop-blur-md">
+        <div className="container mx-auto flex items-center justify-between px-6 py-4">
+          <Link href="/">
+            <motion.div
+              className="flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-950"
+              whileHover={{ x: -4 }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </motion.div>
+          </Link>
+          <span className="text-xs text-neutral-500 sm:text-sm">Last updated December 2025</span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative pt-24 pb-16">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-3xl mx-auto"
-          >
+      <main id="main-content">
+        <section className="relative pt-16 pb-14 sm:pt-20 sm:pb-16">
+          <div className="container mx-auto px-6">
             <motion.div
-              className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent mb-8"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="mx-auto max-w-3xl text-center"
             >
-              <FileText className="w-10 h-10 text-white" />
-            </motion.div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-              <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
+              <motion.div
+                className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-lg shadow-fuchsia-900/15"
+                animate={{ rotate: [0, 4, -4, 0] }}
+                transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <FileText className="h-10 w-10 text-white" />
+              </motion.div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-700/80">Legal</p>
+              <h1 className="mt-4 font-serif text-4xl font-medium tracking-tight text-neutral-950 sm:text-5xl lg:text-[3.25rem]">
                 Terms of Service
-              </span>
-            </h1>
-            <p className="text-xl text-white/60 leading-relaxed mb-8">
-              Your journey through our terms — clear, fair, and straightforward.
-            </p>
+              </h1>
+              <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-neutral-600">
+                A clear path through what you agree to when you use Nomli Mingle.
+              </p>
 
-            {/* Progress indicator */}
-            <div className="flex items-center justify-center gap-2">
-              {roadmapSections.map((section, i) => (
-                <motion.div
-                  key={section.id}
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: section.color }}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                />
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                {roadmapSections.map((section, i) => (
+                  <motion.div
+                    key={section.id}
+                    className="h-2.5 w-2.5 rounded-full shadow-sm ring-2 ring-white"
+                    style={{ backgroundColor: section.color }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        <section className="relative pb-24 sm:pb-32">
+          <div className="container mx-auto px-6">
+            <div className="mx-auto max-w-5xl space-y-20 md:space-y-28">
+              {roadmapSections.map((section, index) => (
+                <RoadmapNode key={section.id} section={section} index={index} total={roadmapSections.length} />
               ))}
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Roadmap Sections */}
-      <section className="relative pb-32">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto space-y-24 md:space-y-32">
-            {roadmapSections.map((section, index) => (
-              <RoadmapNode key={section.id} section={section} index={index} total={roadmapSections.length} />
-            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer CTA */}
-      <section className="relative pb-20">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-2xl mx-auto text-center"
-          >
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10">
-              <p className="text-white/60 text-lg mb-6">By using Nomli Mingle, you agree to these terms. Questions?</p>
-              <a href="mailto:hello@nomli.cc" className="text-primary hover:underline font-medium text-lg">
-                hello@nomli.cc
-              </a>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <Link href="/privacy">
-                  <motion.button
-                    className="px-6 py-3 rounded-full bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    View Privacy Policy
-                  </motion.button>
-                </Link>
-                <Link href="/">
-                  <motion.button
-                    className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Back to Nomli Mingle
-                  </motion.button>
-                </Link>
+        <section className="relative pb-20">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mx-auto max-w-2xl text-center"
+            >
+              <div className="rounded-2xl border border-neutral-200/90 bg-white p-8 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.12)] sm:p-10">
+                <p className="text-lg text-neutral-600">By using Nomli Mingle, you agree to these terms. Questions?</p>
+                <a
+                  href="mailto:support@nomlimingle.com"
+                  className="mt-3 inline-block font-medium text-fuchsia-700 underline-offset-4 transition-colors hover:text-fuchsia-900 hover:underline"
+                >
+                  support@nomlimingle.com
+                </a>
+                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+                  <Link href="/privacy">
+                    <motion.button
+                      type="button"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-6 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-50 sm:w-auto"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Privacy Policy
+                    </motion.button>
+                  </Link>
+                  <Link href="/">
+                    <motion.button
+                      type="button"
+                      className="w-full rounded-lg bg-neutral-950 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 sm:w-auto"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Back to Nomli Mingle
+                    </motion.button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+            </motion.div>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }

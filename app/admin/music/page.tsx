@@ -18,8 +18,21 @@ type Song = {
 
 const GENRES = ["Trending", "Pop", "Afrobeats", "Hip-Hop", "R&B", "Amapiano", "Gospel", "Other"]
 
+function getAccessToken() {
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("nomli_supabase_access_token") || ""
+}
+
+function adminApiHeaders(): HeadersInit {
+  const token = getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 export default function AdminMusicPage() {
   const [songs, setSongs] = useState<Song[]>([])
+  const [loadError, setLoadError] = useState("")
+  const [readOnlyCatalog, setReadOnlyCatalog] = useState(false)
+  const [catalogNotice, setCatalogNotice] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedGenre, setSelectedGenre] = useState("Trending")
@@ -33,15 +46,28 @@ export default function AdminMusicPage() {
 
   const fetchSongs = useCallback(async () => {
     setIsLoading(true)
+    setLoadError("")
+    setCatalogNotice("")
     try {
-      const response = await fetch("/api/admin/music")
-      const result = await response.json()
-      if (!response.ok || !result.success) {
-        throw new Error("Failed to load songs")
+      const response = await fetch("/api/admin/music", { headers: adminApiHeaders() })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok || result.success === false) {
+        const msg =
+          typeof result.error === "string"
+            ? result.error
+            : `Could not load catalog (${response.status}).`
+        setLoadError(msg)
+        setSongs([])
+        setReadOnlyCatalog(false)
+        return
       }
       setSongs(Array.isArray(result.data) ? result.data : [])
-    } catch (error: any) {
-      alert("Failed to load songs")
+      setReadOnlyCatalog(result.readOnly === true)
+      setCatalogNotice(typeof result.message === "string" ? result.message : "")
+    } catch {
+      setLoadError("Network error while loading songs.")
+      setSongs([])
+      setReadOnlyCatalog(false)
     } finally {
       setIsLoading(false)
     }
@@ -53,6 +79,12 @@ export default function AdminMusicPage() {
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (readOnlyCatalog && !getAccessToken()) {
+      alert(
+        "Uploads need the server service role, or deploy the admin-music Edge Function and sign in so your session is sent."
+      )
+      return
+    }
     if (!audioFile) {
       alert("Audio file is required")
       return
@@ -74,11 +106,12 @@ export default function AdminMusicPage() {
 
       const response = await fetch("/api/admin/music", {
         method: "POST",
+        headers: adminApiHeaders(),
         body: formData,
       })
-      const result = await response.json()
+      const result = await response.json().catch(() => ({}))
       if (!response.ok || !result.success) {
-        throw new Error("Upload failed")
+        throw new Error(typeof result.error === "string" ? result.error : "Upload failed")
       }
 
       setTitle("")
@@ -89,17 +122,24 @@ export default function AdminMusicPage() {
       setCoverFile(null)
       await fetchSongs()
     } catch (error: any) {
-      alert("Upload failed")
+      alert(error?.message || "Upload failed")
     } finally {
       setIsUploading(false)
     }
   }
 
   const handleDelete = async (song: Song) => {
+    if (readOnlyCatalog && !getAccessToken()) {
+      alert(
+        "Deletes need the server service role, or deploy the admin-music Edge Function and sign in so your session is sent."
+      )
+      return
+    }
     if (!confirm(`Delete "${song.title}" by ${song.artist}?`)) return
     try {
       const response = await fetch(`/api/admin/music/${song.id}`, {
         method: "DELETE",
+        headers: adminApiHeaders(),
       })
       const result = await response.json()
       if (!response.ok || !result.success) {
@@ -119,11 +159,19 @@ export default function AdminMusicPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white">
       <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Admin</span>
-          </Link>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/admin" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Admin home</span>
+            </Link>
+            <Link
+              href="/music?tab=admin"
+              className="inline-flex items-center gap-2 text-sm text-violet-300/90 hover:text-violet-200"
+            >
+              Review queue on Music
+            </Link>
+          </div>
           <button
             type="button"
             onClick={fetchSongs}
@@ -142,7 +190,28 @@ export default function AdminMusicPage() {
           </div>
           <p className="mb-5 text-sm text-white/60">Upload tracks and manage your music catalog.</p>
 
-          <form onSubmit={handleUpload} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {loadError ? (
+            <div
+              className="mb-5 rounded-xl border border-amber-500/35 bg-amber-500/10 p-4 text-sm text-amber-100/95 leading-relaxed"
+              role="alert"
+            >
+              {loadError}
+            </div>
+          ) : null}
+
+          {catalogNotice ? (
+            <div
+              className="mb-5 rounded-xl border border-sky-500/35 bg-sky-500/10 p-4 text-sm text-sky-100/95 leading-relaxed"
+              role="status"
+            >
+              {catalogNotice}
+            </div>
+          ) : null}
+
+          <form
+            onSubmit={handleUpload}
+            className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${readOnlyCatalog ? "pointer-events-none opacity-45" : ""}`}
+          >
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -197,11 +266,11 @@ export default function AdminMusicPage() {
               <div className="sm:col-span-2">
                 <button
                   type="submit"
-                  disabled={isUploading}
+                  disabled={isUploading || readOnlyCatalog}
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
                 >
                   <Upload className="h-4 w-4" />
-                  {isUploading ? "Uploading..." : "Upload track"}
+                  {readOnlyCatalog ? "Upload requires service role key" : isUploading ? "Uploading..." : "Upload track"}
                 </button>
               </div>
             </form>
@@ -255,7 +324,8 @@ export default function AdminMusicPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(song)}
-                        className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-red-400/30 px-4 text-xs text-red-300 hover:bg-red-500/10"
+                        disabled={readOnlyCatalog}
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-red-400/30 px-4 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-40 disabled:pointer-events-none"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete

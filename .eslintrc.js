@@ -7,7 +7,7 @@ module.exports = {
     'plugin:react-hooks/recommended',
   ],
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'react-native'],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -55,9 +55,5 @@ module.exports = {
     browser: true,
     node: true,
     es6: true,
-    "react-native/react-native": true,
-  },
-  globals: {
-    __DEV__: true,
   },
 }; 

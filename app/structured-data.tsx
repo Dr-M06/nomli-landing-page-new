@@ -1,27 +1,33 @@
+import { getSiteUrl } from "@/lib/site"
+
+const PLAY_STORE =
+  "https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en"
+const APP_STORE = "https://apps.apple.com/us/app/nomli-mingle/id6754324967"
+
 export function StructuredData() {
+  const site = getSiteUrl()
+
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://nomlimingle.com/#website",
-        url: "https://nomlimingle.com",
+        "@id": `${site}/#website`,
+        url: site,
         name: "Nomli Mingle",
         description:
-          "Join Nomli Mingle - A next-generation social networking app. Livestream, chat, make video calls, discover events, and build real communities.",
-        publisher: {
-          "@id": "https://nomlimingle.com/#organization",
-        },
+          "Social feed, dating in Connect, livestreams, chat, and music — one app on iOS and Android.",
+        publisher: { "@id": `${site}/#organization` },
         inLanguage: "en-US",
       },
       {
         "@type": "Organization",
-        "@id": "https://nomlimingle.com/#organization",
+        "@id": `${site}/#organization`,
         name: "Nomli Mingle",
-        url: "https://nomlimingle.com",
+        url: site,
         logo: {
           "@type": "ImageObject",
-          url: "https://nomlimingle.com/icon-512x512.png",
+          url: `${site}/icon-512x512.png`,
           width: 512,
           height: 512,
         },
@@ -30,28 +36,25 @@ export function StructuredData() {
           "https://www.tiktok.com/@nomli_mingle",
           "https://x.com/nomlimingl20270?s=11",
           "https://www.instagram.com/nomli_minglehq/",
-          "https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en",
+          PLAY_STORE,
+          APP_STORE,
         ],
         contactPoint: {
           "@type": "ContactPoint",
           email: "hello@nomli.cc",
-          contactType: "Customer Support",
+          contactType: "customer support",
           availableLanguage: ["English"],
         },
       },
       {
         "@type": "WebPage",
-        "@id": "https://nomlimingle.com/#webpage",
-        url: "https://nomlimingle.com",
-        name: "Nomli Mingle - Beyond Borders. Beyond Limits.",
+        "@id": `${site}/#webpage`,
+        url: site,
+        name: "Nomli Mingle — Social, dating & livestreams in one app",
         description:
-          "Join Nomli Mingle - Livestream, chat, make video calls, discover events, and build real communities. Connect with people who share your interests.",
-        isPartOf: {
-          "@id": "https://nomlimingle.com/#website",
-        },
-        about: {
-          "@id": "https://nomlimingle.com/#organization",
-        },
+          "Join Nomli Mingle for a full-screen social feed, Connect dating, livestreams, and chat — available on Google Play and the App Store.",
+        isPartOf: { "@id": `${site}/#website` },
+        about: { "@id": `${site}/#organization` },
         inLanguage: "en-US",
       },
       {
@@ -64,28 +67,22 @@ export function StructuredData() {
           price: "0",
           priceCurrency: "USD",
         },
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "4.5",
-          ratingCount: "50",
-        },
         description:
-          "Nomli Mingle is a next-generation social networking app designed to help you meet new people, join live events, and build real connections.",
-        downloadUrl: "https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en",
-        screenshot: "https://nomlimingle.com/og-image.png",
+          "Social feed, Connect dating, livestreams, and chat in one app. Download on Android.",
+        downloadUrl: PLAY_STORE,
+        screenshot: `${site}/og-image.png`,
         featureList: [
-          "Go Live & Earn",
-          "Private Chat & Voice Notes",
-          "Voice & Video Calls",
-          "Short Videos (Reels)",
-          "Event Creation & Discovery",
-          "Follow & Be Followed",
+          "Full-screen social feed",
+          "Connect — dating & matching",
+          "Livestreams",
+          "Chat & inbox",
+          "Music & creator tools",
         ],
       },
       {
-        "@type": "SoftwareApplication",
+        "@type": "MobileApplication",
         name: "Nomli Mingle",
-        operatingSystem: "Android",
+        operatingSystem: "iOS",
         applicationCategory: "SocialNetworkingApplication",
         offers: {
           "@type": "Offer",
@@ -93,7 +90,16 @@ export function StructuredData() {
           priceCurrency: "USD",
         },
         description:
-          "A new way to connect — livestream, chat, create, meet people with shared interests, and build real communities.",
+          "Social feed, Connect dating, livestreams, and chat in one app. Download on iPhone and iPad.",
+        downloadUrl: APP_STORE,
+        screenshot: `${site}/og-image.png`,
+        featureList: [
+          "Full-screen social feed",
+          "Connect — dating & matching",
+          "Livestreams",
+          "Chat & inbox",
+          "Music & creator tools",
+        ],
       },
     ],
   }
@@ -105,4 +111,3 @@ export function StructuredData() {
     />
   )
 }
-

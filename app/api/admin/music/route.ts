@@ -1,37 +1,93 @@
 import { NextRequest, NextResponse } from "next/server"
 import {
   hasSupabaseAdmin,
+  hasSupabaseAnonRead,
   insertSong,
   selectSongs,
+  selectSongsWithAnon,
   uploadStorageObject,
   getPublicStorageUrl,
 } from "@/lib/supabase-admin"
+import { canProxyMusicAdminToEdge } from "@/lib/music-admin-edge"
+import { proxyMusicAdminEdge } from "@/lib/music-admin-edge-proxy"
 
 const MUSIC_BUCKET = "app-music"
 
-function supabaseMissing() {
+function catalogUnavailable() {
   return NextResponse.json(
     {
-      error: "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      success: false,
+      code: "supabase_not_configured",
+      error:
+        "Set Supabase URL + anon key, and either SUPABASE_SERVICE_ROLE_KEY on this server OR deploy the Edge Function supabase/functions/admin-music and sign in (Bearer token) so Next can proxy to it. See .env.example.",
     },
-    { status: 500 }
+    { status: 503 }
+  )
+}
+
+function serviceRoleOrEdgeMessage() {
+  return NextResponse.json(
+    {
+      success: false,
+      code: "service_role_or_edge",
+      error:
+        "Uploads need SUPABASE_SERVICE_ROLE_KEY in .env.local, or deploy `admin-music` Edge Function and stay signed in (proxy uses your access token).",
+    },
+    { status: 503 }
   )
 }
 
 export async function GET(request: NextRequest) {
-  if (!hasSupabaseAdmin) return supabaseMissing()
   try {
-    const data = await selectSongs()
-    return NextResponse.json({ success: true, data: data ?? [] })
+    if (hasSupabaseAdmin) {
+      const data = await selectSongs()
+      return NextResponse.json({ success: true, data: data ?? [], readOnly: false })
+    }
+    const edgeGet = await proxyMusicAdminEdge(request, { method: "GET" })
+    if (edgeGet) return edgeGet
+    if (hasSupabaseAnonRead) {
+      const data = await selectSongsWithAnon()
+      return NextResponse.json({
+        success: true,
+        data: data ?? [],
+        readOnly: true,
+        message:
+          "Listed with anon key only. For uploads/deletes: add SUPABASE_SERVICE_ROLE_KEY on the server, or deploy Edge Function admin-music and open this page signed in as an admin.",
+      })
+    }
+    return catalogUnavailable()
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Failed to load songs" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: error?.message || "Failed to load songs" },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
-  if (!hasSupabaseAdmin) return supabaseMissing()
+  if (hasSupabaseAdmin) {
+    const form = await request.formData()
+    return handlePostWithServiceRole(form)
+  }
 
-  const form = await request.formData()
+  if (canProxyMusicAdminToEdge()) {
+    const form = await request.formData()
+    const proxied = await proxyMusicAdminEdge(request, { method: "POST", body: form })
+    if (proxied) return proxied
+    return NextResponse.json(
+      {
+        success: false,
+        code: "auth_required",
+        error: "Sign in for Edge admin uploads (Bearer token), or set SUPABASE_SERVICE_ROLE_KEY on the server.",
+      },
+      { status: 401 }
+    )
+  }
+
+  return serviceRoleOrEdgeMessage()
+}
+
+async function handlePostWithServiceRole(form: FormData) {
   const audioFile = form.get("audioFile")
   const coverFile = form.get("coverFile")
   const title = String(form.get("title") || "").trim()

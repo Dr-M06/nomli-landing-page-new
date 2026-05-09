@@ -10,8 +10,8 @@ const roadmapSections = [
     id: "collection",
     icon: Database,
     title: "Information We Collect",
-    color: "#8b5cf6",
-    gradient: "from-violet-500 to-purple-600",
+    color: "#c026d3",
+    gradient: "from-fuchsia-600 to-pink-600",
     items: [
       "Account info (name, email, photo)",
       "Content you create & share",
@@ -24,8 +24,8 @@ const roadmapSections = [
     id: "usage",
     icon: Eye,
     title: "How We Use Your Data",
-    color: "#06b6d4",
-    gradient: "from-cyan-500 to-blue-600",
+    color: "#0891b2",
+    gradient: "from-cyan-600 to-sky-600",
     items: ["Personalize your experience", "Connect you with others", "Improve our features", "Keep the platform safe"],
     milestone: "Processing",
   },
@@ -33,8 +33,8 @@ const roadmapSections = [
     id: "sharing",
     icon: Share2,
     title: "Data Sharing",
-    color: "#10b981",
-    gradient: "from-emerald-500 to-green-600",
+    color: "#059669",
+    gradient: "from-emerald-600 to-teal-600",
     items: ["Never sold to advertisers", "Shared only with consent", "Service providers only", "Legal requirements"],
     milestone: "Distribution",
   },
@@ -42,8 +42,8 @@ const roadmapSections = [
     id: "security",
     icon: Shield,
     title: "Security Measures",
-    color: "#f59e0b",
-    gradient: "from-amber-500 to-orange-600",
+    color: "#d97706",
+    gradient: "from-amber-600 to-orange-600",
     items: ["End-to-end encryption", "24/7 monitoring", "Regular security audits", "Two-factor auth available"],
     milestone: "Protection",
   },
@@ -51,8 +51,8 @@ const roadmapSections = [
     id: "international",
     icon: Globe,
     title: "International Transfers",
-    color: "#ec4899",
-    gradient: "from-pink-500 to-rose-600",
+    color: "#db2777",
+    gradient: "from-pink-600 to-rose-600",
     items: ["GDPR compliant", "Standard contracts", "Certified facilities", "Transparent policies"],
     milestone: "Global",
   },
@@ -60,8 +60,8 @@ const roadmapSections = [
     id: "deletion",
     icon: Trash2,
     title: "Data Deletion",
-    color: "#ef4444",
-    gradient: "from-red-500 to-rose-600",
+    color: "#dc2626",
+    gradient: "from-red-600 to-rose-600",
     items: ["Delete anytime", "Download your data", "30-day recovery", "Permanent after confirm"],
     milestone: "Control",
   },
@@ -69,8 +69,8 @@ const roadmapSections = [
     id: "cookies",
     icon: Lock,
     title: "No Tracking, No Cookies",
-    color: "#6366f1",
-    gradient: "from-indigo-500 to-violet-600",
+    color: "#4f46e5",
+    gradient: "from-indigo-600 to-violet-600",
     items: ["We don't use cookies", "We don't track users", "No analytics tracking", "Privacy by design"],
     milestone: "Privacy",
   },
@@ -78,8 +78,8 @@ const roadmapSections = [
     id: "updates",
     icon: Bell,
     title: "Policy Updates",
-    color: "#14b8a6",
-    gradient: "from-teal-500 to-cyan-600",
+    color: "#0d9488",
+    gradient: "from-teal-600 to-cyan-600",
     items: ["Email notifications", "In-app alerts", "30-day notice", "Changes summarized"],
     milestone: "Updates",
   },
@@ -100,20 +100,18 @@ function RoadmapCard({
       transition={{ duration: 0.6, delay: index * 0.1 }}
       className="relative"
     >
-      {/* Horizontal connector line */}
       {!isLast && (
-        <div className="absolute top-1/2 left-full w-full h-0.5 hidden lg:block">
+        <div className="absolute top-1/2 left-full z-0 hidden h-0.5 w-full lg:block">
           <motion.div
-            className="h-full bg-gradient-to-r from-white/20 to-transparent"
+            className="h-full bg-gradient-to-r from-neutral-300/80 to-transparent"
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
             style={{ transformOrigin: "left" }}
           />
-          {/* Animated particle */}
           <motion.div
-            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/50"
+            className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-fuchsia-400/70"
             animate={{ x: [0, 100, 0], opacity: [0, 1, 0] }}
             transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, delay: index * 0.3 }}
           />
@@ -121,58 +119,55 @@ function RoadmapCard({
       )}
 
       <motion.div
-        className="group relative p-6 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-sm overflow-hidden h-full"
-        whileHover={{ scale: 1.02, borderColor: `${section.color}40`, y: -5 }}
+        className="group relative h-full overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+        whileHover={{ scale: 1.02, borderColor: `${section.color}55`, y: -5 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Top glow */}
         <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           style={{
-            background: `radial-gradient(circle at 50% 0%, ${section.color}20 0%, transparent 60%)`,
+            background: `radial-gradient(circle at 50% 0%, ${section.color}18 0%, transparent 55%)`,
           }}
         />
 
-        {/* Milestone badge */}
         <div className="absolute top-4 right-4">
           <span
-            className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-            style={{ backgroundColor: `${section.color}20`, color: section.color }}
+            className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
+            style={{ backgroundColor: `${section.color}14`, color: section.color }}
           >
             {section.milestone}
           </span>
         </div>
 
-        {/* Icon */}
         <motion.div
-          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${section.gradient} flex items-center justify-center mb-4 shadow-lg`}
-          style={{ boxShadow: `0 10px 30px ${section.color}30` }}
+          className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${section.gradient} shadow-lg`}
+          style={{ boxShadow: `0 12px 28px ${section.color}2a` }}
           whileHover={{ rotate: 5, scale: 1.1 }}
         >
-          <section.icon className="w-7 h-7 text-white" />
+          <section.icon className="h-7 w-7 text-white" />
         </motion.div>
 
-        {/* Content */}
-        <h3 className="text-xl font-bold text-white mb-4 pr-20">{section.title}</h3>
+        <h3 className="mb-4 pr-20 font-serif text-xl font-medium tracking-tight text-neutral-950">{section.title}</h3>
 
         <ul className="space-y-2">
           {section.items.map((item, i) => (
             <motion.li
               key={i}
-              className="flex items-center gap-2 text-white/60 text-sm"
+              className="flex items-center gap-2 text-sm leading-relaxed text-neutral-600"
               initial={{ opacity: 0, x: -10 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 + i * 0.05 }}
             >
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: section.color }} />
+              <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: section.color }} />
               {item}
             </motion.li>
           ))}
         </ul>
 
-        {/* Step number */}
-        <div className="absolute bottom-4 right-4 text-5xl font-bold text-white/[0.03]">0{index + 1}</div>
+        <div className="pointer-events-none absolute bottom-3 right-4 font-serif text-5xl font-medium text-neutral-950/[0.06]">
+          0{index + 1}
+        </div>
       </motion.div>
     </motion.div>
   )
@@ -184,168 +179,161 @@ export default function PrivacyPage() {
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
-      {/* Progress Bar */}
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[#f7f6f3] text-neutral-900">
       <motion.div
-        className="fixed top-0 left-0 h-1 bg-gradient-to-r from-accent via-primary to-accent z-50"
+        className="fixed top-0 left-0 z-50 h-0.5 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-fuchsia-500"
         style={{ width: progressWidth }}
       />
 
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[180px] animate-pulse" />
-        <div className="absolute bottom-1/3 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] animate-pulse delay-700" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute top-[12%] right-[-5%] h-[420px] w-[420px] rounded-full bg-fuchsia-400/12 blur-[100px]" />
+        <div className="absolute bottom-[8%] left-[-8%] h-[380px] w-[380px] rounded-full bg-pink-400/10 blur-[90px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:72px_72px] opacity-50" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0a0a0f]/80 border-b border-white/5">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <motion.div
-                className="flex items-center gap-3 text-white/70 hover:text-white transition-colors"
-                whileHover={{ x: -4 }}
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="font-medium">Back to Home</span>
-              </motion.div>
-            </Link>
-            <span className="text-sm text-white/50">Effective: December 2025</span>
-          </div>
+      <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-[#f7f6f3]/90 backdrop-blur-md">
+        <div className="container mx-auto flex items-center justify-between px-6 py-4">
+          <Link href="/">
+            <motion.div
+              className="flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-950"
+              whileHover={{ x: -4 }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </motion.div>
+          </Link>
+          <span className="text-xs text-neutral-500 sm:text-sm">Effective December 2025</span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative pt-24 pb-16">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-3xl mx-auto"
-          >
+      <main id="main-content">
+        <section className="relative pt-16 pb-14 sm:pt-20 sm:pb-16">
+          <div className="container mx-auto px-6">
             <motion.div
-              className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-accent to-primary mb-8 relative"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="mx-auto max-w-3xl text-center"
             >
-              <Lock className="w-10 h-10 text-white" />
               <motion.div
-                className="absolute -top-1 -right-1"
-                animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                className="relative mb-8 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-lg shadow-fuchsia-900/15"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
               >
-                <Sparkles className="w-5 h-5 text-accent" />
-              </motion.div>
-            </motion.div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-              <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-                Privacy Policy
-              </span>
-            </h1>
-            <p className="text-xl text-white/60 leading-relaxed mb-8">
-              Your data journey — from collection to protection. No legal jargon, just straight talk.
-            </p>
-
-            {/* Trust badges */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {["GDPR Compliant", "End-to-End Encrypted", "No Data Sales"].map((badge, i) => (
-                <motion.span
-                  key={badge}
-                  className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/60 text-sm font-medium"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + i * 0.1 }}
-                >
-                  {badge}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Roadmap Grid */}
-      <section className="relative pb-32">
-        <div className="container mx-auto px-6">
-          {/* Connected line visualization at the top */}
-          <div className="max-w-6xl mx-auto mb-16">
-            <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 via-cyan-500 via-emerald-500 via-amber-500 via-pink-500 via-red-500 via-indigo-500 to-teal-500"
-                initial={{ width: "0%" }}
-                whileInView={{ width: "100%" }}
-                viewport={{ once: true }}
-                transition={{ duration: 2, ease: "easeOut" }}
-              />
-              {/* Nodes on the progress line */}
-              {roadmapSections.map((section, i) => (
+                <Lock className="h-10 w-10 text-white" />
                 <motion.div
-                  key={section.id}
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-background"
-                  style={{
-                    left: `${(i / (roadmapSections.length - 1)) * 100}%`,
-                    backgroundColor: section.color,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
+                  className="absolute -top-1 -right-1"
+                  animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                >
+                  <Sparkles className="h-5 w-5 text-amber-200" />
+                </motion.div>
+              </motion.div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-fuchsia-700/80">Legal</p>
+              <h1 className="mt-4 font-serif text-4xl font-medium tracking-tight text-neutral-950 sm:text-5xl lg:text-[3.25rem]">
+                Privacy Policy
+              </h1>
+              <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-neutral-600">
+                Your data journey—from collection to protection. Plain language, no filler.
+              </p>
+
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {["GDPR aligned", "Encryption in transit", "No data sales"].map((badge, i) => (
+                  <motion.span
+                    key={badge}
+                    className="rounded-full border border-neutral-200/90 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                  >
+                    {badge}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        <section className="relative pb-24 sm:pb-32">
+          <div className="container mx-auto px-6">
+            <div className="mx-auto mb-14 max-w-6xl">
+              <div className="relative h-2 overflow-hidden rounded-full bg-neutral-200/80">
+                <motion.div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-fuchsia-500 via-cyan-500 via-emerald-500 via-amber-500 via-pink-500 via-red-500 via-indigo-500 to-teal-500"
+                  initial={{ width: "0%" }}
+                  whileInView={{ width: "100%" }}
                   viewport={{ once: true }}
-                  transition={{ delay: (i / roadmapSections.length) * 2 }}
+                  transition={{ duration: 2, ease: "easeOut" }}
                 />
-              ))}
-            </div>
-          </div>
-
-          {/* Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {roadmapSections.map((section, index) => (
-              <RoadmapCard key={section.id} section={section} index={index} total={roadmapSections.length} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer CTA */}
-      <section className="relative pb-20">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-2xl mx-auto text-center"
-          >
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10">
-              <p className="text-white/60 text-lg mb-4">Questions about your privacy?</p>
-              <a href="mailto:hello@nomli.cc" className="text-primary hover:underline font-semibold text-xl">
-                hello@nomli.cc
-              </a>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <Link href="/terms">
-                  <motion.button
-                    className="px-6 py-3 rounded-full bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    View Terms of Service
-                  </motion.button>
-                </Link>
-                <Link href="/">
-                  <motion.button
-                    className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white font-semibold"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Back to Nomli Mingle
-                  </motion.button>
-                </Link>
+                {roadmapSections.map((section, i) => (
+                  <motion.div
+                    key={section.id}
+                    className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+                    style={{
+                      left: `${(i / (roadmapSections.length - 1)) * 100}%`,
+                      backgroundColor: section.color,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (i / roadmapSections.length) * 2 }}
+                  />
+                ))}
               </div>
             </div>
-          </motion.div>
-        </div>
-      </section>
+
+            <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {roadmapSections.map((section, index) => (
+                <RoadmapCard key={section.id} section={section} index={index} total={roadmapSections.length} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative pb-20">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mx-auto max-w-2xl text-center"
+            >
+              <div className="rounded-2xl border border-neutral-200/90 bg-white p-8 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.12)] sm:p-10">
+                <p className="text-lg text-neutral-600">Questions about your privacy?</p>
+                <a
+                  href="mailto:support@nomlimingle.com"
+                  className="mt-3 inline-block font-medium text-fuchsia-700 underline-offset-4 transition-colors hover:text-fuchsia-900 hover:underline"
+                >
+                  support@nomlimingle.com
+                </a>
+                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+                  <Link href="/terms">
+                    <motion.button
+                      type="button"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-6 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-50 sm:w-auto"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Terms of Service
+                    </motion.button>
+                  </Link>
+                  <Link href="/">
+                    <motion.button
+                      type="button"
+                      className="w-full rounded-lg bg-neutral-950 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 sm:w-auto"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Back to Nomli Mingle
+                    </motion.button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
