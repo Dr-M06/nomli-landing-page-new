@@ -84,9 +84,6 @@ export function Header({ variant = "default" }: { variant?: HeaderVariant }) {
           )}
 
           <nav className="hidden items-center gap-8 lg:flex">
-            <a href="https://wallet.nomlimingle.com" target="_blank" rel="noopener noreferrer" className={linkClass}>
-              Wallet
-            </a>
             <Link href="/music" className={linkClass}>
               Music
             </Link>
@@ -141,19 +138,6 @@ export function Header({ variant = "default" }: { variant?: HeaderVariant }) {
                   : "flex max-h-[70dvh] flex-col gap-2 overflow-y-auto rounded-2xl border border-white/15 bg-gradient-to-b from-zinc-900/98 to-black/95 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-md"
               }
             >
-              <a
-                href="https://wallet.nomlimingle.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={
-                  isLightChrome
-                    ? "rounded-lg px-2 py-2 text-base font-medium text-neutral-800 hover:bg-neutral-100"
-                    : "rounded-lg px-2 py-1.5 text-[20px] font-semibold leading-tight text-white/95 hover:bg-white/10"
-                }
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Wallet
-              </a>
               <Link
                 href="/music"
                 className={

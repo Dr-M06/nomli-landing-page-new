@@ -22,10 +22,7 @@ const columns = [
   },
   {
     title: "Support",
-    links: [
-      { label: "Email", href: "mailto:support@nomlimingle.com" },
-      { label: "Wallet", href: "https://wallet.nomlimingle.com", external: true },
-    ],
+    links: [{ label: "Email", href: "mailto:support@nomlimingle.com" }],
   },
 ] as const
 
