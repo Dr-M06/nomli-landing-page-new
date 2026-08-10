@@ -6,7 +6,6 @@ const columns = [
     title: "Product",
     links: [
       { label: "Home", href: "/" },
-      { label: "Music", href: "/music" },
       { label: "Download", href: "/#download" },
     ],
   },
@@ -39,7 +38,7 @@ export function FooterSimple() {
               <span className="font-semibold tracking-tight text-neutral-950">Nomli Mingle</span>
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-neutral-600">
-              Communities, live, chat, and music in one calm app—editorial restraint over noise.
+              Social feed and chat in one calm app—clarity over noise.
             </p>
           </div>
           {columns.map((col) => (

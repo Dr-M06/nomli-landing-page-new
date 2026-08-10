@@ -1,7 +1,7 @@
 {
-  "name": "Nomli Mingle — Social, dating & livestreams",
+  "name": "Nomli Mingle — Social feed & chat",
   "short_name": "Nomli Mingle",
-  "description": "Social feed, Connect dating, livestreams, and chat in one app. Free on iOS and Android.",
+  "description": "Social feed and chat in one app. Free on iOS and Android.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f6f3",
@@ -21,8 +21,7 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["social", "entertainment", "lifestyle"],
+  "categories": ["social", "lifestyle"],
   "lang": "en-US",
   "dir": "ltr"
 }
-

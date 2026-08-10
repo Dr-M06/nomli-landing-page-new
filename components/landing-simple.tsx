@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Heart, Radio, Video } from "lucide-react"
+import { ArrowRight, MessageCircle, Users2, Video } from "lucide-react"
 import { LandingDownloadButtons } from "@/components/landing-download-buttons"
 
 const PLAY_STORE =
@@ -10,18 +10,18 @@ const APP_STORE = "https://apps.apple.com/us/app/nomli-mingle/id6754324967"
 const pillars = [
   {
     icon: Video,
-    title: "Social that owns the screen",
+    title: "A feed that owns the screen",
     body: "Full-bleed posts, For You and Following, reactions where your thumb already is—tap in and see what you missed.",
   },
   {
-    icon: Heart,
-    title: "Dating in Connect",
-    body: "Match and message next to your feed—the same people you see going live are the ones you could be talking to.",
+    icon: MessageCircle,
+    title: "Chat that stays close",
+    body: "DMs with photos, voice notes, and the people from your feed—without bouncing to another app.",
   },
   {
-    icon: Radio,
-    title: "Live while it’s happening",
-    body: "Rooms spin up every night; co-hosts jump in, chat flies, and the moment doesn’t wait for a second app.",
+    icon: Users2,
+    title: "People & communities",
+    body: "Find profiles, follow creators, and grow circles that feel intentional—not algorithmically noisy.",
   },
 ]
 
@@ -51,7 +51,6 @@ function HeroProductPreview() {
 export function LandingSimple() {
   return (
     <div id="main-content" className="bg-[#f7f6f3] text-neutral-900 antialiased">
-      {/* Hero — matches mobile social experience */}
       <section className="relative overflow-hidden border-b border-white/10 bg-[#070708] pt-28 pb-20 text-white sm:pt-32 sm:pb-28">
         <div
           aria-hidden
@@ -69,14 +68,14 @@ export function LandingSimple() {
                 <span className="text-fuchsia-300"> · Mingle</span>
               </p>
               <h1 className="mt-5 text-[2.25rem] font-bold leading-[1.08] tracking-tight sm:text-5xl sm:leading-[1.05] lg:text-[3.25rem]">
-                Social, dating, livestreams—<span className="text-white/90">one home row,</span>{" "}
+                Social feed &amp; chat—<span className="text-white/90">one calm home,</span>{" "}
                 <span className="bg-gradient-to-r from-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
                   tap in.
                 </span>
               </h1>
               <p className="mt-6 text-lg leading-relaxed text-white/65 sm:text-[1.125rem]">
-                Your friends are already in the feed. Matches are happening in Connect. Someone just went live while you
-                were reading this—download Nomli Mingle and catch the next one.
+                Posts, stories, and real conversations in one place—download Nomli Mingle and join the people already in
+                the feed.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-3">
                 <Link
@@ -96,15 +95,15 @@ export function LandingSimple() {
               <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/45">
                 <span className="inline-flex items-center gap-2">
                   <Video className="h-4 w-4 text-fuchsia-400/80" aria-hidden />
-                  Social · feed
+                  Feed
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-fuchsia-400/80" aria-hidden />
-                  Dating · Connect
+                  <MessageCircle className="h-4 w-4 text-fuchsia-400/80" aria-hidden />
+                  Chat
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <Radio className="h-4 w-4 text-fuchsia-400/80" aria-hidden />
-                  Livestreams
+                  <Users2 className="h-4 w-4 text-fuchsia-400/80" aria-hidden />
+                  People
                 </span>
               </div>
             </div>
@@ -113,21 +112,19 @@ export function LandingSimple() {
         </div>
       </section>
 
-      {/* Pillars */}
       <section className="border-b border-neutral-200/45 bg-white py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-neutral-950 sm:text-4xl">
-                Social, dates, and going live
+                Feed, chat, and people
               </h2>
               <p className="mt-3 text-neutral-600">
-                The feed, Connect, and livestreams sit on one home row—so you’re never stuck outside the conversation
-                when something pops off.
+                Everything you need to share and stay close—without the clutter of five separate apps.
               </p>
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-neutral-500 sm:text-right">
-              Three lanes, one app: scroll social, slide into Connect, jump on stage—without losing your place.
+              Scroll the feed, open a chat, find someone new—tabs you learn once, then move at full speed.
             </p>
           </div>
           <div className="mt-14 grid gap-5 sm:grid-cols-3">
@@ -146,7 +143,6 @@ export function LandingSimple() {
         </div>
       </section>
 
-      {/* Band */}
       <section className="relative overflow-hidden border-b border-white/10 bg-[#0c0c0e] py-16 text-neutral-50 sm:py-20">
         <div
           aria-hidden
@@ -167,13 +163,12 @@ export function LandingSimple() {
             </div>
             <div className="text-center">
               <p className="font-serif text-3xl font-medium tabular-nums text-white sm:text-4xl">∞</p>
-              <p className="mt-2 text-sm text-white/50">Social · lives</p>
+              <p className="mt-2 text-sm text-white/50">Feed · chat</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Split */}
       <section className="border-b border-neutral-200/45 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-20 lg:items-center">
@@ -182,13 +177,13 @@ export function LandingSimple() {
                 Built so you don&apos;t miss the moment
               </h2>
               <p className="mt-5 max-w-md text-[17px] leading-relaxed text-neutral-600">
-                Fewer dead ends, faster paths to the good stuff—so when a live starts or a match replies, you&apos;re
+                Fewer dead ends, faster paths to the good stuff—so when someone replies or a post drops, you&apos;re
                 already in the app.
               </p>
               <ul className="mt-10 space-y-4 border-t border-neutral-200/45 pt-10">
                 {[
                   "Social loads full-screen—no tiny previews while everyone else is already reacting.",
-                  "Social, Connect, post, inbox, profile—tabs you learn once, then move at full speed.",
+                  "Feed, create, inbox, profile—tabs you learn once, then move at full speed.",
                   "No tricks with your account—you’re in control of who sees you and how you show up.",
                 ].map((line) => (
                   <li key={line} className="flex gap-3 text-sm leading-relaxed text-neutral-700">
@@ -207,8 +202,8 @@ export function LandingSimple() {
             <div className="relative">
               <div className="rounded-md border border-neutral-200/50 bg-white p-10 sm:p-12">
                 <blockquote className="font-serif text-2xl font-medium leading-snug tracking-tight text-neutral-900 sm:text-[1.65rem]">
-                  &ldquo;I kept seeing Nomli in group chats before I downloaded—turns out the live was half my contacts
-                  already.&rdquo;
+                  &ldquo;I kept seeing Nomli in group chats before I downloaded—turns out half my contacts were already
+                  posting here.&rdquo;
                 </blockquote>
                 <p className="mt-8 text-sm text-neutral-500">— Early member</p>
               </div>
@@ -217,40 +212,36 @@ export function LandingSimple() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="font-serif text-3xl font-medium tracking-tight text-neutral-950 sm:text-4xl">Voices</h2>
           <p className="mt-3 max-w-lg text-neutral-600">
-            People who got tired of hearing &ldquo;you had to be there&rdquo;—now they are.
+            People who got tired of juggling apps—now they just open Nomli.
           </p>
           <div className="mt-12 grid gap-6 md:grid-cols-2">
             <figure className="rounded-md border border-neutral-200/50 bg-white p-8 sm:p-10">
               <blockquote className="text-[17px] leading-relaxed text-neutral-700">
-                I opened it for one post and stayed for three lives. My group thread went quiet because everyone moved
-                here.
+                I opened it for one post and stayed. My group thread went quiet because everyone moved here.
               </blockquote>
               <figcaption className="mt-8 text-sm font-medium text-neutral-900">Early member</figcaption>
               <p className="text-xs text-neutral-500">Social</p>
             </figure>
             <figure className="rounded-md border border-neutral-200/50 bg-white p-8 sm:p-10">
               <blockquote className="text-[17px] leading-relaxed text-neutral-700">
-                Notifications actually mean something—when I go live, people show up. That didn&apos;t happen on the apps I
-                left behind.
+                Chat and the feed in one place finally clicked. I stopped bouncing between three apps just to keep up.
               </blockquote>
-              <figcaption className="mt-8 text-sm font-medium text-neutral-900">Creator</figcaption>
-              <p className="text-xs text-neutral-500">Live</p>
+              <figcaption className="mt-8 text-sm font-medium text-neutral-900">Member</figcaption>
+              <p className="text-xs text-neutral-500">Chat</p>
             </figure>
           </div>
         </div>
       </section>
 
-      {/* Download */}
       <section id="download" className="border-t border-neutral-200/45 bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <h2 className="font-serif text-3xl font-medium tracking-tight text-neutral-950 sm:text-4xl">Download</h2>
           <p className="mx-auto mt-4 max-w-md text-neutral-600">
-            Same app on iOS and Android—install now so the next live, match, or drop in the feed doesn&apos;t pass you by.
+            Same app on iOS and Android—install now so the next post or message doesn&apos;t pass you by.
           </p>
           <LandingDownloadButtons playStoreUrl={PLAY_STORE} appStoreUrl={APP_STORE} />
         </div>

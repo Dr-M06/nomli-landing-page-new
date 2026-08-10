@@ -8,9 +8,9 @@ import { getSiteUrl } from "@/lib/site"
 import "./globals.css"
 
 const siteUrl = getSiteUrl()
-const defaultTitle = "Nomli Mingle — Social, dating & livestreams in one app"
+const defaultTitle = "Nomli Mingle — Social feed & chat in one app"
 const defaultDescription =
-  "Nomli Mingle brings your social feed, Connect dating, and livestreams into one home row. Free on iOS and Android — join your crew on Nomli."
+  "Nomli Mingle brings your social feed and chat into one home. Free on iOS and Android — join your crew on Nomli."
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,18 +32,13 @@ export const metadata: Metadata = {
     "Nomli Mingle",
     "nomli",
     "social app",
-    "social dating app",
-    "livestream app",
-    "video chat",
-    "community app",
     "social networking",
+    "community app",
+    "group chat",
     "meet new people",
     "online communities",
-    "livestreaming",
-    "group chat",
     "Android social app",
     "iOS social app",
-    "dating app",
   ],
   authors: [{ name: "Nomli Mingle", url: siteUrl }],
   creator: "Nomli Mingle",
@@ -81,7 +76,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Nomli Mingle — social, dating, and livestreams in one app",
+        alt: "Nomli Mingle — social feed and chat in one app",
         type: "image/png",
       },
     ],

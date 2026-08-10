@@ -37,6 +37,12 @@ const nextConfig = {
     return [
       { source: "/social", destination: "/", permanent: true },
       { source: "/social/:path*", destination: "/", permanent: true },
+      { source: "/music", destination: "/", permanent: true },
+      { source: "/music/:path*", destination: "/", permanent: true },
+      { source: "/login", destination: "/", permanent: true },
+      { source: "/login/:path*", destination: "/", permanent: true },
+      { source: "/auth", destination: "/", permanent: true },
+      { source: "/auth/:path*", destination: "/", permanent: true },
     ]
   },
   async headers() {

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { FooterSimple } from "@/components/footer-simple"
-import { Globe2, Radio, Users2, ShieldCheck } from "lucide-react"
+import { Globe2, MessageCircle, Users2, ShieldCheck } from "lucide-react"
 
 const PLAY_STORE =
   "https://play.google.com/store/apps/details?id=com.nomli.mingle2&hl=en"
@@ -11,12 +11,12 @@ const pillars = [
   {
     icon: Globe2,
     title: "Discovery",
-    detail: "Meet people near you or across the world through interests, communities, and shared moments.",
+    detail: "Find people and communities through interests, shared posts, and moments that feel real.",
   },
   {
-    icon: Radio,
-    title: "Live",
-    detail: "Go live, host guests, and build real-time experiences with tools that stay out of the way.",
+    icon: MessageCircle,
+    title: "Chat",
+    detail: "DMs with photos, voice notes, and conversations that stay close to your feed.",
   },
   {
     icon: Users2,
@@ -43,19 +43,18 @@ export default function AboutPage() {
               Nomli Mingle, in plain language.
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-neutral-600 sm:text-[1.125rem]">
-              We combine dating, livestreaming, chat, music, and communities in one app—with a layout that favors clarity
-              over clutter.
+              We combine a social feed, chat, and communities in one app—with a layout that favors clarity over clutter.
             </p>
             <p className="mt-4 text-lg leading-relaxed text-neutral-600 sm:text-[1.125rem]">
-              Whether you want to meet people, share moments, or grow an audience, the product is built to feel
-              deliberate, not like a pile of features.
+              Whether you want to share moments, stay close to friends, or find your circle, the product is built to feel
+              deliberate—not like a pile of features.
             </p>
           </div>
 
           <div className="mt-12 rounded-2xl border border-neutral-200/80 bg-white p-8 shadow-sm sm:mt-14 sm:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Mission</p>
             <p className="mt-4 font-serif text-xl font-medium leading-snug text-neutral-950 sm:text-2xl">
-              Help people meet, create, and earn—safely, honestly, and across borders.
+              Help people connect and create—safely, honestly, and across borders.
             </p>
           </div>
 

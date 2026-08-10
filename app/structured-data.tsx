@@ -15,8 +15,7 @@ export function StructuredData() {
         "@id": `${site}/#website`,
         url: site,
         name: "Nomli Mingle",
-        description:
-          "Social feed, dating in Connect, livestreams, chat, and music — one app on iOS and Android.",
+        description: "Social feed and chat in one app — free on iOS and Android.",
         publisher: { "@id": `${site}/#organization` },
         inLanguage: "en-US",
       },
@@ -50,9 +49,9 @@ export function StructuredData() {
         "@type": "WebPage",
         "@id": `${site}/#webpage`,
         url: site,
-        name: "Nomli Mingle — Social, dating & livestreams in one app",
+        name: "Nomli Mingle — Social feed & chat in one app",
         description:
-          "Join Nomli Mingle for a full-screen social feed, Connect dating, livestreams, and chat — available on Google Play and the App Store.",
+          "Join Nomli Mingle for a full-screen social feed and chat — available on Google Play and the App Store.",
         isPartOf: { "@id": `${site}/#website` },
         about: { "@id": `${site}/#organization` },
         inLanguage: "en-US",
@@ -67,17 +66,10 @@ export function StructuredData() {
           price: "0",
           priceCurrency: "USD",
         },
-        description:
-          "Social feed, Connect dating, livestreams, and chat in one app. Download on Android.",
+        description: "Social feed and chat in one app. Download on Android.",
         downloadUrl: PLAY_STORE,
         screenshot: `${site}/og-image.png`,
-        featureList: [
-          "Full-screen social feed",
-          "Connect — dating & matching",
-          "Livestreams",
-          "Chat & inbox",
-          "Music & creator tools",
-        ],
+        featureList: ["Full-screen social feed", "Chat & inbox", "Communities & profiles"],
       },
       {
         "@type": "MobileApplication",
@@ -89,17 +81,10 @@ export function StructuredData() {
           price: "0",
           priceCurrency: "USD",
         },
-        description:
-          "Social feed, Connect dating, livestreams, and chat in one app. Download on iPhone and iPad.",
+        description: "Social feed and chat in one app. Download on iPhone and iPad.",
         downloadUrl: APP_STORE,
         screenshot: `${site}/og-image.png`,
-        featureList: [
-          "Full-screen social feed",
-          "Connect — dating & matching",
-          "Livestreams",
-          "Chat & inbox",
-          "Music & creator tools",
-        ],
+        featureList: ["Full-screen social feed", "Chat & inbox", "Communities & profiles"],
       },
     ],
   }
