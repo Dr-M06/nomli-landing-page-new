@@ -1,8 +1,11 @@
 # Nomli landing (static)
 
-Marketing site for [nomlimingle.com](https://www.nomlimingle.com/) — feed, chat, and local Market. Rated **16+**.
+Marketing site for [nomlimingle.com](https://www.nomlimingle.com/) — feed, chat, audio calls, and local Market.
 
-This folder **is** the production landing site (replaces the old Next.js `nomli-landing-page-new` app).
+**Repo:** [Dr-M06/nomli-landing-page-new](https://github.com/Dr-M06/nomli-landing-page-new)  
+**Source in app monorepo:** `nomli-landing/` (copy here when deploying)
+
+This is a static HTML site. The old Next.js / React app was removed.
 
 ## Brand
 
@@ -19,30 +22,22 @@ This folder **is** the production landing site (replaces the old Next.js `nomli-
 | `terms.html` | `/terms` |
 | `privacy.html` | `/privacy` |
 
-## Crawler / ads verification (keep on deploy)
+## Crawler / ads verification
 
 | File | Purpose |
 |------|---------|
 | `robots.txt` | AdsBot-Google + Googlebot + sitemap |
 | `sitemap.xml` | Indexable URLs |
 | `index.html` JSON-LD | Organization / WebSite / MobileApplication |
-| `app-ads.txt` | AdMob / ads publisher line |
-| `manifest.json` | PWA / install metadata |
-| `_headers` / `vercel.json` | Content-Type + pretty URL rewrites |
-
-No Universal Links / App Links — deep linking is not used.
-
-## Local preview
-
-```bash
-cd nomli-landing
-python3 -m http.server 8787
-# open http://127.0.0.1:8787
-```
+| `app-ads.txt` | AdMob publisher line |
+| `manifest.json` | PWA metadata |
 
 ## Deploy
 
-Point Vercel / Cloudflare Pages / static host at this folder (not Next.js).
+Vercel should use **framework: Other / null** (see `vercel.json`). Point the project root at this repo — no `npm install` / Next build.
 
-- **Vercel:** `vercel.json` rewrites `/terms` & `/privacy`
-- **Cloudflare Pages:** `_redirects` + `_headers`
+```bash
+# from nomliv2
+rsync -a --delete nomli-landing/ ../nomli-landing-page-new/ --exclude .git
+cd ../nomli-landing-page-new && git add -A && git commit -m "Update landing" && git push
+```
