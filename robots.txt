@@ -1,0 +1,22 @@
+# https://www.robotstxt.org/robotstxt.html
+# Keep AdsBot / Googlebot able to crawl marketing + legal pages.
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+
+Host: www.nomlimingle.com
+Sitemap: https://www.nomlimingle.com/sitemap.xml

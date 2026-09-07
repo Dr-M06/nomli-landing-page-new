@@ -1,0 +1,16 @@
+/terms    /terms.html    200
+/privacy  /privacy.html  200
+/terms/   /terms.html    200
+/privacy/ /privacy.html  200
+
+# Legacy Next.js routes → home (preserve crawl equity)
+/about    /    301
+/about/   /    301
+/faq      /    301
+/faq/     /    301
+/music    /    301
+/music/*  /    301
+/login    /    301
+/auth/*   /    301
+/admin    /    301
+/admin/*  /    301

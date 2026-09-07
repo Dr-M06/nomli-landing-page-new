@@ -1,0 +1,27 @@
+{
+  "name": "Nomli — feed, chat, calls & local Market",
+  "short_name": "Nomli",
+  "description": "Social feed, chat, audio calls, and local Market in one app. Free on iOS and Android.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F7F8FA",
+  "theme_color": "#3DDFC2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "lifestyle", "shopping"],
+  "lang": "en-US",
+  "dir": "ltr"
+}
