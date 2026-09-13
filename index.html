@@ -132,17 +132,24 @@ img{display:block;max-width:100%;height:auto}
   min-height:100svh;
   display:grid;
   place-items:end center;
-  padding:88px var(--pad) 28px;
+  padding:88px var(--pad) 48px;
   position:relative;
-  overflow:hidden;
+  overflow:visible;
 }
 .stage-glow{
-  position:absolute;inset:20% -20% -30%;
+  position:absolute;
+  inset:-15% -35% -25%;
   background:
-    radial-gradient(50% 45% at 50% 30%, rgba(61,223,194,.28), transparent 70%),
-    radial-gradient(40% 35% at 80% 70%, rgba(61,223,194,.12), transparent 70%);
+    radial-gradient(ellipse 65% 55% at 50% 42%, rgba(61,223,194,.3), transparent 72%),
+    radial-gradient(ellipse 45% 40% at 78% 58%, rgba(61,223,194,.14), transparent 75%);
   pointer-events:none;
   animation:glow-pulse 5s ease-in-out infinite alternate;
+  -webkit-mask-image:radial-gradient(ellipse 85% 75% at 50% 45%, #000 35%, transparent 78%);
+  mask-image:radial-gradient(ellipse 85% 75% at 50% 45%, #000 35%, transparent 78%);
+}
+@keyframes glow-pulse{
+  from{opacity:.72}
+  to{opacity:1}
 }
 .device{
   position:relative;z-index:1;
@@ -168,10 +175,6 @@ img{display:block;max-width:100%;height:auto}
 @keyframes phone-float{
   0%,100%{transform:translateY(0)}
   50%{transform:translateY(-14px)}
-}
-@keyframes glow-pulse{
-  from{opacity:.75;transform:scale(1)}
-  to{opacity:1;transform:scale(1.06)}
 }
 @keyframes cta-breathe{
   0%,100%{box-shadow:0 0 0 0 rgba(61,223,194,0)}
@@ -253,7 +256,7 @@ img{display:block;max-width:100%;height:auto}
     align-items:center;
     justify-content:center;
     gap:clamp(40px,6vw,80px);
-    padding:0 var(--pad);
+    padding:48px var(--pad) 64px;
     max-width:1100px;margin:0 auto;
   }
   .device{width:min(360px,34vw);grid-column:2;grid-row:1}
@@ -269,6 +272,9 @@ img{display:block;max-width:100%;height:auto}
 .film{
   padding:48px 0 64px;
   border-top:1px solid rgba(255,255,255,.06);
+  position:relative;
+  z-index:1;
+  background:var(--ink);
 }
 .film-inner{
   width:min(1080px,calc(100% - 2 * var(--pad)));
