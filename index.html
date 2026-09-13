@@ -269,19 +269,19 @@ img{display:block;max-width:100%;height:auto}
   font-size:15px;color:var(--mute);max-width:28rem;margin-left:auto;margin-right:auto;
 }
 
-/* Three moments — no cards */
+/* Three moments — app UI, not mismatched stock */
 .moments{padding:0 0 clamp(64px,10vw,96px);background:var(--bg)}
-.moments-head{max-width:36rem;margin:0 auto 8px;padding:0 var(--pad);text-align:center}
+.moments-head{max-width:36rem;margin:0 auto 8px;text-align:center}
 .moment{
   display:grid;grid-template-columns:1fr;
-  gap:28px;align-items:center;
+  gap:32px;align-items:center;
   padding:clamp(48px,8vw,80px) 0;
   border-top:1px solid var(--line);
 }
 @media (min-width:800px){
-  .moment{grid-template-columns:1fr 1fr;gap:56px}
-  .moment:nth-child(even) .moment-copy{order:2}
-  .moment:nth-child(even) .moment-photo{order:1}
+  .moment{grid-template-columns:1.05fr .95fr;gap:64px}
+  .moment.is-flip .moment-copy{order:2}
+  .moment.is-flip .moment-visual{order:1}
 }
 .moment-copy .kicker{margin-bottom:10px}
 .moment h3{
@@ -289,27 +289,26 @@ img{display:block;max-width:100%;height:auto}
   font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.035em;line-height:1.15;
 }
 .moment p{margin-top:12px;color:var(--mute);font-size:16px;line-height:1.5;max-width:34ch}
-.moment-photo{
-  border-radius:14px;overflow:hidden;aspect-ratio:4/3;
-  background:#e8eaef;
+.moment-visual{display:flex;justify-content:center}
+.moment-phone{
+  width:min(240px,58vw);
+  border-radius:32px;overflow:hidden;
+  border:7px solid #1a1c22;background:#1a1c22;
 }
-.moment-photo img{
-  width:100%;height:100%;object-fit:cover;
-  object-position:center;
-}
+.moment-phone img{width:100%;height:auto;display:block;border-radius:25px}
 
-/* Market strip */
+/* Market strip — shopping / local energy */
 .market-strip{
-  position:relative;min-height:min(52vh,480px);
+  position:relative;min-height:min(48vh,440px);
   display:flex;align-items:flex-end;color:#fff;overflow:hidden;
 }
 .market-strip-media{
   position:absolute;inset:0;
-  background:url('img/photos/market-strip.jpg') center / cover no-repeat;
+  background:url('img/photos/market.jpg') center 35% / cover no-repeat;
 }
 .market-strip-shade{
   position:absolute;inset:0;
-  background:linear-gradient(180deg, transparent 20%, rgba(10,12,16,.7) 100%);
+  background:linear-gradient(180deg, transparent 15%, rgba(10,12,16,.75) 100%);
 }
 .market-strip-inner{
   position:relative;z-index:2;
@@ -321,6 +320,10 @@ img{display:block;max-width:100%;height:auto}
   font-family:Outfit,sans-serif;font-weight:700;
   font-size:clamp(1.75rem,4vw,2.75rem);
   letter-spacing:-.04em;max-width:16ch;line-height:1.1;
+}
+.market-strip p{
+  margin-top:12px;max-width:36ch;
+  font-size:16px;line-height:1.45;color:rgba(255,255,255,.82);
 }
 
 /* Close */
@@ -377,7 +380,7 @@ footer{
     padding:0 14px;
     font-size:14px;
   }
-  .moment-photo{aspect-ratio:16/11}
+  .moment-phone{width:min(220px,56vw)}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -438,7 +441,7 @@ footer{
     <section class="moments" aria-label="What you can do">
       <div class="band">
         <header class="moments-head reveal">
-          <p class="kicker">Moments</p>
+          <p class="kicker">Inside Nomli</p>
           <h2>Three things. Done calmly.</h2>
         </header>
 
@@ -448,19 +451,23 @@ footer{
             <h3>See what’s around you</h3>
             <p>Full-bleed posts, For You and Following — without the noise of five other apps.</p>
           </div>
-          <div class="moment-photo">
-            <img src="img/photos/feed.jpg" width="1200" height="900" alt="Friends collaborating and smiling over a laptop" loading="lazy">
+          <div class="moment-visual">
+            <div class="moment-phone">
+              <img src="img/shorts/image1.png" width="1290" height="2796" alt="Nomli feed — full-bleed posts" loading="lazy">
+            </div>
           </div>
         </article>
 
-        <article class="moment reveal">
+        <article class="moment is-flip reveal">
           <div class="moment-copy">
             <p class="kicker">Chat &amp; calls</p>
             <h3>Talk without the noise</h3>
             <p>Messages stay close to the feed. Hop on an audio call when typing isn’t enough.</p>
           </div>
-          <div class="moment-photo">
-            <img src="img/photos/chat.jpg" width="1200" height="900" alt="Friends celebrating together outdoors" loading="lazy">
+          <div class="moment-visual">
+            <div class="moment-phone">
+              <img src="img/shorts/image5.png" width="1290" height="2796" alt="Nomli — voice calls and chat" loading="lazy">
+            </div>
           </div>
         </article>
 
@@ -468,20 +475,23 @@ footer{
           <div class="moment-copy">
             <p class="kicker">Market</p>
             <h3>Buy and sell nearby</h3>
-            <p>Local listings — food, fashion, beauty — with orders that continue in chat.</p>
+            <p>Browse local listings, then keep the order in chat — food, fashion, beauty, and more.</p>
           </div>
-          <div class="moment-photo">
-            <img src="img/photos/market.jpg" width="1200" height="900" alt="People exchanging goods with a smile" loading="lazy">
+          <div class="moment-visual">
+            <div class="moment-phone">
+              <img src="img/shorts/image4.png" width="1290" height="2796" alt="Nomli Market — local listings" loading="lazy">
+            </div>
           </div>
         </article>
       </div>
     </section>
 
     <section class="market-strip" id="market" aria-labelledby="market-title">
-      <div class="market-strip-media" role="img" aria-label="People meeting and talking in a bright workspace"></div>
+      <div class="market-strip-media" role="img" aria-label="Friends shopping for fashion together"></div>
       <div class="market-strip-shade" aria-hidden="true"></div>
       <div class="market-strip-inner">
         <h2 id="market-title" class="reveal">Local hits different.</h2>
+        <p class="reveal">Find what’s nearby — then finish the deal in chat.</p>
       </div>
     </section>
 
