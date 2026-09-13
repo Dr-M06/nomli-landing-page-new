@@ -1,11 +1,10 @@
 # Nomli landing (static)
 
-Marketing site for [nomlimingle.com](https://www.nomlimingle.com/) — feed, chat, audio calls, and local Market.
+Marketing site for nomlimingle.com — feed, chat, audio calls, and local Market.
 
-**Repo:** [Dr-M06/nomli-landing-page-new](https://github.com/Dr-M06/nomli-landing-page-new)  
-**Source in app monorepo:** `nomli-landing/` (copy here when deploying)
+**Repo:** Dr-M06/nomli-landing-page-new
 
-This is a static HTML site. The old Next.js / React app was removed.
+Photo-led, app-minimal landing — full-bleed hero, one product phone, three moment bands, market strip, download close. No feature card grids.
 
 ## Brand
 
@@ -17,27 +16,15 @@ This is a static HTML site. The old Next.js / React app was removed.
 ## Pages
 
 | File | URL |
-|------|-----|
-| `index.html` | `/` |
-| `terms.html` | `/terms` |
-| `privacy.html` | `/privacy` |
+| --- | --- |
+| index.html | / |
+| terms.html | /terms |
+| privacy.html | /privacy |
 
-## Crawler / ads verification
+## Photography
 
-| File | Purpose |
-|------|---------|
-| `robots.txt` | AdsBot-Google + Googlebot + sitemap |
-| `sitemap.xml` | Indexable URLs |
-| `index.html` JSON-LD | Organization / WebSite / MobileApplication |
-| `app-ads.txt` | AdMob publisher line |
-| `manifest.json` | PWA metadata |
+Lifestyle crops live under `img/photos/`. App UI still under `img/shorts/`.
 
 ## Deploy
 
 Vercel should use **framework: Other / null** (see `vercel.json`). Point the project root at this repo — no `npm install` / Next build.
-
-```bash
-# from nomliv2
-rsync -a --delete nomli-landing/ ../nomli-landing-page-new/ --exclude .git
-cd ../nomli-landing-page-new && git add -A && git commit -m "Update landing" && git push
-```

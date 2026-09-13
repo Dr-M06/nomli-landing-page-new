@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nomli — feed, chat, calls & local Market</title>
-<meta name="description" content="Social feed, chat, audio calls, and local Market in one calm app. Also meet Tern — private messaging without the weight.">
+<meta name="description" content="Social feed, chat, audio calls, and local Market in one calm app.">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <link rel="canonical" href="https://www.nomlimingle.com/">
@@ -112,7 +112,8 @@
   --bg:#F7F8FA;
   --surface:#FFFFFF;
   --store-h:52px;
-  --tern:#ffb33a;
+  --band:1120px;
+  --pad:clamp(20px,4vw,40px);
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
@@ -120,395 +121,404 @@ body{
   background:var(--bg);color:var(--ink);
   font:16px/1.5 Figtree,system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
+  overflow-x:clip;
 }
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%;height:auto}
-.shell{width:min(720px,calc(100% - 40px));margin:0 auto}
+.band{width:min(var(--band),calc(100% - 2 * var(--pad)));margin:0 auto}
 
-.page-bg{
-  position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:
-    radial-gradient(90% 55% at 50% -8%, rgba(61,223,194,.24), transparent 55%),
-    var(--bg);
+/* Header over hero */
+.site-header{
+  position:absolute;top:0;left:0;right:0;z-index:40;
+  transition:background .3s ease, border-color .3s ease, backdrop-filter .3s ease;
+  border-bottom:1px solid transparent;
 }
-
-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:28px 0 0;
+.site-header.is-solid{
+  position:fixed;
+  background:rgba(247,248,250,.92);
+  border-bottom-color:var(--line);
+  backdrop-filter:blur(12px);
 }
-.brand{font-family:Outfit,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.04em;transition:opacity .2s}
-.nav{display:flex;gap:20px;align-items:center;font-size:14px;font-weight:500;color:var(--mute)}
-.nav a{
-  position:relative;transition:color .25s ease;
+.site-header-inner{
+  width:min(var(--band),calc(100% - 2 * var(--pad)));
+  margin:0 auto;
+  padding:18px 0;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
 }
+.brand{
+  font-family:Outfit,sans-serif;font-weight:700;font-size:22px;
+  letter-spacing:-.04em;color:#fff;transition:color .25s ease;
+}
+.site-header.is-solid .brand{color:var(--ink)}
+.nav{display:none;align-items:center;gap:24px;font-size:14px;font-weight:500}
+.nav a{color:rgba(255,255,255,.78);transition:color .2s}
+.nav a:hover{color:#fff}
+.site-header.is-solid .nav a{color:var(--mute)}
+.site-header.is-solid .nav a:hover{color:var(--ink)}
 .nav a::after{
-  content:"";position:absolute;left:0;right:0;bottom:-4px;height:1.5px;
-  background:var(--mint-deep);transform:scaleX(0);transform-origin:left;
+  content:"";display:block;height:1.5px;margin-top:4px;
+  background:var(--mint);transform:scaleX(0);transform-origin:left;
   transition:transform .28s ease;
 }
-.nav a:hover{color:var(--ink)}
 .nav a:hover::after{transform:scaleX(1)}
+@media (min-width:760px){.nav{display:flex}}
 
-.hero{padding:72px 0 48px}
-.hero h1{
-  font-family:Outfit,sans-serif;
-  font-size:clamp(52px,11vw,84px);line-height:.92;
-  letter-spacing:-.05em;font-weight:700;
+/* Hero — full bleed photo */
+.hero{
+  position:relative;
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:flex-end;
+  color:#fff;overflow:hidden;
 }
-.hero .lede{margin-top:18px;max-width:34ch;font-size:18px;line-height:1.45;color:var(--mute)}
-.hero .aka{
-  margin-top:12px;font-size:13px;font-weight:500;color:var(--mute);opacity:.85;
+.hero-media{
+  position:absolute;inset:0;
+  background:url('img/photos/hero.jpg') 55% center / cover no-repeat;
+  transform:scale(1.02);
+}
+.hero-shade{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(105deg, rgba(10,12,16,.72) 0%, rgba(10,12,16,.42) 42%, rgba(10,12,16,.12) 72%, transparent 100%),
+    linear-gradient(180deg, rgba(10,12,16,.28) 0%, transparent 28%, rgba(10,12,16,.45) 100%);
+  pointer-events:none;
+}
+.hero-inner{
+  position:relative;z-index:2;
+  width:min(var(--band),calc(100% - 2 * var(--pad)));
+  margin:0 auto;
+  padding:120px 0 clamp(56px,10vh,96px);
+}
+.hero-brand{
+  font-family:Outfit,sans-serif;font-weight:700;
+  font-size:clamp(14px,2vw,16px);letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(255,255,255,.7);
+  margin-bottom:16px;
+}
+.hero h1{
+  font-family:Outfit,sans-serif;font-weight:700;
+  font-size:clamp(2.35rem,7vw,4.25rem);
+  letter-spacing:-.045em;line-height:1.02;
+  max-width:14ch;text-wrap:balance;color:#fff;
+}
+.hero-lead{
+  margin-top:18px;max-width:34rem;
+  font-size:clamp(16px,2.2vw,18px);line-height:1.5;
+  color:rgba(255,255,255,.82);
 }
 .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
 .store{
-  display:inline-flex;align-items:center;gap:10px;
-  height:var(--store-h);padding:0 18px;border-radius:999px;
-  font-size:15px;font-weight:600;border:1px solid var(--mint-deep);
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  height:var(--store-h);padding:0 20px;border-radius:999px;
+  font-size:15px;font-weight:600;
+  border:1px solid var(--mint-deep);
   background:linear-gradient(180deg,#6EEAD2 0%,var(--mint) 100%);
-  color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
-  transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,background .28s ease;
+  color:var(--ink);
+  transition:opacity .2s ease, transform .28s cubic-bezier(.22,1,.36,1);
 }
-.store:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(61,223,194,.32)}
-.store:active{transform:translateY(0)}
-.store svg{width:18px;height:18px;opacity:.9;transition:transform .28s ease}
-.store:hover svg{transform:scale(1.06)}
-.store.ghost{background:var(--surface);border-color:var(--line);box-shadow:none}
-.store.ghost:hover{box-shadow:0 8px 20px rgba(18,20,26,.08);border-color:#d0d4dc}
-.store.tern{
-  border-color:#d48812;
-  background:linear-gradient(180deg,#ffc861 0%,var(--tern) 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+.store:hover{opacity:.92;transform:translateY(-1px)}
+.store svg{width:18px;height:18px}
+.store.ghost{
+  background:transparent;color:#fff;
+  border-color:rgba(255,255,255,.65);
 }
-.store.tern:hover{box-shadow:0 10px 24px rgba(255,179,58,.35)}
+.store.ghost:hover{opacity:.85}
+.hero .store.ghost{border-color:rgba(255,255,255,.7)}
 
-/* One composition: mint stage + single full store art */
-.hero-stage{
-  margin-top:48px;position:relative;
-  border-radius:28px;
+.stagger{animation:rise .85s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0) * 90ms + 60ms)}
+@keyframes rise{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:none}
+}
+
+/* Product — one phone */
+.product{
+  padding:clamp(80px,12vw,120px) 0;
+  background:var(--bg);
+}
+.product-head{text-align:center;max-width:36rem;margin:0 auto 48px}
+.kicker{
+  font-size:12px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--mute);margin-bottom:12px;
+}
+.product-head h2,
+.moments-head h2,
+.close h2{
+  font-family:Outfit,sans-serif;font-weight:700;
+  font-size:clamp(1.75rem,4vw,2.5rem);
+  letter-spacing:-.04em;line-height:1.1;text-wrap:balance;
+}
+.product-head p{margin-top:12px;color:var(--mute);font-size:17px;line-height:1.5}
+.product-stage{
+  position:relative;
+  max-width:520px;margin:0 auto;
+  padding:48px 24px 0;
+  border-radius:16px;
   background:
-    radial-gradient(80% 90% at 18% 40%, rgba(61,223,194,.55), transparent 55%),
-    linear-gradient(160deg,#e8faf5 0%,#f4f6f8 55%,#eef1f4 100%);
-  border:1px solid rgba(61,223,194,.28);
-  padding:36px 24px 0;
-  overflow:hidden;
-  min-height:420px;
-  display:flex;align-items:flex-end;justify-content:center;
+    radial-gradient(70% 80% at 50% 20%, rgba(61,223,194,.35), transparent 60%),
+    linear-gradient(180deg,#eefaf6 0%, var(--bg) 100%);
 }
-.hero-stage::before{
-  content:"";position:absolute;inset:14% auto 22% 8%;
-  width:42%;border-radius:20px;background:var(--mint);
-  opacity:.95;
-  animation:plateGlow 6s ease-in-out infinite;
+.phone{
+  width:min(280px,72%);margin:0 auto;
+  border-radius:36px;overflow:hidden;
+  border:8px solid #1a1c22;
+  background:#1a1c22;
 }
-.hero-stage .poster{
-  position:relative;z-index:1;
-  width:min(300px,78%);
-  margin-bottom:-8px;
-  filter:drop-shadow(0 28px 40px rgba(18,20,26,.18));
-  animation:floaty 5.5s ease-in-out infinite;
-}
-.hero-stage .poster img{
-  width:100%;height:auto;display:block;border-radius:22px 22px 0 0;
-}
-@media (max-width:560px){
-  .hero-stage{min-height:360px;padding-top:28px}
-  .hero-stage::before{inset:10% auto 40% 6%;width:52%;height:36%}
-  .hero-stage .poster{width:min(240px,82%)}
-}
-@keyframes floaty{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-10px)}
-}
-@keyframes plateGlow{
-  0%,100%{opacity:.88;transform:scale(1)}
-  50%{opacity:1;transform:scale(1.02)}
+.phone img{width:100%;height:auto;display:block;border-radius:28px}
+.product-cap{
+  text-align:center;margin-top:28px;
+  font-size:15px;color:var(--mute);max-width:28rem;margin-left:auto;margin-right:auto;
 }
 
-section{padding:72px 0;border-top:1px solid var(--line)}
-section h2{
-  font-family:Outfit,sans-serif;font-size:clamp(26px,4.5vw,34px);
-  letter-spacing:-.03em;font-weight:650;line-height:1.15;
-  text-wrap:balance;max-width:16ch;
+/* Three moments — no cards */
+.moments{padding:0 0 clamp(64px,10vw,96px);background:var(--bg)}
+.moments-head{max-width:36rem;margin:0 auto 8px;padding:0 var(--pad);text-align:center}
+.moment{
+  display:grid;grid-template-columns:1fr;
+  gap:28px;align-items:center;
+  padding:clamp(48px,8vw,80px) 0;
+  border-top:1px solid var(--line);
 }
-section .sub{margin-top:10px;color:var(--mute);max-width:42ch;font-size:16px}
-
-.features{margin-top:40px;display:grid;gap:28px}
-.feature{
-  display:grid;grid-template-columns:1fr;gap:16px;
-  padding-top:28px;border-top:1px solid var(--line);
+@media (min-width:800px){
+  .moment{grid-template-columns:1fr 1fr;gap:56px}
+  .moment:nth-child(even) .moment-copy{order:2}
+  .moment:nth-child(even) .moment-photo{order:1}
 }
-@media (min-width:640px){
-  .feature{grid-template-columns:1.1fr .9fr;align-items:center;gap:28px}
-  .feature:nth-child(even) .copy{order:2}
-  .feature:nth-child(even) .shot{order:1}
+.moment-copy .kicker{margin-bottom:10px}
+.moment h3{
+  font-family:Outfit,sans-serif;font-weight:700;
+  font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.035em;line-height:1.15;
 }
-.feature .n{
-  font-family:Outfit,sans-serif;font-size:12px;font-weight:600;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--mute);
+.moment p{margin-top:12px;color:var(--mute);font-size:16px;line-height:1.5;max-width:34ch}
+.moment-photo{
+  border-radius:14px;overflow:hidden;aspect-ratio:4/3;
+  background:#e8eaef;
 }
-.feature h3{
-  margin-top:8px;font-family:Outfit,sans-serif;font-size:24px;
-  letter-spacing:-.025em;font-weight:600;
-}
-.feature p{margin-top:8px;color:var(--mute);font-size:15px;max-width:36ch}
-.shot{
-  border-radius:16px;overflow:hidden;border:1px solid var(--line);
-  background:#efebe3;margin:0 auto;width:min(260px,100%);
-  box-shadow:0 12px 28px rgba(18,20,26,.08);
-  transition:transform .45s cubic-bezier(.22,1,.36,1),box-shadow .45s ease;
-}
-.shot:hover{
-  transform:translateY(-6px);
-  box-shadow:0 20px 40px rgba(18,20,26,.12);
-}
-.shot img{width:100%;height:auto;display:block}
-
-/* Scroll reveal */
-.reveal{
-  opacity:0;transform:translateY(22px);
-  transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);
-  transition-delay:var(--d,0ms);
-}
-.reveal.in{
-  opacity:1;transform:none;
-}
-.feature.reveal:nth-child(1){--d:0ms}
-.feature.reveal:nth-child(2){--d:70ms}
-.feature.reveal:nth-child(3){--d:140ms}
-.feature.reveal:nth-child(4){--d:210ms}
-
-/* Tern — dedicated, calm, separate tone */
-.tern-block{
-  margin-top:36px;padding:36px 28px;border-radius:20px;
-  border:1px solid var(--line);background:var(--surface);
-  display:grid;gap:28px;
-  transition:box-shadow .4s ease,transform .4s cubic-bezier(.22,1,.36,1);
-}
-.tern-block:hover{
-  box-shadow:0 16px 40px rgba(18,20,26,.06);
-}
-@media (min-width:640px){
-  .tern-block{grid-template-columns:1fr;align-items:stretch}
-}
-@media (min-width:720px){
-  .tern-block{grid-template-columns:1fr 1.05fr;align-items:center}
-}
-.tern-kicker{
-  font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  color:#b45309;
-}
-.tern-block h2{max-width:12ch;margin-top:10px}
-.tern-proof{
-  margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;
-}
-.tern-proof div{
-  font-size:14px;color:var(--mute);
-  transition:transform .3s ease;
-}
-.tern-proof div:hover{transform:translateX(2px)}
-.tern-proof b{display:block;color:var(--ink);font-weight:600;font-size:15px;margin-bottom:2px}
-.tern-visual{
-  border-radius:14px;overflow:hidden;border:1px solid var(--line);
-  background:linear-gradient(160deg,#fff8eb,#ffffff 55%,#f7f8fa);
-  display:flex;align-items:center;justify-content:center;
-  padding:18px;
-  transition:transform .45s cubic-bezier(.22,1,.36,1);
-}
-.tern-visual:hover{transform:scale(1.015)}
-.tern-visual img{
-  width:100%;height:auto;display:block;
-  object-fit:contain;
+.moment-photo img{
+  width:100%;height:100%;object-fit:cover;
+  object-position:center;
 }
 
-.legal-strip{
-  display:grid;gap:12px;margin-top:8px;
+/* Market strip */
+.market-strip{
+  position:relative;min-height:min(52vh,480px);
+  display:flex;align-items:flex-end;color:#fff;overflow:hidden;
 }
-.legal-card{
-  display:flex;justify-content:space-between;align-items:center;gap:16px;
-  padding:18px 0;border-top:1px solid var(--line);
-  font-size:15px;
-  transition:padding .3s ease,background .3s ease;
+.market-strip-media{
+  position:absolute;inset:0;
+  background:url('img/photos/market-strip.jpg') center / cover no-repeat;
 }
-.legal-card:last-child{border-bottom:1px solid var(--line)}
-.legal-card span{color:var(--mute);font-size:14px}
-.legal-card a{font-weight:600;font-family:Outfit,sans-serif;letter-spacing:-.02em;transition:color .25s ease}
-.legal-card a:hover{color:var(--mint-deep)}
-.legal-card .arrow{
-  display:inline-block;transition:transform .3s cubic-bezier(.22,1,.36,1);color:var(--mute);
+.market-strip-shade{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, transparent 20%, rgba(10,12,16,.7) 100%);
 }
-.legal-card:hover .arrow{transform:translateX(4px);color:var(--ink)}
+.market-strip-inner{
+  position:relative;z-index:2;
+  width:min(var(--band),calc(100% - 2 * var(--pad)));
+  margin:0 auto;
+  padding:48px 0 56px;
+}
+.market-strip h2{
+  font-family:Outfit,sans-serif;font-weight:700;
+  font-size:clamp(1.75rem,4vw,2.75rem);
+  letter-spacing:-.04em;max-width:16ch;line-height:1.1;
+}
+
+/* Close */
+.close{
+  padding:clamp(80px,12vw,120px) 0;
+  text-align:center;background:var(--surface);
+  border-top:1px solid var(--line);
+}
+.close .brand-mark{
+  font-family:Outfit,sans-serif;font-weight:700;font-size:20px;
+  letter-spacing:-.04em;margin-bottom:16px;
+}
+.close h2{max-width:14ch;margin:0 auto}
+.close p{margin:14px auto 0;max-width:32rem;color:var(--mute);font-size:16px}
+.close .cta{justify-content:center;margin-top:28px}
+.close .store.ghost{
+  background:var(--surface);color:var(--ink);border-color:var(--line);
+}
 
 footer{
-  padding:48px 0 72px;border-top:1px solid var(--line);
+  padding:40px 0 56px;border-top:1px solid var(--line);
+  background:var(--bg);
+}
+.footer-inner{
+  width:min(var(--band),calc(100% - 2 * var(--pad)));
+  margin:0 auto;
   display:flex;flex-wrap:wrap;gap:16px 28px;
   justify-content:space-between;align-items:center;
   font-size:14px;color:var(--mute);
 }
 .foot-links{display:flex;flex-wrap:wrap;gap:18px}
-.foot-links a{transition:color .25s ease}
 .foot-links a:hover{color:var(--ink)}
 
-@media (max-width:560px){
-  .nav{display:none}
-  .hero{padding:56px 0 40px}
-  .cta .store{flex:1 1 auto;justify-content:center}
-  .tern-proof{grid-template-columns:1fr}
+.reveal{
+  opacity:0;transform:translateY(20px);
+  transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1);
+}
+.reveal.in{opacity:1;transform:none}
+
+@media (max-width:720px){
+  .hero-media{background-position:68% center}
+  .hero-inner{padding-top:100px;padding-bottom:48px}
+  .hero h1{max-width:none;font-size:clamp(2rem,9vw,2.6rem)}
+  .cta{flex-direction:column;align-items:stretch}
+  .cta .store{width:100%}
+  .moment-photo{aspect-ratio:16/11}
 }
 
-@media (prefers-reduced-motion:no-preference){
-  header{animation:rise .55s ease both}
-  .hero h1{animation:rise .75s cubic-bezier(.22,1,.36,1) both}
-  .hero .lede{animation:rise .75s cubic-bezier(.22,1,.36,1) .08s both}
-  .hero .aka{animation:rise .75s cubic-bezier(.22,1,.36,1) .14s both}
-  .cta{animation:rise .75s cubic-bezier(.22,1,.36,1) .2s both}
-  .hero-stage{animation:rise .9s cubic-bezier(.22,1,.36,1) .28s both}
-}
-@keyframes rise{
-  from{opacity:0;transform:translateY(18px)}
-  to{opacity:1;transform:none}
-}
 @media (prefers-reduced-motion:reduce){
-  .store,.shot,.tern-block,.tern-visual,.legal-card,.nav a,.nav a::after,.foot-links a{transition:none}
-  .hero-stage .poster,.hero-stage::before{animation:none}
-  .reveal{opacity:1;transform:none;transition:none}
+  .stagger,.reveal{animation:none;opacity:1;transform:none;transition:none}
   html{scroll-behavior:auto}
 }
 </style>
 </head>
 <body>
-<div class="page-bg" aria-hidden="true"></div>
-<div class="shell">
-  <header>
-    <a class="brand" href="./">Nomli</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="#features">Features</a>
-      <a href="#tern">Tern</a>
-      <a href="#legal">Legal</a>
-    </nav>
+  <header class="site-header" id="siteHeader">
+    <div class="site-header-inner">
+      <a class="brand" href="./">Nomli</a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#market">Market</a>
+        <a href="#download">Download</a>
+      </nav>
+    </div>
   </header>
 
   <main>
-    <section class="hero" aria-label="Hero">
-      <h1>Nomli</h1>
-      <p class="lede">Feed, chat, audio calls &amp; local Market—one calm home, without juggling five apps.</p>
-      <p class="aka">Formerly known as Nomli Mingle</p>
-      <div class="cta" id="get">
-        <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.8-1.9c.9-1.1 1.3-2.2 1.3-2.3-.1 0-2.5-.9-2.5-3.9zM14.1 5.8c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.7 1.5-.6.7-1.1 1.8-.9 2.8 1 .1 2-.6 2.7-1.4z"/></svg>
-          App Store
-        </a>
-        <a class="store ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.6.6-.6 1.1v17.2c0 .5.3.9.6 1.1l9.7-9.7L3.6 2.3zm12.1 7L5.2 3.1l9.4 9.4 1.1-1.1zm1.4 1.4-1.6 1.6 1.6 1.6 3.1-1.8c.5-.3.5-1.1 0-1.4l-3.1-1.8zM5.2 20.9l10.5-6.2-1.1-1.1L5.2 20.9z"/></svg>
-          Google Play
-        </a>
-      </div>
-
-      <div class="hero-stage" aria-label="Nomli art">
-        <figure class="poster">
-          <img src="img/shorts/image2.png" width="1290" height="2796" alt="Nomli — Post it. Feel it." loading="eager">
-        </figure>
-      </div>
-    </section>
-
-    <section id="features" aria-label="Features">
-      <h2 class="reveal">Four things. Done well.</h2>
-      <p class="sub reveal">Feed, people, calls, and Market—learn once, then move.</p>
-
-      <div class="features">
-        <article class="feature reveal">
-          <div class="copy">
-            <div class="n">01 — Feed</div>
-            <h3>More than scroll</h3>
-            <p>Full-bleed posts, For You and Following, reactions where your thumb already is.</p>
-          </div>
-          <div class="shot"><img src="img/shorts/image1.png" width="1290" height="2796" alt="Nomli — More than scroll" loading="lazy"></div>
-        </article>
-        <article class="feature reveal">
-          <div class="copy">
-            <div class="n">02 — People</div>
-            <h3>Find your people</h3>
-            <p>Suggested profiles, follows, and chat that stays close to the feed.</p>
-          </div>
-          <div class="shot"><img src="img/shorts/image3.png" width="1290" height="2796" alt="Nomli — Find your people" loading="lazy"></div>
-        </article>
-        <article class="feature reveal">
-          <div class="copy">
-            <div class="n">03 — Calls</div>
-            <h3>Audio calls that just work</h3>
-            <p>Hop on a voice call when typing isn’t enough—same people, same app.</p>
-          </div>
-          <div class="shot"><img src="img/shorts/image5.png" width="1290" height="2796" alt="Nomli — Voice calls that just work" loading="lazy"></div>
-        </article>
-        <article class="feature reveal">
-          <div class="copy">
-            <div class="n">04 — Market</div>
-            <h3>Local hits different</h3>
-            <p>Buy and sell nearby—homemade food, fashion, beauty—orders that continue in chat.</p>
-          </div>
-          <div class="shot"><img src="img/shorts/image4.png" width="1290" height="2796" alt="Nomli Market — Local hits different" loading="lazy"></div>
-        </article>
-      </div>
-    </section>
-
-    <section id="tern" aria-label="Tern">
-      <p class="tern-kicker reveal" style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#b45309">From Nomli Tech</p>
-      <h2 class="reveal">Also from us: Tern</h2>
-      <p class="sub reveal">Private messaging without the weight—tiny install, no phone number, built for weak networks.</p>
-
-      <div class="tern-block reveal">
-        <div>
-          <div class="tern-proof">
-            <div><b>Under 1 MB</b>Android download</div>
-            <div><b>Under 2 MB</b>iPhone download</div>
-            <div><b>Encrypted</b>Only you and them</div>
-            <div><b>No number</b>Your Tern ID is enough</div>
-          </div>
-          <div class="cta" style="margin-top:28px">
-            <a class="store tern" href="https://tern.niilox.com/" rel="noopener">Open Tern site</a>
-            <a class="store ghost" href="https://apps.apple.com/fi/app/tern-encrypted-chat/id6796479503" rel="noopener">App Store</a>
-            <a class="store ghost" href="https://play.google.com/store/apps/details?id=org.nomli.nlite" rel="noopener">Google Play</a>
-          </div>
-        </div>
-        <div class="tern-visual">
-          <img src="img/tern-share.png" width="1200" height="630" alt="Tern — private messaging without the weight" loading="lazy">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-media" role="img" aria-label="Friends laughing together outdoors with phones"></div>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="hero-brand stagger" style="--i:0">Nomli</p>
+        <h1 id="hero-title" class="stagger" style="--i:1">Meet people. Chat. Trade nearby.</h1>
+        <p class="hero-lead stagger" style="--i:2">Feed, calls, and local Market — one calm app.</p>
+        <div class="cta stagger" style="--i:3" id="get">
+          <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.8-1.9c.9-1.1 1.3-2.2 1.3-2.3-.1 0-2.5-.9-2.5-3.9zM14.1 5.8c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.7 1.5-.6.7-1.1 1.8-.9 2.8 1 .1 2-.6 2.7-1.4z"/></svg>
+            App Store
+          </a>
+          <a class="store ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.6.6-.6 1.1v17.2c0 .5.3.9.6 1.1l9.7-9.7L3.6 2.3zm12.1 7L5.2 3.1l9.4 9.4 1.1-1.1zm1.4 1.4-1.6 1.6 1.6 1.6 3.1-1.8c.5-.3.5-1.1 0-1.4l-3.1-1.8zM5.2 20.9l10.5-6.2-1.1-1.1L5.2 20.9z"/></svg>
+            Google Play
+          </a>
         </div>
       </div>
     </section>
 
-    <section id="legal" aria-label="Legal">
-      <h2 class="reveal">Terms &amp; privacy</h2>
-      <p class="sub reveal">Plain-language policies for Nomli — eligibility, Market, ads, and your data.</p>
-      <div class="legal-strip">
-        <div class="legal-card reveal">
-          <div>
-            <a href="terms.html">Terms of Service</a>
-            <span style="display:block;margin-top:4px">16+ · accounts · Market · ads · conduct</span>
+    <section class="product" id="features" aria-labelledby="product-title">
+      <div class="band">
+        <header class="product-head reveal">
+          <p class="kicker">The app</p>
+          <h2 id="product-title">One home for feed, chat, and Market.</h2>
+          <p>Open Nomli once — posts, people, calls, and nearby listings stay together.</p>
+        </header>
+        <div class="product-stage reveal" id="productPhone">
+          <div class="phone">
+            <img src="img/shorts/image2.png" width="1290" height="2796" alt="Nomli app — Post it. Feel it." loading="lazy">
           </div>
-          <a class="arrow" href="terms.html" aria-label="Open Terms">→</a>
         </div>
-        <div class="legal-card reveal">
-          <div>
-            <a href="privacy.html">Privacy Policy</a>
-            <span style="display:block;margin-top:4px">Data we collect · AdMob · location · deletion</span>
+        <p class="product-cap reveal">Full-bleed feed, reactions where your thumb already is.</p>
+      </div>
+    </section>
+
+    <section class="moments" aria-label="What you can do">
+      <div class="band">
+        <header class="moments-head reveal">
+          <p class="kicker">Moments</p>
+          <h2>Three things. Done calmly.</h2>
+        </header>
+
+        <article class="moment reveal">
+          <div class="moment-copy">
+            <p class="kicker">Feed</p>
+            <h3>See what’s around you</h3>
+            <p>Full-bleed posts, For You and Following — without the noise of five other apps.</p>
           </div>
-          <a class="arrow" href="privacy.html" aria-label="Open Privacy">→</a>
+          <div class="moment-photo">
+            <img src="img/photos/feed.jpg" width="1200" height="900" alt="Friends collaborating and smiling over a laptop" loading="lazy">
+          </div>
+        </article>
+
+        <article class="moment reveal">
+          <div class="moment-copy">
+            <p class="kicker">Chat &amp; calls</p>
+            <h3>Talk without the noise</h3>
+            <p>Messages stay close to the feed. Hop on an audio call when typing isn’t enough.</p>
+          </div>
+          <div class="moment-photo">
+            <img src="img/photos/chat.jpg" width="1200" height="900" alt="Friends celebrating together outdoors" loading="lazy">
+          </div>
+        </article>
+
+        <article class="moment reveal" id="marketMoment">
+          <div class="moment-copy">
+            <p class="kicker">Market</p>
+            <h3>Buy and sell nearby</h3>
+            <p>Local listings — food, fashion, beauty — with orders that continue in chat.</p>
+          </div>
+          <div class="moment-photo">
+            <img src="img/photos/market.jpg" width="1200" height="900" alt="People exchanging goods with a smile" loading="lazy">
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="market-strip" id="market" aria-labelledby="market-title">
+      <div class="market-strip-media" role="img" aria-label="People meeting and talking in a bright workspace"></div>
+      <div class="market-strip-shade" aria-hidden="true"></div>
+      <div class="market-strip-inner">
+        <h2 id="market-title" class="reveal">Local hits different.</h2>
+      </div>
+    </section>
+
+    <section class="close" id="download" aria-labelledby="close-title">
+      <div class="band">
+        <p class="brand-mark reveal">Nomli</p>
+        <h2 id="close-title" class="reveal">Get Nomli</h2>
+        <p class="reveal">Feed, chat, calls &amp; Market — free on iOS and Android.</p>
+        <div class="cta reveal">
+          <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.8-1.9c.9-1.1 1.3-2.2 1.3-2.3-.1 0-2.5-.9-2.5-3.9zM14.1 5.8c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.7 1.5-.6.7-1.1 1.8-.9 2.8 1 .1 2-.6 2.7-1.4z"/></svg>
+            App Store
+          </a>
+          <a class="store ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.6.6-.6 1.1v17.2c0 .5.3.9.6 1.1l9.7-9.7L3.6 2.3zm12.1 7L5.2 3.1l9.4 9.4 1.1-1.1zm1.4 1.4-1.6 1.6 1.6 1.6 3.1-1.8c.5-.3.5-1.1 0-1.4l-3.1-1.8zM5.2 20.9l10.5-6.2-1.1-1.1L5.2 20.9z"/></svg>
+            Google Play
+          </a>
         </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <div>© <span id="y"></span> Nomli Tech Limited</div>
-    <div class="foot-links">
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="https://tern.niilox.com/" rel="noopener">Tern</a>
-      <a href="mailto:support@nomlimingle.com">Support</a>
+    <div class="footer-inner">
+      <div>© <span id="y"></span> Nomli Tech Limited</div>
+      <div class="foot-links">
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://tern.niilox.com/" rel="noopener">Tern</a>
+        <a href="mailto:support@nomlimingle.com">Support</a>
+      </div>
     </div>
   </footer>
-</div>
+
 <script>
 document.getElementById('y').textContent = new Date().getFullYear();
+
+(function () {
+  var header = document.getElementById('siteHeader');
+  var hero = document.querySelector('.hero');
+  function onScroll() {
+    var threshold = hero ? Math.max(48, hero.offsetHeight * 0.12) : 48;
+    header.classList.toggle('is-solid', window.scrollY > threshold);
+  }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+})();
+
 (function () {
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var nodes = document.querySelectorAll('.reveal');

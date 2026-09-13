@@ -18,10 +18,11 @@
 body{background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 .shell{width:min(680px,calc(100% - 40px));margin:0 auto;padding:28px 0 80px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:56px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:56px;padding-bottom:18px;border-bottom:1px solid var(--line)}
 .brand{font-family:Outfit,sans-serif;font-weight:700;font-size:20px;letter-spacing:-.04em;text-decoration:none}
 .back{font-size:14px;color:var(--mute);text-decoration:none;font-weight:500}
 .back:hover{color:var(--ink)}
+.back::after{content:"";display:inline-block;width:0;height:1.5px;background:#3DDFC2;vertical-align:middle;margin-left:0;transition:width .25s}
 h1{font-family:Outfit,sans-serif;font-size:clamp(32px,6vw,44px);letter-spacing:-.035em;line-height:1.1;font-weight:700}
 .meta{margin-top:12px;color:var(--mute);font-size:14px}
 h2{font-family:Outfit,sans-serif;font-size:20px;letter-spacing:-.02em;margin:40px 0 10px;font-weight:650}
