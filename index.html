@@ -335,14 +335,14 @@ img{display:block;max-width:100%;height:auto}
   transition-delay:calc(var(--w, 0) * 100ms);
 }
 .line.in h2 .word{opacity:1;transform:none}
-.line h2 span{color:var(--mint);position:relative}
-.line h2 span::after{
+.line h2 .accent{color:var(--mint);position:relative}
+.line h2 .accent::after{
   content:"";position:absolute;left:0;right:0;bottom:.08em;height:.12em;
   background:var(--mint);border-radius:99px;opacity:.35;
   transform:scaleX(0);transform-origin:left;
   transition:transform .6s cubic-bezier(.22,1,.36,1) .35s;
 }
-.line.in h2 span::after{transform:scaleX(1)}
+.line.in h2 .accent::after{transform:scaleX(1)}
 .line p{
   margin:16px auto 0;max-width:28rem;
   color:var(--fog);font-size:1rem;
@@ -445,7 +445,7 @@ footer{
     </section>
 
     <section class="line" aria-labelledby="pitch">
-      <h2 id="pitch">Scroll. Chat. <span>Trade nearby.</span></h2>
+      <h2 id="pitch"><span class="word" style="--w:0">Scroll.</span> <span class="word" style="--w:1">Chat.</span> <span class="word" style="--w:2"><span class="accent">Trade nearby.</span></span></h2>
       <p>One social home — no juggling five apps for the same people.</p>
     </section>
 
@@ -470,6 +470,57 @@ footer{
   </footer>
 <script>
 document.getElementById('y').textContent = new Date().getFullYear();
+
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var frames = document.querySelectorAll('.frame');
+  var line = document.querySelector('.line');
+
+  if (reduce) {
+    frames.forEach(function (el) { el.classList.add('in'); });
+    if (line) line.classList.add('in');
+    return;
+  }
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
+    frames.forEach(function (el) { io.observe(el); });
+    if (line) io.observe(line);
+  } else {
+    frames.forEach(function (el) { el.classList.add('in'); });
+    if (line) line.classList.add('in');
+  }
+
+  // Soft 3D tilt on hero phone (desktop)
+  var phone = document.querySelector('.device');
+  var stage = document.querySelector('.stage');
+  if (!phone || !stage || window.matchMedia('(pointer: coarse)').matches) return;
+
+  var idle = null;
+  stage.addEventListener('pointermove', function (e) {
+    var r = stage.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width - 0.5;
+    var y = (e.clientY - r.top) / r.height - 0.5;
+    phone.classList.add('is-tilting');
+    phone.style.transform =
+      'perspective(900px) rotateY(' + (x * 10) + 'deg) rotateX(' + (-y * 8) + 'deg) translateY(' + (y * -6) + 'px)';
+    clearTimeout(idle);
+    idle = setTimeout(function () {
+      phone.classList.remove('is-tilting');
+      phone.style.transform = '';
+    }, 1800);
+  });
+  stage.addEventListener('pointerleave', function () {
+    phone.classList.remove('is-tilting');
+    phone.style.transform = '';
+  });
+})();
 </script>
 </body>
 </html>
