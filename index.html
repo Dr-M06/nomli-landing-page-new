@@ -204,23 +204,33 @@ img{display:block;max-width:100%;height:auto}
   padding:48px 0 64px;
   border-top:1px solid rgba(255,255,255,.06);
 }
+.film-inner{
+  width:min(1080px,calc(100% - 2 * var(--pad)));
+  margin:0 auto;
+}
 .film h2{
   font-family:Outfit,sans-serif;font-weight:700;
   font-size:1.1rem;letter-spacing:-.02em;
-  padding:0 var(--pad) 20px;
+  padding:0 0 20px;
   color:var(--fog);
 }
 .rail{
   display:flex;gap:16px;
+  justify-content:center;
+  flex-wrap:nowrap;
   overflow-x:auto;scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch;
-  padding:0 var(--pad) 8px;
+  padding:0 0 8px;
   scrollbar-width:none;
 }
 .rail::-webkit-scrollbar{display:none}
 .frame{
   flex:0 0 auto;width:min(200px,52vw);
   scroll-snap-align:start;
+}
+@media (min-width:900px){
+  .rail{overflow:visible}
+  .frame{width:calc((100% - 48px) / 4);max-width:220px}
 }
 .frame .shell{
   border-radius:28px;overflow:hidden;
@@ -312,24 +322,26 @@ footer{
     </section>
 
     <section class="film" aria-label="App screens">
-      <h2>Inside the app</h2>
-      <div class="rail">
-        <figure class="frame">
-          <div class="shell"><img src="img/shorts/image2.png" width="1290" height="2796" alt="Discover feed" loading="lazy"></div>
-          <p>Discover</p>
-        </figure>
-        <figure class="frame">
-          <div class="shell"><img src="img/shorts/image3.png" width="1290" height="2796" alt="People to follow" loading="lazy"></div>
-          <p>People</p>
-        </figure>
-        <figure class="frame">
-          <div class="shell"><img src="img/shorts/image4.png" width="1290" height="2796" alt="Local Market" loading="lazy"></div>
-          <p>Market</p>
-        </figure>
-        <figure class="frame">
-          <div class="shell"><img src="img/shorts/image5.png" width="1290" height="2796" alt="Audio calls" loading="lazy"></div>
-          <p>Calls</p>
-        </figure>
+      <div class="film-inner">
+        <h2>Inside the app</h2>
+        <div class="rail">
+          <figure class="frame">
+            <div class="shell"><img src="img/shorts/image2.png" width="1290" height="2796" alt="Discover feed" loading="lazy"></div>
+            <p>Discover</p>
+          </figure>
+          <figure class="frame">
+            <div class="shell"><img src="img/shorts/image3.png" width="1290" height="2796" alt="People to follow" loading="lazy"></div>
+            <p>People</p>
+          </figure>
+          <figure class="frame">
+            <div class="shell"><img src="img/shorts/image4.png" width="1290" height="2796" alt="Local Market" loading="lazy"></div>
+            <p>Market</p>
+          </figure>
+          <figure class="frame">
+            <div class="shell"><img src="img/shorts/image5.png" width="1290" height="2796" alt="Audio calls" loading="lazy"></div>
+            <p>Calls</p>
+          </figure>
+        </div>
       </div>
     </section>
 
