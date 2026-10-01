@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nomli — social feed, chat, calls & Market</title>
-<meta name="description" content="Nomli is a social app — full-screen feed, follows, chat, audio calls, and local Market.">
+<meta name="description" content="Nomli is a social app — feed, follows, chat, audio calls, and local Market in one place.">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <link rel="canonical" href="https://www.nomlimingle.com/">
@@ -19,12 +19,12 @@
 <meta name="twitter:title" content="Nomli — social feed, chat, calls & Market">
 <meta name="twitter:description" content="Share posts, follow people, call friends, and trade nearby — in one app.">
 <meta name="twitter:image" content="https://www.nomlimingle.com/twitter-image.png">
-<meta name="theme-color" content="#EDEFF2">
+<meta name="theme-color" content="#D8EDE6">
 <link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -80,469 +80,620 @@
 </script>
 <style>
 :root{
-  --bg:#EDEFF2;
-  --ink:#12141A;
-  --mute:#5A6270;
-  --line:rgba(18,20,26,.1);
-  --mint:#2FD4B5;
-  --forest:#16382E;
+  --mint:#D8EDE6;
+  --mint-deep:#B9DFD2;
+  --ink:#111318;
+  --mute:#5C6570;
+  --paper:#FFFFFF;
+  --coral:#FF6A3D;
+  --coral-ink:#fff;
+  --line:rgba(17,19,24,.08);
+  --shadow:0 18px 40px rgba(17,19,24,.08);
   --pad:clamp(20px,4.5vw,56px);
   --ease:cubic-bezier(.22,1,.36,1);
+  --radius:22px;
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{
-  background:var(--bg);
+  background:var(--mint);
   color:var(--ink);
-  font:16px/1.5 Figtree,system-ui,sans-serif;
+  font:16px/1.55 Manrope,system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
   overflow-x:clip;
 }
 a{color:inherit;text-decoration:none}
-img{display:block;max-width:100%;height:auto}
+button{font:inherit}
 
-/* ——— nav ——— */
+/* ——— top ——— */
 .bar{
-  position:absolute;inset:0 0 auto;z-index:20;
+  position:relative;z-index:30;
   display:flex;align-items:center;justify-content:space-between;
-  padding:22px var(--pad);
+  padding:20px var(--pad);
+  max-width:1180px;margin:0 auto;
 }
-.logo{
+.brand{
+  display:inline-flex;align-items:center;gap:10px;
   font-family:Syne,sans-serif;font-weight:800;
   font-size:1.35rem;letter-spacing:-.05em;
 }
-.bar-actions{display:flex;align-items:center;gap:22px}
-.nav-link{font-size:14px;font-weight:600;color:var(--mute)}
-.nav-link:hover{color:var(--ink)}
-.dl{
-  font-size:13px;font-weight:600;
-  padding:10px 18px;
-  background:var(--ink);color:#fff;
-  transition:background .2s ease, transform .25s var(--ease);
+.mark{
+  width:28px;height:28px;border-radius:50%;
+  background:#1FA88C;
+  display:grid;place-items:center;
+  color:#fff;flex-shrink:0;
 }
-.dl:hover{background:var(--forest);transform:translateY(-1px)}
+.mark svg{width:14px;height:14px}
+.bar-nav{
+  display:none;gap:28px;
+  font-size:14px;font-weight:600;color:var(--mute);
+}
+.bar-nav a:hover{color:var(--ink)}
+.bar-actions{display:flex;align-items:center;gap:16px}
+.bar-actions .quiet{display:none;font-size:14px;font-weight:600;color:var(--mute)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:44px;padding:0 18px;
+  border-radius:999px;
+  font-size:14px;font-weight:700;
+  background:var(--coral);color:var(--coral-ink);
+  border:0;cursor:pointer;
+  transition:transform .25s var(--ease), filter .2s ease, box-shadow .25s ease;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.03);box-shadow:0 10px 24px rgba(255,106,61,.28)}
+.btn svg{width:15px;height:15px}
+@media (min-width:860px){
+  .bar-nav{display:flex}
+  .bar-actions .quiet{display:inline}
+}
 
-/* ——— hero: one composition ——— */
+/* ——— hero ——— */
 .hero{
   position:relative;
-  min-height:100svh;
-  display:grid;
-  align-items:end;
-  overflow:hidden;
-  background:
-    radial-gradient(ellipse 90% 70% at 70% 20%, rgba(47,212,181,.18), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 10% 90%, rgba(22,56,46,.08), transparent 55%),
-    var(--bg);
+  max-width:1180px;margin:0 auto;
+  padding:28px var(--pad) 72px;
+  display:grid;gap:48px;
+  align-items:center;
 }
-.hero-copy{
-  position:relative;z-index:2;
-  padding:100px var(--pad) 40px;
-  max-width:34rem;
+.hero-copy{max-width:34rem;position:relative;z-index:2}
+.kicker{
+  display:inline-block;
+  font-size:12px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:#1A7A66;
+  margin-bottom:18px;
+  opacity:0;transform:translateY(10px);
+  animation:rise .7s var(--ease) .05s forwards;
 }
-.hero-copy .brand{
+.hero h1{
   font-family:Syne,sans-serif;font-weight:800;
-  font-size:clamp(4.2rem,16vw,7.5rem);
-  letter-spacing:-.07em;line-height:.88;
-  color:var(--forest);
-  opacity:0;transform:translateY(18px);
-  animation:rise .9s var(--ease) .1s forwards;
-}
-.hero-copy .lead{
-  margin-top:18px;
-  font-size:clamp(1.05rem,2.4vw,1.25rem);
-  color:var(--mute);line-height:1.4;max-width:22rem;
+  font-size:clamp(2.6rem,7vw,4.4rem);
+  letter-spacing:-.055em;line-height:.98;
   opacity:0;transform:translateY(14px);
-  animation:rise .9s var(--ease) .22s forwards;
+  animation:rise .8s var(--ease) .12s forwards;
 }
-.stores{
-  display:flex;flex-wrap:wrap;gap:10px;
-  margin-top:28px;
-  opacity:0;transform:translateY(14px);
-  animation:rise .9s var(--ease) .36s forwards;
+.hero h1 .soft{color:#1A7A66}
+.hero .lead{
+  margin-top:18px;color:var(--mute);
+  font-size:1.05rem;line-height:1.55;max-width:28rem;
+  opacity:0;transform:translateY(12px);
+  animation:rise .8s var(--ease) .22s forwards;
 }
-.store{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-width:148px;height:48px;padding:0 18px;
-  font-size:14px;font-weight:600;
-  background:var(--ink);color:#fff;
-  transition:transform .25s var(--ease), background .2s ease;
+.hero .cta-row{
+  margin-top:28px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+  opacity:0;transform:translateY(12px);
+  animation:rise .8s var(--ease) .32s forwards;
 }
-.store:hover{transform:translateY(-2px);background:var(--forest)}
-.store.ghost{
-  background:transparent;color:var(--ink);
-  border:1.5px solid rgba(18,20,26,.22);
-}
-.store.ghost:hover{border-color:var(--ink);background:rgba(18,20,26,.04)}
-.store svg{width:16px;height:16px}
+.store-links{display:flex;gap:14px;font-size:13px;font-weight:650;color:var(--mute)}
+.store-links a{border-bottom:1px solid transparent}
+.store-links a:hover{color:var(--ink);border-color:rgba(17,19,24,.25)}
 
-.hero-visual{
-  position:relative;z-index:1;
-  width:100%;
-  margin-top:8px;
-  opacity:0;transform:translateY(28px) scale(.985);
-  animation:rise-scale 1.1s var(--ease) .2s forwards;
+.hero-stage{
+  position:relative;
+  min-height:420px;
+  opacity:0;transform:translateY(20px);
+  animation:rise .95s var(--ease) .2s forwards;
 }
-.hero-visual img{
-  width:100%;
-  height:auto;
-  object-fit:cover;
-  object-position:center top;
-}
-
-@keyframes rise{
-  to{opacity:1;transform:none}
-}
-@keyframes rise-scale{
-  to{opacity:1;transform:none}
-}
-
 @media (min-width:900px){
   .hero{
-    grid-template-columns:minmax(280px,0.9fr) minmax(360px,1.1fr);
-    align-items:stretch;
+    grid-template-columns:1fr 1.05fr;
+    padding:40px var(--pad) 88px;
+    gap:32px;
   }
-  .hero-copy{
-    display:flex;flex-direction:column;justify-content:center;
-    padding:120px var(--pad) 80px;
-    max-width:none;
-  }
-  .hero-visual{
-    margin:0;
-    min-height:100svh;
-    align-self:stretch;
-  }
-  .hero-visual img{
-    width:100%;
-    height:100%;
-    min-height:100svh;
-    object-fit:cover;
-    object-position:center center;
-  }
+  .hero-stage{min-height:520px}
 }
 
-/* ——— moment bands: one job each ——— */
-.moment{
-  position:relative;
-  min-height:min(88svh,920px);
-  display:grid;
-  align-items:end;
-  overflow:hidden;
-  background:#0E1116;
-  color:#F4F5F7;
-}
-.moment + .moment{border-top:1px solid rgba(255,255,255,.06)}
-.moment-media{
-  position:absolute;inset:0;
-  opacity:0;transform:scale(1.04);
-  transition:opacity 1s var(--ease), transform 1.4s var(--ease);
-}
-.moment.in .moment-media{opacity:1;transform:none}
-.moment-media img{
-  width:100%;height:100%;
-  object-fit:cover;object-position:center top;
-}
-.moment-shade{
-  position:absolute;inset:0;
-  background:linear-gradient(180deg, transparent 35%, rgba(8,10,14,.82) 100%);
+/* floating deco bubbles */
+.deco{
+  position:absolute;border-radius:50%;
+  background:rgba(255,255,255,.35);
   pointer-events:none;
 }
-.moment-copy{
-  position:relative;z-index:2;
-  padding:48px var(--pad) 56px;
-  max-width:28rem;
-  opacity:0;transform:translateY(16px);
-  transition:opacity .7s var(--ease) .15s, transform .7s var(--ease) .15s;
+.deco-1{width:64px;height:64px;top:8%;right:12%;animation:float 7s ease-in-out infinite}
+.deco-2{width:36px;height:36px;bottom:18%;left:6%;animation:float 6s ease-in-out .6s infinite}
+.deco-3{width:22px;height:22px;top:42%;left:18%;opacity:.5;animation:float 8s ease-in-out 1s infinite}
+
+.phone{
+  position:absolute;
+  left:50%;top:50%;
+  width:min(220px,52vw);
+  aspect-ratio:9/17.5;
+  transform:translate(-55%,-52%);
+  border:2px solid var(--ink);
+  border-radius:34px;
+  background:
+    linear-gradient(165deg, #2a3340 0%, #1a2028 100%);
+  overflow:hidden;
+  box-shadow:var(--shadow);
 }
-.moment.in .moment-copy{opacity:1;transform:none}
-.moment-copy h2{
-  font-family:Syne,sans-serif;font-weight:800;
-  font-size:clamp(2rem,5vw,3rem);
-  letter-spacing:-.05em;line-height:1;
+.phone-notch{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:42%;height:18px;border-radius:20px;background:#0c0e12;z-index:2;
 }
-.moment-copy p{
-  margin-top:10px;
-  color:rgba(244,245,247,.72);
-  font-size:1.05rem;max-width:22rem;
+.phone-screen{
+  position:absolute;inset:10px;
+  border-radius:26px;overflow:hidden;
+  background:
+    radial-gradient(circle at 30% 20%, #3d4a5c, transparent 50%),
+    linear-gradient(180deg,#2c3644,#1b222c);
+}
+.phone-face{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg, transparent 45%, rgba(8,10,14,.55) 100%),
+    radial-gradient(ellipse at 50% 35%, #8a9aab 0%, #4a5564 45%, #2a3340 100%);
+}
+.phone-face::after{
+  content:"";
+  position:absolute;left:50%;top:28%;
+  width:52%;aspect-ratio:1;border-radius:50%;
+  transform:translateX(-50%);
+  background:radial-gradient(circle at 40% 35%, #c5d0db, #6b7888 70%);
+  opacity:.9;
 }
 
-/* ——— market strip ——— */
-.strip{
-  display:grid;
-  background:var(--forest);
-  color:#E8F5F0;
+.float{
+  position:absolute;
+  background:var(--paper);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
 }
-.strip img{
-  width:100%;
-  height:min(42vw,380px);
-  object-fit:cover;
+.float-chat{
+  right:2%;top:14%;
+  width:min(220px,58vw);
+  padding:12px 14px;
+  display:flex;gap:10px;align-items:flex-start;
+  animation:float 5.5s ease-in-out infinite;
 }
-.strip-copy{
-  padding:clamp(36px,6vw,64px) var(--pad);
-  display:flex;flex-direction:column;justify-content:center;
-  gap:10px;
+.avatar{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;
+  font-size:12px;font-weight:700;color:#fff;
 }
-.strip-copy h2{
+.av-a{background:#1FA88C}
+.av-b{background:#5B6CFF}
+.av-c{background:#E8A317}
+.float-chat .body{min-width:0}
+.float-chat .name{font-size:12px;font-weight:700}
+.float-chat .msg{font-size:12px;color:var(--mute);margin-top:2px;line-height:1.35}
+
+.float-voice{
+  left:0;bottom:22%;
+  width:min(200px,54vw);
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  animation:float 6.2s ease-in-out .4s infinite;
+}
+.play{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--coral);color:#fff;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.play svg{width:12px;height:12px;margin-left:1px}
+.wave{display:flex;align-items:center;gap:3px;height:28px;flex:1}
+.wave i{
+  display:block;width:3px;border-radius:99px;background:#111318;
+  animation:eq 1.2s ease-in-out infinite;
+}
+.wave i:nth-child(1){height:28%;animation-delay:0s}
+.wave i:nth-child(2){height:55%;animation-delay:.1s}
+.wave i:nth-child(3){height:80%;animation-delay:.15s}
+.wave i:nth-child(4){height:42%;animation-delay:.05s}
+.wave i:nth-child(5){height:68%;animation-delay:.2s}
+.wave i:nth-child(6){height:35%;animation-delay:.12s}
+.wave i:nth-child(7){height:90%;animation-delay:.18s}
+.wave i:nth-child(8){height:48%;animation-delay:.08s}
+.wave-meta{font-size:11px;font-weight:650;color:var(--mute);white-space:nowrap}
+
+.float-call{
+  right:8%;bottom:10%;
+  width:92px;padding:10px;
+  text-align:center;
+  animation:float 5.8s ease-in-out .8s infinite;
+}
+.float-call .thumb{
+  width:100%;aspect-ratio:1;border-radius:14px;
+  background:
+    radial-gradient(circle at 45% 35%, #d7e0ea, #7a8796 70%);
+  margin-bottom:8px;
+}
+.float-call .label{font-size:11px;font-weight:700}
+.float-call .sub{font-size:10px;color:var(--mute);margin-top:2px}
+
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-8px)}
+}
+@keyframes eq{
+  0%,100%{transform:scaleY(1)}
+  50%{transform:scaleY(.55)}
+}
+
+/* ——— feature ——— */
+.feature{
+  background:var(--paper);
+  border-radius:40px 40px 0 0;
+  padding:clamp(56px,8vw,96px) var(--pad);
+}
+.feature-inner{
+  max-width:1180px;margin:0 auto;
+  display:grid;gap:40px;
+  align-items:center;
+}
+.feature h2{
   font-family:Syne,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,4vw,2.5rem);
-  letter-spacing:-.04em;line-height:1.05;
+  font-size:clamp(1.7rem,3.8vw,2.55rem);
+  letter-spacing:-.045em;line-height:1.15;
+  max-width:18ch;
 }
-.strip-copy p{color:rgba(232,245,240,.72);max-width:28rem}
+.feature .aside{color:var(--mute);max-width:28rem;margin-top:14px;line-height:1.55}
+.feature-visual{
+  position:relative;
+  display:grid;gap:16px;
+  justify-items:start;
+}
+@media (min-width:860px){
+  .feature-inner{grid-template-columns:1fr 1fr;gap:56px}
+  .feature-visual{justify-items:end}
+}
+
+.chip{
+  display:inline-flex;align-items:center;gap:10px;
+  background:#F3F5F7;border-radius:16px;
+  padding:12px 14px;
+  font-size:13px;font-weight:650;
+  box-shadow:0 8px 20px rgba(17,19,24,.04);
+}
+.chip .dot{width:10px;height:10px;border-radius:50%;background:#1FA88C}
+.chip.market .dot{background:var(--coral)}
+
+.chat-card{
+  width:min(100%,340px);
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+.chat-card .head{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;padding-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.chat-card .head strong{font-size:14px;display:block}
+.chat-card .head span{font-size:12px;color:var(--mute)}
+.bubbles{display:grid;gap:10px}
+.bubble{
+  max-width:88%;
+  padding:10px 12px;border-radius:16px;
+  font-size:13px;line-height:1.4;
+}
+.bubble.in{background:#EEF2F5;border-bottom-left-radius:6px}
+.bubble.out{
+  margin-left:auto;background:#D8EDE6;border-bottom-right-radius:6px;
+  font-weight:550;
+}
+
+.pillars{
+  display:grid;gap:14px;
+  margin-top:28px;
+  grid-template-columns:1fr;
+}
+@media (min-width:560px){
+  .pillars{grid-template-columns:repeat(3,1fr)}
+}
+.pillar{
+  padding:18px 16px;
+  border-radius:18px;
+  background:#F6F8F9;
+}
+.pillar strong{
+  display:block;
+  font-family:Syne,sans-serif;font-weight:700;
+  font-size:1rem;letter-spacing:-.02em;margin-bottom:6px;
+}
+.pillar p{font-size:13px;color:var(--mute);line-height:1.45}
+
+/* ——— close band ——— */
+.close{
+  background:var(--mint);
+  padding:clamp(48px,7vw,80px) var(--pad);
+}
+.close-inner{
+  max-width:1180px;margin:0 auto;
+  display:grid;gap:28px;align-items:center;
+}
+.close h2{
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(1.7rem,3.6vw,2.4rem);
+  letter-spacing:-.04em;line-height:1.1;
+  max-width:14ch;
+}
+.close p{color:var(--mute);max-width:26rem;margin-top:10px}
+.close .actions{display:flex;flex-wrap:wrap;gap:12px}
+.btn.ghost{
+  background:transparent;color:var(--ink);
+  border:1.5px solid rgba(17,19,24,.18);
+  box-shadow:none;
+}
+.btn.ghost:hover{border-color:var(--ink);box-shadow:none;filter:none}
 @media (min-width:800px){
-  .strip{grid-template-columns:1.15fr 0.85fr}
-  .strip img{height:100%;min-height:320px}
+  .close-inner{grid-template-columns:1.2fr auto;gap:40px}
 }
 
 /* ——— about ——— */
 .about{
-  padding:clamp(56px,8vw,96px) var(--pad);
+  background:var(--paper);
+  padding:clamp(48px,7vw,72px) var(--pad) 40px;
   border-top:1px solid var(--line);
 }
-.about-inner{width:min(640px,100%);margin:0 auto}
+.about-inner{max-width:680px;margin:0 auto}
 .about .eyebrow{
-  font-family:Syne,sans-serif;font-weight:600;
-  font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--mute);margin-bottom:12px;
+  font-size:12px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--mute);margin-bottom:10px;
 }
 .about h2{
   font-family:Syne,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,4vw,2.4rem);
-  letter-spacing:-.045em;line-height:1.1;
-}
-.about .lede{
-  margin-top:16px;color:var(--mute);
-  font-size:1.05rem;line-height:1.55;max-width:36rem;
-}
-.about .lede a{
-  color:var(--ink);
-  border-bottom:1px solid rgba(47,212,181,.55);
-}
-.about .lede a:hover{border-color:var(--mint)}
-.family{
-  margin-top:36px;
-  border-top:1px solid var(--line);
-}
-.family a{
-  display:flex;align-items:baseline;justify-content:space-between;gap:20px;
-  padding:18px 0;
-  border-bottom:1px solid var(--line);
-  transition:padding-left .3s var(--ease);
-}
-.family a:hover{padding-left:6px}
-.family .pname{
-  font-family:Syne,sans-serif;font-weight:700;
-  font-size:1.1rem;letter-spacing:-.03em;
-  display:block;
-}
-.family .phint{
-  display:block;margin-top:4px;
-  color:var(--mute);font-size:.95rem;line-height:1.4;
-  max-width:36rem;
-}
-.family .go{opacity:.4;flex-shrink:0}
-.family a:hover .go{opacity:1;color:var(--mint)}
-
-/* ——— close ——— */
-.end{
-  padding:clamp(48px,7vw,80px) var(--pad);
-  text-align:center;
-  border-top:1px solid var(--line);
-  background:
-    radial-gradient(ellipse 60% 80% at 50% 100%, rgba(47,212,181,.14), transparent 70%),
-    var(--bg);
-}
-.end .logo{
-  display:inline-block;margin-bottom:8px;
-  color:var(--forest);font-size:1.15rem;
-}
-.end h2{
-  font-family:Syne,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,4vw,2.35rem);
+  font-size:clamp(1.5rem,3vw,2rem);
   letter-spacing:-.04em;
 }
-.end .stores{justify-content:center;margin-top:22px;opacity:1;transform:none;animation:none}
+.about .lede{margin-top:12px;color:var(--mute);line-height:1.55}
+.about .lede a{color:var(--ink);border-bottom:1px solid rgba(31,168,140,.45)}
+.family{margin-top:28px;border-top:1px solid var(--line)}
+.family a{
+  display:flex;justify-content:space-between;gap:16px;align-items:baseline;
+  padding:16px 0;border-bottom:1px solid var(--line);
+}
+.family .pname{font-weight:700;font-size:1rem}
+.family .phint{display:block;margin-top:3px;font-size:.92rem;color:var(--mute)}
+.family .go{opacity:.35}
+.family a:hover .go{opacity:1;color:var(--coral)}
 
 footer{
-  padding:28px var(--pad) 48px;
+  background:var(--paper);
+  padding:24px var(--pad) 40px;
   display:flex;flex-wrap:wrap;gap:14px 24px;
   justify-content:space-between;
   font-size:13px;color:var(--mute);
   border-top:1px solid var(--line);
+  max-width:100%;
+}
+.footer-inner{
+  width:min(1180px,100%);margin:0 auto;
+  display:flex;flex-wrap:wrap;gap:14px 24px;
+  justify-content:space-between;
 }
 .links{display:flex;gap:16px;flex-wrap:wrap}
 .links a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){
-  .hero-copy .brand,.hero-copy .lead,.stores,.hero-visual,
-  .moment-media,.moment-copy{animation:none !important;transition:none !important;opacity:1 !important;transform:none !important}
+  .kicker,.hero h1,.hero .lead,.hero .cta-row,.hero-stage{animation:none;opacity:1;transform:none}
+  .float-chat,.float-voice,.float-call,.deco,.wave i{animation:none}
 }
 </style>
 </head>
 <body>
   <header class="bar">
-    <a class="logo" href="./">Nomli</a>
+    <a class="brand" href="./">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A3.5 3.5 0 0 1 7.5 3h9A3.5 3.5 0 0 1 20 6.5v6A3.5 3.5 0 0 1 16.5 16H10l-4.2 3.2c-.7.5-1.8 0-1.8-.9V6.5z"/></svg>
+      </span>
+      Nomli
+    </a>
+    <nav class="bar-nav" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#about">About</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
     <div class="bar-actions">
-      <a class="nav-link" href="#about">About</a>
-      <a class="dl" href="#get">Get Nomli</a>
+      <a class="quiet" href="#get">iOS &amp; Android</a>
+      <a class="btn" href="#get">
+        Get Nomli
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+      </a>
     </div>
   </header>
 
   <main>
     <section class="hero" aria-label="Nomli">
       <div class="hero-copy">
-        <h1 class="brand">Nomli</h1>
-        <p class="lead">Posts, people, calls &amp; local Market — one social home.</p>
-        <div class="stores" id="get">
-          <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.8-1.9c.9-1.1 1.3-2.2 1.3-2.3-.1 0-2.5-.9-2.5-3.9zM14.1 5.8c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.7 1.5-.6.7-1.1 1.8-.9 2.8 1 .1 2-.6 2.7-1.4z"/></svg>
-            App Store
+        <p class="kicker">Social · chat · local Market</p>
+        <h1>Say hi to your people.<br><span class="soft">Stay close.</span></h1>
+        <p class="lead">
+          Posts, DMs, audio calls, and nearby Market — one calm place for the people
+          you already care about.
+        </p>
+        <div class="cta-row" id="get">
+          <a class="btn" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
+            Get Nomli
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
           </a>
-          <a class="store ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.6.6-.6 1.1v17.2c0 .5.3.9.6 1.1l9.7-9.7L3.6 2.3zm12.1 7L5.2 3.1l9.4 9.4 1.1-1.1zm1.4 1.4-1.6 1.6 1.6 1.6 3.1-1.8c.5-.3.5-1.1 0-1.4l-3.1-1.8zM5.2 20.9l10.5-6.2-1.1-1.1L5.2 20.9z"/></svg>
-            Google Play
-          </a>
+          <div class="store-links">
+            <a href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
+            <a href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
+          </div>
         </div>
       </div>
-      <div class="hero-visual">
-        <img src="img/shorts/image2.png" width="1290" height="2796" alt="Nomli Discover feed with posts and follows" loading="eager" fetchpriority="high">
+
+      <div class="hero-stage" aria-hidden="true">
+        <span class="deco deco-1"></span>
+        <span class="deco deco-2"></span>
+        <span class="deco deco-3"></span>
+
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen"><div class="phone-face"></div></div>
+        </div>
+
+        <div class="float float-chat">
+          <div class="avatar av-a">A</div>
+          <div class="body">
+            <div class="name">Aisha</div>
+            <div class="msg">Market open till 7 — the jollof is going fast.</div>
+          </div>
+        </div>
+
+        <div class="float float-voice">
+          <div class="play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="wave" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <span class="wave-meta">0:18</span>
+        </div>
+
+        <div class="float float-call">
+          <div class="thumb"></div>
+          <div class="label">Maya</div>
+          <div class="sub">On a call</div>
+        </div>
       </div>
     </section>
 
-    <section class="moment" aria-labelledby="m-people">
-      <div class="moment-media">
-        <img src="img/shorts/image3.png" width="1290" height="2796" alt="People to follow in Nomli" loading="lazy">
-      </div>
-      <div class="moment-shade" aria-hidden="true"></div>
-      <div class="moment-copy">
-        <h2 id="m-people">People</h2>
-        <p>Find who to follow — then keep the conversation going in chat.</p>
+    <section class="feature" id="features" aria-labelledby="feat-title">
+      <div class="feature-inner">
+        <div>
+          <h2 id="feat-title">Be yourself with the people who matter — feed, chat, and calls in one home.</h2>
+          <p class="aside">No juggling five apps for the same circle. Scroll the day, reply in chat, hop on audio when text isn’t enough.</p>
+          <div class="pillars">
+            <div class="pillar">
+              <strong>Feed</strong>
+              <p>Discover posts and people worth following.</p>
+            </div>
+            <div class="pillar">
+              <strong>Chat &amp; calls</strong>
+              <p>DMs and audio when you need a real voice.</p>
+            </div>
+            <div class="pillar">
+              <strong>Market</strong>
+              <p>Local listings next to the same conversations.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-visual">
+          <div class="chip market">
+            <span class="dot"></span>
+            New nearby · Homemade food
+          </div>
+          <div class="chat-card">
+            <div class="head">
+              <div class="avatar av-b">K</div>
+              <div>
+                <strong>Kai</strong>
+                <span>Active now</span>
+              </div>
+            </div>
+            <div class="bubbles">
+              <div class="bubble in">You free later? There’s a market stall two blocks down.</div>
+              <div class="bubble out">Yes — calling you in 5.</div>
+              <div class="bubble in">Bring cash. See you.</div>
+            </div>
+          </div>
+          <div class="chip">
+            <span class="dot"></span>
+            Voice note · 0:18
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="moment" aria-labelledby="m-market">
-      <div class="moment-media">
-        <img src="img/shorts/image4.png" width="1290" height="2796" alt="Nomli local Market" loading="lazy">
-      </div>
-      <div class="moment-shade" aria-hidden="true"></div>
-      <div class="moment-copy">
-        <h2 id="m-market">Market</h2>
-        <p>Local listings next to the same people you already talk to.</p>
-      </div>
-    </section>
-
-    <section class="moment" aria-labelledby="m-calls">
-      <div class="moment-media">
-        <img src="img/shorts/image5.png" width="1290" height="2796" alt="Nomli audio calls" loading="lazy">
-      </div>
-      <div class="moment-shade" aria-hidden="true"></div>
-      <div class="moment-copy">
-        <h2 id="m-calls">Calls</h2>
-        <p>Jump on audio when a thread needs a voice, not another text.</p>
-      </div>
-    </section>
-
-    <section class="strip" aria-labelledby="strip-title">
-      <img src="img/photos/market-strip.jpg" width="1600" height="900" alt="Browsing clothes at a local market" loading="lazy">
-      <div class="strip-copy">
-        <h2 id="strip-title">Trade nearby</h2>
-        <p>Market sits in the same app as your feed and chats — no extra install for local deals.</p>
+    <section class="close" aria-labelledby="close-title">
+      <div class="close-inner">
+        <div>
+          <h2 id="close-title">Open Nomli on your phone</h2>
+          <p>Free on the App Store and Google Play. Built for everyday social — not another noisy feed clone.</p>
+        </div>
+        <div class="actions">
+          <a class="btn" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
+          <a class="btn ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
+        </div>
       </div>
     </section>
 
     <section class="about" id="about" aria-labelledby="about-title">
       <div class="about-inner">
-        <p class="eyebrow">About us</p>
+        <p class="eyebrow">About</p>
         <h2 id="about-title">Built by Nomli Tech</h2>
         <p class="lede">
           Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> —
-          a Finland-based studio shipping mobile apps, websites, and the realtime stack
-          behind them.
+          a Finland-based studio shipping mobile apps, websites, and the realtime stack behind them.
         </p>
         <div class="family" role="list">
           <a href="https://nomli.cc/" rel="noopener" role="listitem">
             <span>
               <span class="pname">Nomli Tech</span>
-              <span class="phint">Studio — apps, sites &amp; product builds · nomli.cc</span>
+              <span class="phint">Studio — apps, sites &amp; product builds</span>
             </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://www.niilox.com/" rel="noopener" role="listitem">
             <span>
               <span class="pname">Niilox</span>
-              <span class="phint">Realtime API — chat, WebRTC &amp; LiveKit monitor</span>
+              <span class="phint">Realtime API — chat, WebRTC &amp; monitor</span>
             </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://tern.niilox.com/" rel="noopener" role="listitem">
             <span>
               <span class="pname">Tern</span>
-              <span class="phint">Private messaging — tiny footprint, no phone number</span>
+              <span class="phint">Private messaging — tiny footprint</span>
             </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://driftin.live/" rel="noopener" role="listitem">
             <span>
               <span class="pname">Drift</span>
-              <span class="phint">Livestream, chat &amp; gifts — running on Niilox</span>
+              <span class="phint">Livestream, chat &amp; gifts</span>
             </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
         </div>
       </div>
     </section>
-
-    <section class="end" aria-labelledby="end-title">
-      <a class="logo" href="./">Nomli</a>
-      <h2 id="end-title">Open your feed</h2>
-      <div class="stores">
-        <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
-        <a class="store ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
-      </div>
-    </section>
   </main>
 
   <footer>
-    <div>© <span id="y"></span> Nomli Tech Limited</div>
-    <div class="links">
-      <a href="#about">About</a>
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a>
-      <a href="https://www.niilox.com/" rel="noopener">Niilox</a>
-      <a href="mailto:support@nomlimingle.com">Support</a>
+    <div class="footer-inner">
+      <div>© <span id="y"></span> Nomli Tech Limited</div>
+      <div class="links">
+        <a href="#about">About</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a>
+        <a href="mailto:support@nomlimingle.com">Support</a>
+      </div>
     </div>
   </footer>
 <script>
 document.getElementById('y').textContent = new Date().getFullYear();
-
-(function () {
-  if (/\/about\/?$/.test(location.pathname)) {
-    var aboutEl = document.getElementById('about');
-    if (aboutEl) {
-      requestAnimationFrame(function () {
-        aboutEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  }
-
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var moments = document.querySelectorAll('.moment');
-  if (reduce) {
-    moments.forEach(function (el) { el.classList.add('in'); });
-    return;
-  }
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('in');
-        io.unobserve(entry.target);
-      });
-    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
-    moments.forEach(function (el) { io.observe(el); });
-  } else {
-    moments.forEach(function (el) { el.classList.add('in'); });
-  }
-})();
+if (/\/about\/?$/.test(location.pathname)) {
+  var aboutEl = document.getElementById('about');
+  if (aboutEl) requestAnimationFrame(function () {
+    aboutEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
 </script>
 </body>
 </html>
