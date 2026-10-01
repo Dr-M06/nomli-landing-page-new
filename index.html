@@ -19,12 +19,12 @@
 <meta name="twitter:title" content="Nomli — social feed, chat, calls & Market">
 <meta name="twitter:description" content="Share posts, follow people, call friends, and trade nearby — in one app.">
 <meta name="twitter:image" content="https://www.nomlimingle.com/twitter-image.png">
-<meta name="theme-color" content="#0E1116">
+<meta name="theme-color" content="#EDEFF2">
 <link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -80,406 +80,317 @@
 </script>
 <style>
 :root{
-  --mint:#3DDFC2;
-  --ink:#0E1116;
-  --fog:#9AA1AD;
-  --pad:clamp(20px,5vw,48px);
+  --bg:#EDEFF2;
+  --ink:#12141A;
+  --mute:#5A6270;
+  --line:rgba(18,20,26,.1);
+  --mint:#2FD4B5;
+  --forest:#16382E;
+  --pad:clamp(20px,4.5vw,56px);
+  --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{
-  background:var(--ink);
-  color:#F7F8FA;
-  font:16px/1.45 Figtree,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  font:16px/1.5 Figtree,system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
   overflow-x:clip;
 }
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%;height:auto}
 
-/* ——— top bar ——— */
+/* ——— nav ——— */
 .bar{
-  position:fixed;inset:0 0 auto;z-index:50;
+  position:absolute;inset:0 0 auto;z-index:20;
   display:flex;align-items:center;justify-content:space-between;
-  padding:18px var(--pad);
-  background:linear-gradient(180deg,rgba(14,17,22,.92),transparent);
-  pointer-events:none;
+  padding:22px var(--pad);
 }
-.bar a,.bar .dl{pointer-events:auto}
-.bar-actions{display:flex;align-items:center;gap:18px}
-.nav-link{
-  font-size:14px;font-weight:600;color:var(--fog);
-  transition:color .25s ease;
+.logo{
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:1.35rem;letter-spacing:-.05em;
 }
-.nav-link:hover{color:#fff}
+.bar-actions{display:flex;align-items:center;gap:22px}
+.nav-link{font-size:14px;font-weight:600;color:var(--mute)}
+.nav-link:hover{color:var(--ink)}
 .dl{
   font-size:13px;font-weight:600;
-  padding:10px 16px;border-radius:999px;
-  background:var(--mint);color:var(--ink);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
-  animation:cta-breathe 2.8s ease-in-out infinite;
+  padding:10px 18px;
+  background:var(--ink);color:#fff;
+  transition:background .2s ease, transform .25s var(--ease);
 }
-.dl:hover{transform:scale(1.06);box-shadow:0 0 0 6px rgba(61,223,194,.2)}
-.logo{
-  font-family:Outfit,sans-serif;font-weight:800;font-size:1.25rem;
-  letter-spacing:-.05em;
-  transition:color .25s ease, letter-spacing .35s ease;
-}
-.logo:hover{color:var(--mint);letter-spacing:-.02em}
+.dl:hover{background:var(--forest);transform:translateY(-1px)}
 
-/* ——— stage 1: the phone IS the page ——— */
-.stage{
+/* ——— hero: one composition ——— */
+.hero{
+  position:relative;
   min-height:100svh;
   display:grid;
-  place-items:end center;
-  padding:88px var(--pad) 48px;
-  position:relative;
-  overflow:visible;
-}
-.stage-glow{
-  position:absolute;
-  inset:-15% -35% -25%;
-  background:
-    radial-gradient(ellipse 65% 55% at 50% 42%, rgba(61,223,194,.3), transparent 72%),
-    radial-gradient(ellipse 45% 40% at 78% 58%, rgba(61,223,194,.14), transparent 75%);
-  pointer-events:none;
-  animation:glow-pulse 5s ease-in-out infinite alternate;
-  -webkit-mask-image:radial-gradient(ellipse 85% 75% at 50% 45%, #000 35%, transparent 78%);
-  mask-image:radial-gradient(ellipse 85% 75% at 50% 45%, #000 35%, transparent 78%);
-}
-@keyframes glow-pulse{
-  from{opacity:.72}
-  to{opacity:1}
-}
-.device{
-  position:relative;z-index:1;
-  width:min(340px,86vw);
-  border-radius:44px;
-  border:12px solid #1A1E26;
-  background:#000;
+  align-items:end;
   overflow:hidden;
-  box-shadow:0 50px 100px rgba(0,0,0,.55);
-  animation:
-    float-in .9s cubic-bezier(.22,1,.36,1) both,
-    phone-float 5.5s ease-in-out 1s infinite;
-  transform-style:preserve-3d;
-  will-change:transform;
-  transition:box-shadow .4s ease;
+  background:
+    radial-gradient(ellipse 90% 70% at 70% 20%, rgba(47,212,181,.18), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 90%, rgba(22,56,46,.08), transparent 55%),
+    var(--bg);
 }
-.device.is-tilting{animation:none}
-.device img{width:100%;height:auto}
-@keyframes float-in{
-  from{opacity:0;transform:translateY(28px) scale(.97)}
-  to{opacity:1;transform:none}
-}
-@keyframes phone-float{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-14px)}
-}
-@keyframes cta-breathe{
-  0%,100%{box-shadow:0 0 0 0 rgba(61,223,194,0)}
-  50%{box-shadow:0 0 0 8px rgba(61,223,194,.18)}
-}
-
-/* ——— copy dock under / beside phone on large ——— */
-.dock{
+.hero-copy{
   position:relative;z-index:2;
-  width:100%;
-  max-width:420px;
-  margin:0 auto;
-  padding:28px 0 8px;
-  text-align:center;
+  padding:100px var(--pad) 40px;
+  max-width:34rem;
 }
-.dock .name,
-.dock .tag,
-.dock .stores{
-  opacity:0;
-  animation:rise-pop .75s cubic-bezier(.22,1,.36,1) forwards;
+.hero-copy .brand{
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(4.2rem,16vw,7.5rem);
+  letter-spacing:-.07em;line-height:.88;
+  color:var(--forest);
+  opacity:0;transform:translateY(18px);
+  animation:rise .9s var(--ease) .1s forwards;
 }
-.dock .name{animation-delay:.15s}
-.dock .tag{animation-delay:.28s}
-.dock .stores{animation-delay:.42s}
-@keyframes rise-pop{
-  from{opacity:0;transform:translateY(22px) scale(.98)}
-  to{opacity:1;transform:none}
-}
-.dock .name{
-  font-family:Outfit,sans-serif;font-weight:800;
-  font-size:clamp(2.75rem,10vw,4rem);
-  letter-spacing:-.06em;line-height:.95;
-  background:linear-gradient(105deg,#fff 40%,var(--mint) 55%,#fff 70%);
-  background-size:220% 100%;
-  -webkit-background-clip:text;background-clip:text;
-  color:transparent;
-  animation:
-    rise-pop .75s cubic-bezier(.22,1,.36,1) .15s forwards,
-    shine 4.5s ease-in-out 1.2s infinite;
-}
-@keyframes shine{
-  0%,100%{background-position:100% 50%}
-  50%{background-position:0% 50%}
-}
-.dock .tag{
-  margin-top:12px;color:var(--fog);
-  font-size:1.05rem;line-height:1.4;
+.hero-copy .lead{
+  margin-top:18px;
+  font-size:clamp(1.05rem,2.4vw,1.25rem);
+  color:var(--mute);line-height:1.4;max-width:22rem;
+  opacity:0;transform:translateY(14px);
+  animation:rise .9s var(--ease) .22s forwards;
 }
 .stores{
-  display:flex;gap:10px;margin-top:22px;
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin-top:28px;
+  opacity:0;transform:translateY(14px);
+  animation:rise .9s var(--ease) .36s forwards;
 }
 .store{
-  flex:1;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  height:50px;border-radius:999px;
+  min-width:148px;height:48px;padding:0 18px;
   font-size:14px;font-weight:600;
-  background:var(--mint);color:var(--ink);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1), background .2s, border-color .2s, box-shadow .3s;
+  background:var(--ink);color:#fff;
+  transition:transform .25s var(--ease), background .2s ease;
 }
-.store:hover{
-  transform:translateY(-3px) scale(1.03);
-  box-shadow:0 12px 28px rgba(61,223,194,.35);
-}
-.store:active{transform:scale(.97)}
+.store:hover{transform:translateY(-2px);background:var(--forest)}
 .store.ghost{
-  background:transparent;color:#fff;
-  border:1px solid rgba(255,255,255,.28);
+  background:transparent;color:var(--ink);
+  border:1.5px solid rgba(18,20,26,.22);
 }
-.store.ghost:hover{
-  border-color:var(--mint);color:var(--mint);
-  box-shadow:0 12px 28px rgba(61,223,194,.15);
-}
-.store svg{width:17px;height:17px;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
-.store:hover svg{transform:scale(1.12) rotate(-6deg)}
+.store.ghost:hover{border-color:var(--ink);background:rgba(18,20,26,.04)}
+.store svg{width:16px;height:16px}
 
-@media (min-width:960px){
-  .stage{
-    grid-template-columns:1fr min(360px,34vw);
-    align-items:center;
-    justify-content:center;
-    gap:clamp(40px,6vw,80px);
-    padding:48px var(--pad) 64px;
-    max-width:1100px;margin:0 auto;
-  }
-  .device{width:min(360px,34vw);grid-column:2;grid-row:1}
-  .dock{
-    grid-column:1;grid-row:1;
-    text-align:left;max-width:none;margin:0;padding:0;
-  }
-  .dock .name{font-size:clamp(3.5rem,6vw,5.5rem)}
-  .stores{max-width:380px}
+.hero-visual{
+  position:relative;z-index:1;
+  width:100%;
+  margin-top:8px;
+  opacity:0;transform:translateY(28px) scale(.985);
+  animation:rise-scale 1.1s var(--ease) .2s forwards;
+}
+.hero-visual img{
+  width:100%;
+  height:auto;
+  object-fit:cover;
+  object-position:center top;
 }
 
-/* ——— filmstrip of screens ——— */
-.film{
-  padding:48px 0 64px;
-  border-top:1px solid rgba(255,255,255,.06);
-  position:relative;
-  z-index:1;
-  background:var(--ink);
+@keyframes rise{
+  to{opacity:1;transform:none}
 }
-.film-inner{
-  width:min(1080px,calc(100% - 2 * var(--pad)));
-  margin:0 auto;
+@keyframes rise-scale{
+  to{opacity:1;transform:none}
 }
-.film h2{
-  font-family:Outfit,sans-serif;font-weight:700;
-  font-size:1.1rem;letter-spacing:-.02em;
-  padding:0 0 20px;
-  color:var(--fog);
-}
-.rail{
-  display:flex;gap:16px;
-  justify-content:center;
-  flex-wrap:nowrap;
-  overflow-x:auto;scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  padding:0 0 8px;
-  scrollbar-width:none;
-}
-.rail::-webkit-scrollbar{display:none}
-.frame{
-  flex:0 0 auto;width:min(200px,52vw);
-  scroll-snap-align:start;
-  opacity:0;transform:translateY(36px) scale(.94);
-  transition:
-    opacity .7s cubic-bezier(.22,1,.36,1),
-    transform .7s cubic-bezier(.22,1,.36,1);
-  transition-delay:calc(var(--i, 0) * 90ms);
-}
-.frame.in{opacity:1;transform:none}
-.frame:hover{z-index:2}
-.frame:hover .shell{
-  transform:translateY(-10px) scale(1.04) rotate(var(--tilt, -1.5deg));
-  box-shadow:0 28px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(61,223,194,.35);
-}
-.frame:nth-child(even){--tilt:1.5deg}
+
 @media (min-width:900px){
-  .rail{overflow:visible}
-  .frame{width:calc((100% - 48px) / 4);max-width:220px}
+  .hero{
+    grid-template-columns:minmax(280px,0.9fr) minmax(360px,1.1fr);
+    align-items:stretch;
+  }
+  .hero-copy{
+    display:flex;flex-direction:column;justify-content:center;
+    padding:120px var(--pad) 80px;
+    max-width:none;
+  }
+  .hero-visual{
+    margin:0;
+    min-height:100svh;
+    align-self:stretch;
+  }
+  .hero-visual img{
+    width:100%;
+    height:100%;
+    min-height:100svh;
+    object-fit:cover;
+    object-position:center center;
+  }
 }
-.frame .shell{
-  border-radius:28px;overflow:hidden;
-  border:8px solid #1A1E26;background:#000;
-  transition:transform .45s cubic-bezier(.34,1.4,.64,1), box-shadow .45s ease;
-}
-.frame .shell img{width:100%}
-.frame p{
-  margin-top:12px;
-  font-family:Outfit,sans-serif;font-weight:600;font-size:13px;
-  color:var(--fog);letter-spacing:-.01em;
-  transition:color .25s ease, transform .35s ease;
-}
-.frame:hover p{color:var(--mint);transform:translateY(2px)}
 
-/* ——— one line pitch ——— */
-.line{
-  padding:72px var(--pad);
-  text-align:center;
-  border-top:1px solid rgba(255,255,255,.06);
+/* ——— moment bands: one job each ——— */
+.moment{
+  position:relative;
+  min-height:min(88svh,920px);
+  display:grid;
+  align-items:end;
+  overflow:hidden;
+  background:#0E1116;
+  color:#F4F5F7;
 }
-.line h2{
-  font-family:Outfit,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,5vw,2.75rem);
-  letter-spacing:-.045em;line-height:1.1;
-  max-width:16ch;margin:0 auto;
+.moment + .moment{border-top:1px solid rgba(255,255,255,.06)}
+.moment-media{
+  position:absolute;inset:0;
+  opacity:0;transform:scale(1.04);
+  transition:opacity 1s var(--ease), transform 1.4s var(--ease);
 }
-.line h2 .word{
-  display:inline-block;
-  opacity:0;transform:translateY(18px);
-  transition:opacity .55s cubic-bezier(.22,1,.36,1), transform .55s cubic-bezier(.22,1,.36,1);
-  transition-delay:calc(var(--w, 0) * 100ms);
+.moment.in .moment-media{opacity:1;transform:none}
+.moment-media img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center top;
 }
-.line.in h2 .word{opacity:1;transform:none}
-.line h2 .accent{color:var(--mint);position:relative}
-.line h2 .accent::after{
-  content:"";position:absolute;left:0;right:0;bottom:.08em;height:.12em;
-  background:var(--mint);border-radius:99px;opacity:.35;
-  transform:scaleX(0);transform-origin:left;
-  transition:transform .6s cubic-bezier(.22,1,.36,1) .35s;
+.moment-shade{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, transparent 35%, rgba(8,10,14,.82) 100%);
+  pointer-events:none;
 }
-.line.in h2 .accent::after{transform:scaleX(1)}
-.line p{
-  margin:16px auto 0;max-width:28rem;
-  color:var(--fog);font-size:1rem;
-  opacity:0;transform:translateY(12px);
-  transition:opacity .6s ease .35s, transform .6s ease .35s;
+.moment-copy{
+  position:relative;z-index:2;
+  padding:48px var(--pad) 56px;
+  max-width:28rem;
+  opacity:0;transform:translateY(16px);
+  transition:opacity .7s var(--ease) .15s, transform .7s var(--ease) .15s;
 }
-.line.in p{opacity:1;transform:none}
+.moment.in .moment-copy{opacity:1;transform:none}
+.moment-copy h2{
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(2rem,5vw,3rem);
+  letter-spacing:-.05em;line-height:1;
+}
+.moment-copy p{
+  margin-top:10px;
+  color:rgba(244,245,247,.72);
+  font-size:1.05rem;max-width:22rem;
+}
 
-/* ——— about / family ——— */
+/* ——— market strip ——— */
+.strip{
+  display:grid;
+  background:var(--forest);
+  color:#E8F5F0;
+}
+.strip img{
+  width:100%;
+  height:min(42vw,380px);
+  object-fit:cover;
+}
+.strip-copy{
+  padding:clamp(36px,6vw,64px) var(--pad);
+  display:flex;flex-direction:column;justify-content:center;
+  gap:10px;
+}
+.strip-copy h2{
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(1.75rem,4vw,2.5rem);
+  letter-spacing:-.04em;line-height:1.05;
+}
+.strip-copy p{color:rgba(232,245,240,.72);max-width:28rem}
+@media (min-width:800px){
+  .strip{grid-template-columns:1.15fr 0.85fr}
+  .strip img{height:100%;min-height:320px}
+}
+
+/* ——— about ——— */
 .about{
-  padding:72px var(--pad);
-  border-top:1px solid rgba(255,255,255,.06);
+  padding:clamp(56px,8vw,96px) var(--pad);
+  border-top:1px solid var(--line);
 }
-.about-inner{
-  width:min(720px,100%);
-  margin:0 auto;
-  opacity:0;transform:translateY(28px);
-  transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);
-}
-.about.in .about-inner{opacity:1;transform:none}
+.about-inner{width:min(640px,100%);margin:0 auto}
 .about .eyebrow{
-  font-family:Outfit,sans-serif;font-weight:600;
-  font-size:13px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--fog);margin-bottom:12px;
+  font-family:Syne,sans-serif;font-weight:600;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mute);margin-bottom:12px;
 }
 .about h2{
-  font-family:Outfit,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,4.5vw,2.5rem);
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(1.75rem,4vw,2.4rem);
   letter-spacing:-.045em;line-height:1.1;
 }
 .about .lede{
-  margin-top:16px;color:var(--fog);font-size:1.05rem;line-height:1.55;
-  max-width:38rem;
+  margin-top:16px;color:var(--mute);
+  font-size:1.05rem;line-height:1.55;max-width:36rem;
 }
 .about .lede a{
-  color:#fff;border-bottom:1px solid rgba(61,223,194,.45);
-  transition:color .2s, border-color .2s;
+  color:var(--ink);
+  border-bottom:1px solid rgba(47,212,181,.55);
 }
-.about .lede a:hover{color:var(--mint);border-color:var(--mint)}
+.about .lede a:hover{border-color:var(--mint)}
 .family{
   margin-top:36px;
-  display:flex;flex-direction:column;
-  border-top:1px solid rgba(255,255,255,.08);
+  border-top:1px solid var(--line);
 }
 .family a{
-  display:grid;grid-template-columns:1fr auto;gap:8px 20px;
-  align-items:baseline;
+  display:flex;align-items:baseline;justify-content:space-between;gap:20px;
   padding:18px 0;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  transition:color .25s ease, padding-left .35s cubic-bezier(.22,1,.36,1);
+  border-bottom:1px solid var(--line);
+  transition:padding-left .3s var(--ease);
 }
-.family a:hover{color:var(--mint);padding-left:6px}
+.family a:hover{padding-left:6px}
 .family .pname{
-  font-family:Outfit,sans-serif;font-weight:700;
-  font-size:1.15rem;letter-spacing:-.03em;
+  font-family:Syne,sans-serif;font-weight:700;
+  font-size:1.1rem;letter-spacing:-.03em;
+  display:block;
 }
-.family .phint{grid-column:1;color:var(--fog);font-size:.95rem;line-height:1.4}
-.family a:hover .phint{color:rgba(61,223,194,.75)}
-.family .go{
-  grid-column:2;grid-row:1 / span 2;align-self:center;
-  font-size:1.25rem;opacity:.45;transition:opacity .25s, transform .35s cubic-bezier(.34,1.56,.64,1);
+.family .phint{
+  display:block;margin-top:4px;
+  color:var(--mute);font-size:.95rem;line-height:1.4;
+  max-width:36rem;
 }
-.family a:hover .go{opacity:1;transform:translateX(4px)}
+.family .go{opacity:.4;flex-shrink:0}
+.family a:hover .go{opacity:1;color:var(--mint)}
 
-/* ——— end ——— */
+/* ——— close ——— */
 .end{
-  padding:56px var(--pad) 80px;
+  padding:clamp(48px,7vw,80px) var(--pad);
   text-align:center;
-  border-top:1px solid rgba(255,255,255,.06);
+  border-top:1px solid var(--line);
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 100%, rgba(47,212,181,.14), transparent 70%),
+    var(--bg);
 }
 .end .logo{
-  display:inline-block;font-size:1.1rem;margin-bottom:10px;color:var(--mint);
-  animation:logo-bob 3s ease-in-out infinite;
-}
-@keyframes logo-bob{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-4px)}
+  display:inline-block;margin-bottom:8px;
+  color:var(--forest);font-size:1.15rem;
 }
 .end h2{
-  font-family:Outfit,sans-serif;font-weight:800;
-  font-size:clamp(1.75rem,4vw,2.25rem);
+  font-family:Syne,sans-serif;font-weight:800;
+  font-size:clamp(1.75rem,4vw,2.35rem);
   letter-spacing:-.04em;
 }
-.end .stores{max-width:400px;margin:24px auto 0}
+.end .stores{justify-content:center;margin-top:22px;opacity:1;transform:none;animation:none}
 
 footer{
   padding:28px var(--pad) 48px;
   display:flex;flex-wrap:wrap;gap:14px 24px;
   justify-content:space-between;
-  font-size:13px;color:var(--fog);
-  border-top:1px solid rgba(255,255,255,.06);
+  font-size:13px;color:var(--mute);
+  border-top:1px solid var(--line);
 }
 .links{display:flex;gap:16px;flex-wrap:wrap}
-.links a{transition:color .2s}
-.links a:hover{color:#fff}
+.links a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){
-  .device,.dock .name,.dock .tag,.dock .stores,.dl,.end .logo,.stage-glow{animation:none !important}
-  .device,.dock .name,.dock .tag,.dock .stores,.frame,.line h2 .word,.line p,.about-inner{opacity:1 !important;transform:none !important;transition:none !important;color:inherit}
-  .dock .name{background:none;-webkit-text-fill-color:initial;color:#fff}
-  .line h2 .accent::after{display:none}
+  .hero-copy .brand,.hero-copy .lead,.stores,.hero-visual,
+  .moment-media,.moment-copy{animation:none !important;transition:none !important;opacity:1 !important;transform:none !important}
 }
 </style>
 </head>
 <body>
-  <div class="bar">
+  <header class="bar">
     <a class="logo" href="./">Nomli</a>
     <div class="bar-actions">
       <a class="nav-link" href="#about">About</a>
       <a class="dl" href="#get">Get Nomli</a>
     </div>
-  </div>
+  </header>
 
   <main>
-    <!-- The app itself leads -->
-    <section class="stage" aria-label="Nomli app">
-      <div class="stage-glow" aria-hidden="true"></div>
-      <div class="device">
-        <img src="img/shorts/image2.png" width="1290" height="2796" alt="Nomli Discover feed with posts and follows" loading="eager">
-      </div>
-      <div class="dock">
-        <h1 class="name">Nomli</h1>
-        <p class="tag">The social app for posts, people, calls &amp; local Market.</p>
+    <section class="hero" aria-label="Nomli">
+      <div class="hero-copy">
+        <h1 class="brand">Nomli</h1>
+        <p class="lead">Posts, people, calls &amp; local Market — one social home.</p>
         <div class="stores" id="get">
           <a class="store" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.8-1.9c.9-1.1 1.3-2.2 1.3-2.3-.1 0-2.5-.9-2.5-3.9zM14.1 5.8c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.7 1.5-.6.7-1.1 1.8-.9 2.8 1 .1 2-.6 2.7-1.4z"/></svg>
@@ -491,35 +402,50 @@ footer{
           </a>
         </div>
       </div>
-    </section>
-
-    <section class="film" aria-label="App screens">
-      <div class="film-inner">
-        <h2>Inside the app</h2>
-        <div class="rail">
-          <figure class="frame" style="--i:0">
-            <div class="shell"><img src="img/shorts/image2.png" width="1290" height="2796" alt="Discover feed" loading="lazy"></div>
-            <p>Discover</p>
-          </figure>
-          <figure class="frame" style="--i:1">
-            <div class="shell"><img src="img/shorts/image3.png" width="1290" height="2796" alt="People to follow" loading="lazy"></div>
-            <p>People</p>
-          </figure>
-          <figure class="frame" style="--i:2">
-            <div class="shell"><img src="img/shorts/image4.png" width="1290" height="2796" alt="Local Market" loading="lazy"></div>
-            <p>Market</p>
-          </figure>
-          <figure class="frame" style="--i:3">
-            <div class="shell"><img src="img/shorts/image5.png" width="1290" height="2796" alt="Audio calls" loading="lazy"></div>
-            <p>Calls</p>
-          </figure>
-        </div>
+      <div class="hero-visual">
+        <img src="img/shorts/image2.png" width="1290" height="2796" alt="Nomli Discover feed with posts and follows" loading="eager" fetchpriority="high">
       </div>
     </section>
 
-    <section class="line" aria-labelledby="pitch">
-      <h2 id="pitch"><span class="word" style="--w:0">Scroll.</span> <span class="word" style="--w:1">Chat.</span> <span class="word" style="--w:2"><span class="accent">Trade nearby.</span></span></h2>
-      <p>One social home — no juggling five apps for the same people.</p>
+    <section class="moment" aria-labelledby="m-people">
+      <div class="moment-media">
+        <img src="img/shorts/image3.png" width="1290" height="2796" alt="People to follow in Nomli" loading="lazy">
+      </div>
+      <div class="moment-shade" aria-hidden="true"></div>
+      <div class="moment-copy">
+        <h2 id="m-people">People</h2>
+        <p>Find who to follow — then keep the conversation going in chat.</p>
+      </div>
+    </section>
+
+    <section class="moment" aria-labelledby="m-market">
+      <div class="moment-media">
+        <img src="img/shorts/image4.png" width="1290" height="2796" alt="Nomli local Market" loading="lazy">
+      </div>
+      <div class="moment-shade" aria-hidden="true"></div>
+      <div class="moment-copy">
+        <h2 id="m-market">Market</h2>
+        <p>Local listings next to the same people you already talk to.</p>
+      </div>
+    </section>
+
+    <section class="moment" aria-labelledby="m-calls">
+      <div class="moment-media">
+        <img src="img/shorts/image5.png" width="1290" height="2796" alt="Nomli audio calls" loading="lazy">
+      </div>
+      <div class="moment-shade" aria-hidden="true"></div>
+      <div class="moment-copy">
+        <h2 id="m-calls">Calls</h2>
+        <p>Jump on audio when a thread needs a voice, not another text.</p>
+      </div>
+    </section>
+
+    <section class="strip" aria-labelledby="strip-title">
+      <img src="img/photos/market-strip.jpg" width="1600" height="900" alt="Browsing clothes at a local market" loading="lazy">
+      <div class="strip-copy">
+        <h2 id="strip-title">Trade nearby</h2>
+        <p>Market sits in the same app as your feed and chats — no extra install for local deals.</p>
+      </div>
     </section>
 
     <section class="about" id="about" aria-labelledby="about-title">
@@ -529,27 +455,35 @@ footer{
         <p class="lede">
           Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> —
           a Finland-based studio shipping mobile apps, websites, and the realtime stack
-          behind them. Same team, more products when you need infra, privacy, or a build partner.
+          behind them.
         </p>
         <div class="family" role="list">
           <a href="https://nomli.cc/" rel="noopener" role="listitem">
-            <span class="pname">Nomli Tech</span>
-            <span class="phint">Studio — apps, sites &amp; product builds · nomli.cc</span>
+            <span>
+              <span class="pname">Nomli Tech</span>
+              <span class="phint">Studio — apps, sites &amp; product builds · nomli.cc</span>
+            </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://www.niilox.com/" rel="noopener" role="listitem">
-            <span class="pname">Niilox</span>
-            <span class="phint">Realtime API — live video, messaging, SMS &amp; auth for weak networks</span>
+            <span>
+              <span class="pname">Niilox</span>
+              <span class="phint">Realtime API — chat, WebRTC &amp; LiveKit monitor</span>
+            </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://tern.niilox.com/" rel="noopener" role="listitem">
-            <span class="pname">Tern</span>
-            <span class="phint">Private messaging — tiny footprint, no phone number required</span>
+            <span>
+              <span class="pname">Tern</span>
+              <span class="phint">Private messaging — tiny footprint, no phone number</span>
+            </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <a href="https://driftin.live/" rel="noopener" role="listitem">
-            <span class="pname">Drift</span>
-            <span class="phint">Livestream, chat &amp; gifts — running on Niilox</span>
+            <span>
+              <span class="pname">Drift</span>
+              <span class="phint">Livestream, chat &amp; gifts — running on Niilox</span>
+            </span>
             <span class="go" aria-hidden="true">→</span>
           </a>
         </div>
@@ -581,7 +515,6 @@ footer{
 document.getElementById('y').textContent = new Date().getFullYear();
 
 (function () {
-  // /about rewrite → land on About section
   if (/\/about\/?$/.test(location.pathname)) {
     var aboutEl = document.getElementById('about');
     if (aboutEl) {
@@ -592,17 +525,11 @@ document.getElementById('y').textContent = new Date().getFullYear();
   }
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var frames = document.querySelectorAll('.frame');
-  var line = document.querySelector('.line');
-  var about = document.querySelector('.about');
-
+  var moments = document.querySelectorAll('.moment');
   if (reduce) {
-    frames.forEach(function (el) { el.classList.add('in'); });
-    if (line) line.classList.add('in');
-    if (about) about.classList.add('in');
+    moments.forEach(function (el) { el.classList.add('in'); });
     return;
   }
-
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -610,39 +537,11 @@ document.getElementById('y').textContent = new Date().getFullYear();
         entry.target.classList.add('in');
         io.unobserve(entry.target);
       });
-    }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
-    frames.forEach(function (el) { io.observe(el); });
-    if (line) io.observe(line);
-    if (about) io.observe(about);
+    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+    moments.forEach(function (el) { io.observe(el); });
   } else {
-    frames.forEach(function (el) { el.classList.add('in'); });
-    if (line) line.classList.add('in');
-    if (about) about.classList.add('in');
+    moments.forEach(function (el) { el.classList.add('in'); });
   }
-
-  // Soft 3D tilt on hero phone (desktop)
-  var phone = document.querySelector('.device');
-  var stage = document.querySelector('.stage');
-  if (!phone || !stage || window.matchMedia('(pointer: coarse)').matches) return;
-
-  var idle = null;
-  stage.addEventListener('pointermove', function (e) {
-    var r = stage.getBoundingClientRect();
-    var x = (e.clientX - r.left) / r.width - 0.5;
-    var y = (e.clientY - r.top) / r.height - 0.5;
-    phone.classList.add('is-tilting');
-    phone.style.transform =
-      'perspective(900px) rotateY(' + (x * 10) + 'deg) rotateX(' + (-y * 8) + 'deg) translateY(' + (y * -6) + 'px)';
-    clearTimeout(idle);
-    idle = setTimeout(function () {
-      phone.classList.remove('is-tilting');
-      phone.style.transform = '';
-    }, 1800);
-  });
-  stage.addEventListener('pointerleave', function () {
-    phone.classList.remove('is-tilting');
-    phone.style.transform = '';
-  });
 })();
 </script>
 </body>

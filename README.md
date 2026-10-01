@@ -1,17 +1,17 @@
 # Nomli landing (static)
 
-Marketing site for nomlimingle.com — feed, chat, audio calls, and local Market.
+Marketing site for [nomlimingle.com](https://nomlimingle.com/) — feed, chat, audio calls, and local Market.
 
-**Repo:** Dr-M06/nomli-landing-page-new
+**Repo:** [Dr-M06/nomli-landing-page-new](https://github.com/Dr-M06/nomli-landing-page-new)
 
-Photo-led, app-minimal landing — full-bleed hero, one product phone, three moment bands, market strip, download close. No feature card grids.
+Light, brand-first landing — Syne wordmark, one hero composition with the app screen edge-to-edge, full-bleed moment bands, market strip, download close. No dark glow, no feature card grids, no floating phone clusters.
 
 ## Brand
 
-- Accent mint: `#3DDFC2`
-- Background: `#F7F8FA`
-- Ink: `#12141A`
-- Type: Outfit (display) + Figtree (body)
+- Accent mint: `#2FD4B5`
+- Forest ink: `#16382E`
+- Background: `#EDEFF2`
+- Type: Syne (display) + Figtree (body)
 
 ## Pages
 
@@ -21,10 +21,10 @@ Photo-led, app-minimal landing — full-bleed hero, one product phone, three mom
 | terms.html | /terms |
 | privacy.html | /privacy |
 
-## Photography
+## Assets
 
-Lifestyle crops live under `img/photos/`. App UI still under `img/shorts/`.
+App marketing frames under `img/shorts/`. Lifestyle crops under `img/photos/`.
 
 ## Deploy
 
-Vercel should use **framework: Other / null** (see `vercel.json`). Point the project root at this repo — no `npm install` / Next build.
+Vercel: **framework Other / null** (`vercel.json`). Root = this repo — no `npm install`.
