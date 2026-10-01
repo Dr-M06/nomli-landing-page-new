@@ -205,26 +205,18 @@ a{color:inherit;text-decoration:none}
   width:min(210px,50vw);aspect-ratio:9/17.8;
   transform:translate(-52%,-54%);
   border:2.5px solid var(--ink);border-radius:36px;
-  background:#1B222B;overflow:hidden;box-shadow:var(--shadow);
-}
-.phone-island{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  width:38%;height:16px;border-radius:20px;background:#0B0E12;z-index:2;
+  background:#0B0E12;overflow:hidden;box-shadow:var(--shadow);
 }
 .phone-ui{
-  position:absolute;inset:9px;border-radius:28px;overflow:hidden;
-  background:linear-gradient(180deg,#2A3340,#171D25);
+  position:absolute;inset:0;
+  border-radius:34px;overflow:hidden;
+  background:#12151A;
 }
-.phone-ui::before{
-  content:"";position:absolute;inset:0;
-  background:
-    radial-gradient(circle at 50% 32%, #9AA8B8 0%, #5A6674 42%, transparent 58%),
-    linear-gradient(180deg, transparent 50%, rgba(0,0,0,.45));
-}
-.phone-ui::after{
-  content:"";position:absolute;left:50%;top:24%;
-  width:46%;aspect-ratio:1;border-radius:50%;transform:translateX(-50%);
-  background:radial-gradient(circle at 40% 30%, #D5DEE8, #6E7B8A 75%);
+.phone-ui img{
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center top;
+  display:block;
 }
 
 .card{
@@ -454,8 +446,9 @@ footer{
         <span class="deco c"></span>
 
         <div class="phone">
-          <div class="phone-island"></div>
-          <div class="phone-ui"></div>
+          <div class="phone-ui">
+            <img src="img/phone-feed.jpg" width="660" height="1130" alt="Nomli Discover feed" decoding="async">
+          </div>
         </div>
 
         <div class="card card-msg">
