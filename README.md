@@ -4,14 +4,7 @@ Marketing site for [nomlimingle.com](https://nomlimingle.com/).
 
 **Repo:** [Dr-M06/nomli-landing-page-new](https://github.com/Dr-M06/nomli-landing-page-new)
 
-Clean, minimal product page — soft mint field, Syne wordmark, coral CTAs, floating chat/call UI snippets. No full app screenshot walls.
-
-## Brand
-
-- Field mint: `#D8EDE6`
-- Coral CTA: `#FF6A3D`
-- Ink: `#111318`
-- Type: Syne (display) + Manrope (UI)
+Flat product page — system type, white field, thin borders, centered device strip with real app screens. No soft-mint SaaS chrome, no floating cards, no glow.
 
 ## Pages
 
@@ -23,4 +16,4 @@ Clean, minimal product page — soft mint field, Syne wordmark, coral CTAs, floa
 
 ## Deploy
 
-Vercel: **framework Other / null** (`vercel.json`). Root = this repo.
+Vercel: **framework Other / null** (`vercel.json`).
