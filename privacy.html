@@ -16,7 +16,8 @@ body{background:var(--bg);color:var(--ink);font:17px/1.47 var(--sans);letter-spa
 a{color:inherit}
 .shell{width:min(680px,calc(100% - 40px));margin:0 auto;padding:28px 0 80px}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.brand{font-size:21px;font-weight:600;letter-spacing:-.03em;text-decoration:none}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:21px;font-weight:600;letter-spacing:-.03em;text-decoration:none}
+.brand img{width:24px;height:24px;border-radius:5px}
 .back{font-size:14px;color:var(--mute);text-decoration:none}
 .back:hover{color:var(--ink)}
 h1{font-size:clamp(32px,6vw,40px);letter-spacing:-.02em;line-height:1.1;font-weight:600}
@@ -38,7 +39,7 @@ ul{padding-left:1.2em;margin:8px 0;display:grid;gap:6px}
 <body>
 <div class="shell">
   <div class="top">
-    <a class="brand" href="./">Nomli</a>
+    <a class="brand" href="./"><img src="img/logo.png" width="24" height="24" alt="">Nomli</a>
     <a class="back" href="./">← Home</a>
   </div>
 

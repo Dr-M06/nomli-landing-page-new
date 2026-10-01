@@ -20,8 +20,10 @@
 <meta name="twitter:description" content="Share posts, follow people, call friends, and trade nearby — in one app.">
 <meta name="twitter:image" content="https://www.nomlimingle.com/twitter-image.png">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" href="favicon.ico">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="shortcut icon" href="favicon.ico">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -113,9 +115,13 @@ img{display:block;max-width:100%;height:auto}
   border-bottom:1px solid transparent;
 }
 .logo{
+  display:inline-flex;align-items:center;gap:10px;
   font-size:21px;
   font-weight:600;
   letter-spacing:-.03em;
+}
+.logo img{
+  width:28px;height:28px;border-radius:6px;
 }
 .nav-right{
   display:flex;align-items:center;gap:28px;
@@ -353,7 +359,10 @@ footer{
 </head>
 <body>
   <header class="wrap nav">
-    <a class="logo" href="./">Nomli</a>
+    <a class="logo" href="./">
+      <img src="img/logo.png" width="28" height="28" alt="">
+      Nomli
+    </a>
     <div class="nav-right">
       <a href="#about">About</a>
       <a class="nav-cta" href="#get">Get the app</a>

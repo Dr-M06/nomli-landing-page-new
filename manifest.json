@@ -4,8 +4,8 @@
   "description": "Social feed, chat, audio calls, and local Market in one app. Free on iOS and Android.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#F7F8FA",
-  "theme_color": "#3DDFC2",
+  "background_color": "#ffffff",
+  "theme_color": "#1d1d1f",
   "orientation": "portrait-primary",
   "icons": [
     {
