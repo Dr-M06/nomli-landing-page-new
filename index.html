@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nomli Mingle — social feed, chat, calls & Market</title>
-<meta name="description" content="Nomli Mingle is a social app — feed, follows, chat, audio calls, and local Market in one place.">
+<meta name="description" content="Nomli Mingle is a social app — feed, follows, chat, audio calls, and local Market. Livestream and schedule lives on Drift.">
 <meta name="application-name" content="Nomli Mingle">
 <meta name="apple-mobile-web-app-title" content="Nomli Mingle">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -432,6 +432,100 @@ a{color:inherit;text-decoration:none}
 .b.in{background:var(--panel);border-bottom-left-radius:5px}
 .b.out{margin-left:auto;background:var(--sage);border-bottom-right-radius:5px}
 
+/* ——— livestream → Drift ——— */
+.live{
+  background:#0B0C0F;
+  color:#F4F5F7;
+  padding:clamp(56px,8vw,96px) 0;
+}
+.live-grid{
+  display:grid;gap:36px;align-items:center;
+}
+.live .eyebrow{
+  font-size:12px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(200,255,0,.85);margin-bottom:12px;
+}
+.live h2{
+  font-size:clamp(1.7rem,3.6vw,2.5rem);
+  font-weight:800;letter-spacing:-.045em;line-height:1.12;
+  max-width:16ch;
+}
+.live .lede{
+  margin-top:14px;color:rgba(244,245,247,.68);
+  font-size:1.02rem;line-height:1.55;max-width:32rem;
+}
+.live-points{
+  margin-top:28px;
+  display:grid;gap:0;
+  border-top:1px solid rgba(255,255,255,.1);
+  list-style:none;padding:0;
+}
+.live-points li{
+  display:grid;gap:4px;
+  padding:16px 0;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.live-points strong{
+  font-size:1rem;font-weight:750;letter-spacing:-.02em;
+}
+.live-points span{color:rgba(244,245,247,.58);font-size:.95rem;line-height:1.45}
+.live-cta{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;align-items:center;
+}
+.btn-live{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:48px;padding:0 20px;border-radius:12px;
+  background:#c8ff00;color:#0A0A0A;
+  font-size:14px;font-weight:800;letter-spacing:-.02em;
+  transition:transform .25s var(--ease), box-shadow .25s ease;
+}
+.btn-live:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(200,255,0,.28);
+}
+.btn-live-ghost{
+  display:inline-flex;align-items:center;height:48px;padding:0 16px;
+  border-radius:12px;font-size:14px;font-weight:700;
+  color:rgba(244,245,247,.8);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2);
+  transition:color .2s, box-shadow .2s;
+}
+.btn-live-ghost:hover{color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)}
+.live-panel{
+  background:#14161B;
+  border:1px solid rgba(255,255,255,.08);
+  padding:22px;
+  display:grid;gap:14px;
+}
+.live-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:#1A1D24;
+  border:1px solid rgba(255,255,255,.06);
+}
+.live-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#ff3b3b;
+  box-shadow:0 0 0 4px rgba(255,59,59,.2);
+  flex-shrink:0;
+  animation:pulse-live 1.6s ease-in-out infinite;
+}
+.live-row .title{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.live-row .sub{font-size:12px;color:rgba(244,245,247,.5);margin-top:2px}
+.live-cal{
+  width:40px;height:40px;flex-shrink:0;
+  background:#c8ff00;color:#0A0A0A;
+  display:grid;place-items:center;
+  font-size:11px;font-weight:800;line-height:1.05;text-align:center;
+}
+@keyframes pulse-live{
+  0%,100%{box-shadow:0 0 0 4px rgba(255,59,59,.15)}
+  50%{box-shadow:0 0 0 7px rgba(255,59,59,.28)}
+}
+@media (min-width:860px){
+  .live-grid{grid-template-columns:1.1fr .9fr;gap:48px}
+}
+
 /* ——— bottom sage ——— */
 .bottom{
   background:var(--sage);
@@ -521,6 +615,7 @@ footer{
       </a>
       <nav class="nav-mid" aria-label="Primary">
         <a href="#product">Product</a>
+        <a href="#live">Live</a>
         <a href="privacy.html">Privacy</a>
         <a href="#about">About</a>
       </nav>
@@ -637,6 +732,61 @@ footer{
     </div>
   </section>
 
+  <section class="live" id="live" aria-labelledby="live-title">
+    <div class="shell live-grid">
+      <div>
+        <p class="eyebrow">Livestream</p>
+        <h2 id="live-title">Go live on Drift</h2>
+        <p class="lede">
+          Nomli livestream moved to <strong style="color:#fff;font-weight:700">Drift</strong> —
+          schedule upcoming streams, drop into live rooms, chat and gift in realtime.
+          Walk in. Walk out. No extra download.
+        </p>
+        <ul class="live-points">
+          <li>
+            <strong>Schedule a stream</strong>
+            <span>Pick a time, category, and title — remind followers when you’re about to go live.</span>
+          </li>
+          <li>
+            <strong>Browse live rooms</strong>
+            <span>Tap a category, join audio or video, leave when you’re done.</span>
+          </li>
+          <li>
+            <strong>Continue from Nomli</strong>
+            <span>Open Drift with your Nomli profile when you hand off from the app.</span>
+          </li>
+        </ul>
+        <div class="live-cta">
+          <a class="btn-live" href="https://www.driftin.live/" rel="noopener">Open Drift</a>
+          <a class="btn-live-ghost" href="https://www.driftin.live/scheduled" rel="noopener">Schedule live →</a>
+        </div>
+      </div>
+      <div class="live-panel" aria-hidden="true">
+        <div class="live-row">
+          <span class="live-dot"></span>
+          <div>
+            <div class="title">Night talk · Music</div>
+            <div class="sub">Live now · walk in anytime</div>
+          </div>
+        </div>
+        <div class="live-row">
+          <div class="live-cal">FRI<br>18</div>
+          <div>
+            <div class="title">Weekend Market live</div>
+            <div class="sub">Scheduled · reminders on</div>
+          </div>
+        </div>
+        <div class="live-row">
+          <div class="live-cal" style="background:#2a2e36;color:#c8ff00">SAT<br>20</div>
+          <div>
+            <div class="title">Creator Q&amp;A</div>
+            <div class="sub">Upcoming on Drift</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="bottom" aria-labelledby="bottom-title">
     <div class="shell bottom-grid">
       <div>
@@ -692,6 +842,10 @@ footer{
         <li>
           <strong>Local Market</strong>
           <span>Listings next to the same chats — trade nearby without another app.</span>
+        </li>
+        <li>
+          <strong>Livestream on Drift</strong>
+          <span>Host and schedule lives at <a href="https://www.driftin.live/" rel="noopener">driftin.live</a> — connected to Nomli.</span>
         </li>
       </ul>
     </div>
