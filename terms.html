@@ -11,23 +11,25 @@
 <link rel="icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--lime:#D7FF00;--ink:#0A0A0A;--mute:#6B6B6B;--line:rgba(10,10,10,.1);--bg:#F2F2F2}
+:root{--sage:#D6EADF;--coral:#FF6B3D;--ink:#15171C;--mute:#5E6772;--line:rgba(21,23,28,.1);--bg:#D6EADF;--paper:#fff}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 .shell{width:min(680px,calc(100% - 40px));margin:0 auto;padding:28px 0 80px}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:56px;padding-bottom:18px;border-bottom:1px solid var(--line)}
-.brand{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:20px;letter-spacing:-.04em;text-decoration:none}
-.back{font-size:14px;color:var(--mute);text-decoration:none;font-weight:500}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:1.05rem;letter-spacing:-.03em;text-decoration:none}
+.brand img{width:28px;height:28px;border-radius:6px;display:block}
+.back{font-size:14px;color:var(--mute);text-decoration:none;font-weight:600}
 .back:hover{color:var(--ink)}
-h1{font-family:"Space Grotesk",sans-serif;font-size:clamp(32px,6vw,44px);letter-spacing:-.04em;line-height:1.1;font-weight:700}
-.meta{margin-top:12px;color:var(--mute);font-size:14px}
-h2{font-family:"Space Grotesk",sans-serif;font-size:20px;letter-spacing:-.02em;margin:40px 0 10px;font-weight:600}
-p,li{color:#2a2e36;font-size:15.5px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:0;padding:clamp(28px,5vw,40px)}
+h1{font-size:clamp(28px,5vw,40px);letter-spacing:-.04em;line-height:1.1;font-weight:800}
+.meta{margin-top:12px;color:var(--mute);font-size:14px;font-weight:500}
+h2{font-size:18px;letter-spacing:-.02em;margin:36px 0 10px;font-weight:750}
+p,li{color:#2a2e36;font-size:15.5px;font-weight:500}
 ul{padding-left:1.2em;margin:8px 0;display:grid;gap:6px}
-.foot{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);font-size:14px;color:var(--mute);display:flex;gap:18px;flex-wrap:wrap}
+.foot{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);font-size:14px;color:var(--mute);display:flex;gap:18px;flex-wrap:wrap;font-weight:500}
 .foot a{color:var(--mute);text-decoration:none}
 .foot a:hover{color:var(--ink)}
 </style>
@@ -35,76 +37,83 @@ ul{padding-left:1.2em;margin:8px 0;display:grid;gap:6px}
 <body>
 <div class="shell">
   <div class="top">
-    <a class="brand" href="./">Nomli</a>
+    <a class="brand" href="./">
+      <img src="icon-192.png" width="192" height="192" alt="">
+      Nomli Mingle
+    </a>
     <a class="back" href="./">← Home</a>
   </div>
 
-  <h1>Terms of Service</h1>
-  <p class="meta">Effective: 7 September 2026 · Nomli Tech Limited · App rated 16+</p>
+  <div class="panel">
+    <h1>Terms of Service</h1>
+    <p class="meta">Effective: 7 September 2026 · Nomli Tech Limited · Nomli Mingle rated 16+</p>
 
-  <h2>1. Agreement</h2>
-  <p>These Terms govern your use of Nomli (the “Service”), including our mobile apps and websites. By creating an account or using Nomli, you agree to these Terms and our <a href="privacy.html">Privacy Policy</a>. If you do not agree, do not use the Service.</p>
+    <h2>1. Agreement</h2>
+    <p>These Terms govern your use of <strong>Nomli Mingle</strong> (the “Service”), including our mobile apps and websites. By creating an account or using Nomli Mingle, you agree to these Terms and our <a href="privacy.html">Privacy Policy</a>. If you do not agree, do not use the Service.</p>
 
-  <h2>2. Eligibility (16+)</h2>
-  <p>Nomli is rated <strong>16+</strong>. You must be at least <strong>16 years old</strong> to create an account or use the Service. By using Nomli, you confirm that you meet this age requirement. We may suspend or delete accounts that violate age rules.</p>
+    <h2>2. Eligibility (16+)</h2>
+    <p>Nomli Mingle is rated <strong>16+</strong>. You must be at least <strong>16 years old</strong> to create an account or use the Service. By using Nomli Mingle, you confirm that you meet this age requirement. We may suspend or delete accounts that violate age rules.</p>
 
-  <h2>3. The Service</h2>
-  <p>Nomli provides:</p>
-  <ul>
-    <li><strong>Feed</strong> — posts, stories, reactions, and profiles</li>
-    <li><strong>Chat</strong> — direct messages and related media</li>
-    <li><strong>Market</strong> — local listings, seller shops, and order discussions in chat</li>
-  </ul>
-  <p>Features may change. Some surfaces show advertising (including third-party ads). Market transactions are between buyers and sellers; Nomli is not the seller unless we clearly say otherwise.</p>
+    <h2>3. The Service</h2>
+    <p>Nomli Mingle provides:</p>
+    <ul>
+      <li><strong>Feed</strong> — posts, stories, reactions, and profiles</li>
+      <li><strong>Chat</strong> — direct messages and related media</li>
+      <li><strong>Audio calls</strong> — voice calls between users</li>
+      <li><strong>Market</strong> — local listings, seller shops, and order discussions in chat</li>
+    </ul>
+    <p>Features may change. Some surfaces show advertising (including third-party ads). Market transactions are between buyers and sellers; Nomli Tech Limited / Nomli Mingle is not the seller unless we clearly say otherwise.</p>
 
-  <h2>4. Accounts</h2>
-  <p>You are responsible for your login credentials and activity on your account. Keep your contact details accurate. Notify us at <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a> if you suspect unauthorized access. We may refuse, suspend, or terminate accounts that break these Terms or applicable law.</p>
+    <h2>4. Accounts</h2>
+    <p>You are responsible for your login credentials and activity on your Nomli Mingle account. Keep your contact details accurate. Notify us at <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a> if you suspect unauthorized access. We may refuse, suspend, or terminate accounts that break these Terms or applicable law.</p>
 
-  <h2>5. Your content</h2>
-  <p>You keep ownership of content you post (text, photos, video, voice, listings, and similar). You grant Nomli a worldwide, non-exclusive, royalty-free license to host, store, display, reproduce, and distribute that content as needed to operate and improve the Service (including moderation and backups).</p>
-  <p>You must have the rights to content you upload. Do not post illegal content, sexual content involving minors, scams, malware, or content that infringes others’ rights.</p>
+    <h2>5. Your content</h2>
+    <p>You keep ownership of content you post (text, photos, video, voice, listings, and similar). You grant Nomli Tech Limited a worldwide, non-exclusive, royalty-free license to host, store, display, reproduce, and distribute that content as needed to operate and improve Nomli Mingle (including moderation and backups).</p>
+    <p>You must have the rights to content you upload. Do not post illegal content, sexual content involving minors, scams, malware, or content that infringes others’ rights.</p>
 
-  <h2>6. Conduct</h2>
-  <p>You agree not to:</p>
-  <ul>
-    <li>Harass, threaten, or discriminate against others</li>
-    <li>Spam, scrape, or abuse the Service or its APIs</li>
-    <li>Impersonate people or brands</li>
-    <li>Use Market for prohibited goods/services or fraud</li>
-    <li>Interfere with security, ads measurement, or other users’ experience</li>
-  </ul>
-  <p>We may remove content, limit features, or ban accounts when we believe these rules or the law were broken. In-app reporting tools help us review issues; we do not guarantee a particular outcome or response time.</p>
+    <h2>6. Conduct</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Harass, threaten, or discriminate against others</li>
+      <li>Spam, scrape, or abuse the Service or its APIs</li>
+      <li>Impersonate people or brands</li>
+      <li>Use Market for prohibited goods/services or fraud</li>
+      <li>Interfere with security, ads measurement, or other users’ experience</li>
+    </ul>
+    <p>We may remove content, limit features, or ban accounts when we believe these rules or the law were broken. In-app reporting tools help us review issues; we do not guarantee a particular outcome or response time.</p>
 
-  <h2>7. Market</h2>
-  <p>Listings, prices, delivery, and payment arrangements are between users. Discuss payment and meetups carefully. Nomli does not escrow funds by default and is not responsible for disputes between buyers and sellers, except where required by law or where we offer a specific protected flow (if any) described in-product.</p>
+    <h2>7. Market</h2>
+    <p>Listings, prices, delivery, and payment arrangements are between users. Discuss payment and meetups carefully. Nomli Mingle does not escrow funds by default and is not responsible for disputes between buyers and sellers, except where required by law or where we offer a specific protected flow (if any) described in-product.</p>
 
-  <h2>8. Advertising</h2>
-  <p>The Service may display ads from Nomli or partners (for example Google AdMob). Ads help keep Nomli free. Ad partners may use device advertising identifiers subject to your device settings and our Privacy Policy.</p>
+    <h2>8. Advertising</h2>
+    <p>The Service may display ads from Nomli Tech Limited or partners (for example Google AdMob). Ads help keep Nomli Mingle free. Ad partners may use device advertising identifiers subject to your device settings and our Privacy Policy.</p>
 
-  <h2>9. Intellectual property</h2>
-  <p>Nomli’s name, branding, software, and design are owned by Nomli Tech Limited or its licensors. You may not copy or reverse engineer the app except as allowed by law.</p>
+    <h2>9. Intellectual property</h2>
+    <p>The Nomli Mingle name, branding, software, and design are owned by Nomli Tech Limited or its licensors. You may not copy or reverse engineer the app except as allowed by law.</p>
 
-  <h2>10. Disclaimers</h2>
-  <p>The Service is provided “as is.” To the fullest extent permitted by law, we disclaim warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not guarantee uninterrupted or error-free operation, or that content from other users is accurate or safe.</p>
+    <h2>10. Disclaimers</h2>
+    <p>The Service is provided “as is.” To the fullest extent permitted by law, we disclaim warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not guarantee uninterrupted or error-free operation, or that content from other users is accurate or safe.</p>
 
-  <h2>11. Limitation of liability</h2>
-  <p>To the fullest extent permitted by law, Nomli Tech Limited and its affiliates will not be liable for indirect, incidental, special, consequential, or punitive damages, or loss of profits, data, or goodwill. Our total liability for any claim relating to the Service is limited to the greater of (a) amounts you paid us for the Service in the 12 months before the claim or (b) USD $50.</p>
+    <h2>11. Limitation of liability</h2>
+    <p>To the fullest extent permitted by law, Nomli Tech Limited and its affiliates will not be liable for indirect, incidental, special, consequential, or punitive damages, or loss of profits, data, or goodwill. Our total liability for any claim relating to the Service is limited to the greater of (a) amounts you paid us for the Service in the 12 months before the claim or (b) USD $50.</p>
 
-  <h2>12. Termination</h2>
-  <p>You may delete your account in the app settings. We may suspend or end access if you violate these Terms, create risk, or if we discontinue the Service. Provisions that should survive (including licenses already exercised, liability limits, and dispute terms) will survive termination.</p>
+    <h2>12. Termination</h2>
+    <p>You may delete your Nomli Mingle account in the app settings. We may suspend or end access if you violate these Terms, create risk, or if we discontinue the Service. Provisions that should survive (including licenses already exercised, liability limits, and dispute terms) will survive termination.</p>
 
-  <h2>13. Changes</h2>
-  <p>We may update these Terms. Material changes will be posted here with an updated effective date and, when appropriate, noted in the app. Continued use after changes means you accept the updated Terms.</p>
+    <h2>13. Changes</h2>
+    <p>We may update these Terms. Material changes will be posted here with an updated effective date and, when appropriate, noted in Nomli Mingle. Continued use after changes means you accept the updated Terms.</p>
 
-  <h2>14. Contact</h2>
-  <p>Nomli Tech Limited<br>
-  Support: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a><br>
-  Web: <a href="https://www.nomlimingle.com">www.nomlimingle.com</a></p>
+    <h2>14. Contact</h2>
+    <p>Nomli Tech Limited<br>
+    Product: Nomli Mingle<br>
+    Support: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a><br>
+    Web: <a href="https://www.nomlimingle.com">www.nomlimingle.com</a></p>
 
-  <div class="foot">
-    <a href="privacy.html">Privacy Policy</a>
-    <a href="./">Home</a>
-    <a href="mailto:support@nomlimingle.com">Support</a>
+    <div class="foot">
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="./">Home</a>
+      <a href="mailto:support@nomlimingle.com">Support</a>
+    </div>
   </div>
 </div>
 </body>

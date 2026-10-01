@@ -11,23 +11,25 @@
 <link rel="icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--lime:#D7FF00;--ink:#0A0A0A;--mute:#6B6B6B;--line:rgba(10,10,10,.1);--bg:#F2F2F2}
+:root{--sage:#D6EADF;--coral:#FF6B3D;--ink:#15171C;--mute:#5E6772;--line:rgba(21,23,28,.1);--bg:#D6EADF;--paper:#fff}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 .shell{width:min(680px,calc(100% - 40px));margin:0 auto;padding:28px 0 80px}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:56px;padding-bottom:18px;border-bottom:1px solid var(--line)}
-.brand{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:20px;letter-spacing:-.04em;text-decoration:none}
-.back{font-size:14px;color:var(--mute);text-decoration:none;font-weight:500}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:1.05rem;letter-spacing:-.03em;text-decoration:none}
+.brand img{width:28px;height:28px;border-radius:6px;display:block}
+.back{font-size:14px;color:var(--mute);text-decoration:none;font-weight:600}
 .back:hover{color:var(--ink)}
-h1{font-family:"Space Grotesk",sans-serif;font-size:clamp(32px,6vw,44px);letter-spacing:-.04em;line-height:1.1;font-weight:700}
-.meta{margin-top:12px;color:var(--mute);font-size:14px}
-h2{font-family:"Space Grotesk",sans-serif;font-size:20px;letter-spacing:-.02em;margin:40px 0 10px;font-weight:600}
-p,li{color:#2a2e36;font-size:15.5px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:0;padding:clamp(28px,5vw,40px)}
+h1{font-size:clamp(28px,5vw,40px);letter-spacing:-.04em;line-height:1.1;font-weight:800}
+.meta{margin-top:12px;color:var(--mute);font-size:14px;font-weight:500}
+h2{font-size:18px;letter-spacing:-.02em;margin:36px 0 10px;font-weight:750}
+p,li{color:#2a2e36;font-size:15.5px;font-weight:500}
 ul{padding-left:1.2em;margin:8px 0;display:grid;gap:6px}
-.foot{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);font-size:14px;color:var(--mute);display:flex;gap:18px;flex-wrap:wrap}
+.foot{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);font-size:14px;color:var(--mute);display:flex;gap:18px;flex-wrap:wrap;font-weight:500}
 .foot a{color:var(--mute);text-decoration:none}
 .foot a:hover{color:var(--ink)}
 </style>
@@ -35,84 +37,89 @@ ul{padding-left:1.2em;margin:8px 0;display:grid;gap:6px}
 <body>
 <div class="shell">
   <div class="top">
-    <a class="brand" href="./">Nomli</a>
+    <a class="brand" href="./">
+      <img src="icon-192.png" width="192" height="192" alt="">
+      Nomli Mingle
+    </a>
     <a class="back" href="./">← Home</a>
   </div>
 
-  <h1>Privacy Policy</h1>
-  <p class="meta">Effective: 7 September 2026 · Nomli Tech Limited · App rated 16+</p>
+  <div class="panel">
+    <h1>Privacy Policy</h1>
+    <p class="meta">Effective: 7 September 2026 · Nomli Tech Limited · Nomli Mingle rated 16+</p>
 
-  <h2>1. Who we are</h2>
-  <p>Nomli Tech Limited (“Nomli,” “we,” “us”) provides the Nomli mobile apps and related websites (the “Service”). Contact: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a>.</p>
+    <h2>1. Who we are</h2>
+    <p>Nomli Tech Limited (“we,” “us”) provides the <strong>Nomli Mingle</strong> mobile apps and related websites (the “Service”). Contact: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a>.</p>
 
-  <h2>2. Age</h2>
-  <p>Nomli is intended for users <strong>16 and older</strong>. We do not knowingly collect personal data from children under 16. If you believe a child under 16 created an account, contact us and we will take appropriate steps to delete it.</p>
+    <h2>2. Age</h2>
+    <p>Nomli Mingle is intended for users <strong>16 and older</strong>. We do not knowingly collect personal data from children under 16. If you believe a child under 16 created an account, contact us and we will take appropriate steps to delete it.</p>
 
-  <h2>3. Information we collect</h2>
-  <ul>
-    <li><strong>Account</strong> — email, display name, handle, profile photo, password or sign-in tokens (Google / Apple), and similar profile fields you choose to add</li>
-    <li><strong>Content</strong> — posts, stories, messages, voice notes, Market listings, order notes, and reports you submit</li>
-    <li><strong>Usage</strong> — interactions with feed, chat, Market, and app screens (to operate features and keep the Service reliable)</li>
-    <li><strong>Device</strong> — device type, OS version, app version, push tokens, coarse diagnostics/crash data</li>
-    <li><strong>Location (optional / Market)</strong> — approximate or precise location when you allow it, to show nearby listings and set service areas</li>
-    <li><strong>Advertising</strong> — advertising identifiers and ad interaction data via partners such as Google AdMob (subject to your device ad settings)</li>
-    <li><strong>Support</strong> — messages you send to support@nomlimingle.com</li>
-  </ul>
+    <h2>3. Information we collect</h2>
+    <ul>
+      <li><strong>Account</strong> — email, display name, handle, profile photo, password or sign-in tokens (Google / Apple), and similar profile fields you choose to add</li>
+      <li><strong>Content</strong> — posts, stories, messages, voice notes, Market listings, order notes, and reports you submit</li>
+      <li><strong>Usage</strong> — interactions with feed, chat, Market, and app screens (to operate features and keep the Service reliable)</li>
+      <li><strong>Device</strong> — device type, OS version, app version, push tokens, coarse diagnostics/crash data</li>
+      <li><strong>Location (optional / Market)</strong> — approximate or precise location when you allow it, to show nearby listings and set service areas</li>
+      <li><strong>Advertising</strong> — advertising identifiers and ad interaction data via partners such as Google AdMob (subject to your device ad settings)</li>
+      <li><strong>Support</strong> — messages you send to support@nomlimingle.com</li>
+    </ul>
 
-  <h2>4. How we use information</h2>
-  <ul>
-    <li>Provide feed, chat, profiles, Market, and account security</li>
-    <li>Send transactional notifications (messages, orders, security alerts) and optional product updates</li>
-    <li>Moderate content, prevent abuse, and enforce our Terms</li>
-    <li>Show and measure advertising</li>
-    <li>Improve performance and fix bugs</li>
-    <li>Comply with law and respond to lawful requests</li>
-  </ul>
+    <h2>4. How we use information</h2>
+    <ul>
+      <li>Provide Nomli Mingle feed, chat, profiles, Market, and account security</li>
+      <li>Send transactional notifications (messages, orders, security alerts) and optional product updates</li>
+      <li>Moderate content, prevent abuse, and enforce our Terms</li>
+      <li>Show and measure advertising</li>
+      <li>Improve performance and fix bugs</li>
+      <li>Comply with law and respond to lawful requests</li>
+    </ul>
 
-  <h2>5. Sharing</h2>
-  <p>We do <strong>not sell</strong> your personal information. We share data with:</p>
-  <ul>
-    <li><strong>Service providers</strong> that host infrastructure, auth, messaging, media, analytics, crash reporting, or push delivery</li>
-    <li><strong>Advertising partners</strong> (for example Google) to serve and measure ads</li>
-    <li><strong>Other users</strong> when you post publicly, message them, or publish a Market shop/listing</li>
-    <li><strong>Authorities</strong> when required by law or to protect users and Nomli</li>
-  </ul>
+    <h2>5. Sharing</h2>
+    <p>We do <strong>not sell</strong> your personal information. We share data with:</p>
+    <ul>
+      <li><strong>Service providers</strong> that host infrastructure, auth, messaging, media, analytics, crash reporting, or push delivery</li>
+      <li><strong>Advertising partners</strong> (for example Google) to serve and measure ads</li>
+      <li><strong>Other users</strong> when you post publicly, message them, or publish a Market shop/listing</li>
+      <li><strong>Authorities</strong> when required by law or to protect users and Nomli Mingle</li>
+    </ul>
 
-  <h2>6. Messages &amp; Market</h2>
-  <p>Direct messages and Market chats are processed to deliver the Service and for safety/moderation. They are not end-to-end encrypted across all surfaces. Do not share secrets you would not trust on a typical social network.</p>
+    <h2>6. Messages &amp; Market</h2>
+    <p>Direct messages and Market chats are processed to deliver Nomli Mingle and for safety/moderation. They are not end-to-end encrypted across all surfaces. Do not share secrets you would not trust on a typical social network.</p>
 
-  <h2>7. Ads &amp; identifiers</h2>
-  <p>Nomli uses third-party advertising. Partners may collect advertising IDs and related data to personalize or measure ads. You can reset or limit ad tracking in your device settings (for example Android Advertising ID / Apple App Tracking controls where applicable).</p>
+    <h2>7. Ads &amp; identifiers</h2>
+    <p>Nomli Mingle uses third-party advertising. Partners may collect advertising IDs and related data to personalize or measure ads. You can reset or limit ad tracking in your device settings (for example Android Advertising ID / Apple App Tracking controls where applicable).</p>
 
-  <h2>8. Retention</h2>
-  <p>We keep account and content data while your account is active and for a reasonable period afterward for backups, legal claims, and abuse prevention. You can delete your account in-app; some residual copies may remain in backups for a limited time.</p>
+    <h2>8. Retention</h2>
+    <p>We keep account and content data while your account is active and for a reasonable period afterward for backups, legal claims, and abuse prevention. You can delete your account in Nomli Mingle; some residual copies may remain in backups for a limited time.</p>
 
-  <h2>9. Your choices</h2>
-  <ul>
-    <li>Edit profile information in the app</li>
-    <li>Control location and notification permissions in system settings</li>
-    <li>Limit ad tracking in device settings</li>
-    <li>Delete your account in settings (or email support)</li>
-    <li>Request access or deletion where required by applicable law by contacting support</li>
-  </ul>
+    <h2>9. Your choices</h2>
+    <ul>
+      <li>Edit profile information in Nomli Mingle</li>
+      <li>Control location and notification permissions in system settings</li>
+      <li>Limit ad tracking in device settings</li>
+      <li>Delete your account in settings (or email support)</li>
+      <li>Request access or deletion where required by applicable law by contacting support</li>
+    </ul>
 
-  <h2>10. International transfers</h2>
-  <p>We may process data in countries other than where you live, using providers with appropriate safeguards as required by law.</p>
+    <h2>10. International transfers</h2>
+    <p>We may process data in countries other than where you live, using providers with appropriate safeguards as required by law.</p>
 
-  <h2>11. Security</h2>
-  <p>We use industry-standard protections such as encryption in transit (HTTPS/TLS) and access controls. No method of transmission or storage is 100% secure.</p>
+    <h2>11. Security</h2>
+    <p>We use industry-standard protections such as encryption in transit (HTTPS/TLS) and access controls. No method of transmission or storage is 100% secure.</p>
 
-  <h2>12. Changes</h2>
-  <p>We may update this Policy. We will post the new version here with a revised effective date and, for material changes, provide additional notice when appropriate.</p>
+    <h2>12. Changes</h2>
+    <p>We may update this Policy. We will post the new version here with a revised effective date and, for material changes, provide additional notice in Nomli Mingle when appropriate.</p>
 
-  <h2>13. Contact</h2>
-  <p>Privacy questions: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a><br>
-  Nomli Tech Limited · <a href="https://www.nomlimingle.com">www.nomlimingle.com</a></p>
+    <h2>13. Contact</h2>
+    <p>Privacy questions: <a href="mailto:support@nomlimingle.com">support@nomlimingle.com</a><br>
+    Nomli Tech Limited · Nomli Mingle · <a href="https://www.nomlimingle.com">www.nomlimingle.com</a></p>
 
-  <div class="foot">
-    <a href="terms.html">Terms of Service</a>
-    <a href="./">Home</a>
-    <a href="mailto:support@nomlimingle.com">Support</a>
+    <div class="foot">
+      <a href="terms.html">Terms of Service</a>
+      <a href="./">Home</a>
+      <a href="mailto:support@nomlimingle.com">Support</a>
+    </div>
   </div>
 </div>
 </body>
