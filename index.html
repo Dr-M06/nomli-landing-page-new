@@ -19,12 +19,12 @@
 <meta name="twitter:title" content="Nomli — social feed, chat, calls & Market">
 <meta name="twitter:description" content="Share posts, follow people, call friends, and trade nearby — in one app.">
 <meta name="twitter:image" content="https://www.nomlimingle.com/twitter-image.png">
-<meta name="theme-color" content="#F2F2F2">
+<meta name="theme-color" content="#D6EADF">
 <link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -80,381 +80,451 @@
 </script>
 <style>
 :root{
-  --bg:#F2F2F2;
+  --sage:#D6EADF;
+  --sage-deep:#C3DCCF;
+  --ink:#15171C;
+  --mute:#5E6772;
   --paper:#FFFFFF;
-  --ink:#0A0A0A;
-  --mute:#6B6B6B;
-  --line:rgba(10,10,10,.1);
-  --lime:#D7FF00;
-  --pad:clamp(22px,5vw,64px);
-  --max:1080px;
+  --panel:#F4F6F8;
+  --coral:#FF6B3D;
+  --line:rgba(21,23,28,.08);
+  --shadow:0 16px 40px rgba(21,23,28,.1);
+  --pad:clamp(20px,4.5vw,56px);
+  --max:1140px;
   --ease:cubic-bezier(.22,1,.36,1);
+  --r:24px;
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{
-  background:var(--bg);
+  background:var(--sage);
   color:var(--ink);
-  font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif;
-  font-weight:400;
+  font:16px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;
+  font-weight:500;
   -webkit-font-smoothing:antialiased;
   overflow-x:clip;
 }
 a{color:inherit;text-decoration:none}
 
-.wrap{width:min(var(--max),calc(100% - 2 * var(--pad)));margin:0 auto}
+.shell{width:min(var(--max),calc(100% - 2 * var(--pad)));margin:0 auto}
 
-/* nav */
+/* ——— nav ——— */
 .bar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:28px 0 8px;
+  padding:22px 0;
+  gap:20px;
 }
-.brand{
-  display:inline-flex;align-items:center;gap:12px;
+.logo{
+  display:inline-flex;align-items:center;gap:10px;
+  font-weight:800;font-size:1.25rem;letter-spacing:-.04em;
 }
-.mark{
-  width:36px;height:36px;
-  background:var(--ink);
-  display:grid;place-items:center;
-  flex-shrink:0;
+.logo-mark{
+  width:30px;height:30px;border-radius:50%;
+  background:#2FA88A;
+  display:grid;place-items:center;color:#fff;
 }
-.mark span{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:700;font-size:1.15rem;line-height:1;
-  color:var(--lime);letter-spacing:-.06em;
+.logo-mark svg{width:14px;height:14px}
+.nav-mid{
+  display:none;gap:28px;
+  font-size:14px;font-weight:600;color:var(--mute);
 }
-.brand-name{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:700;font-size:1.2rem;
-  letter-spacing:-.04em;
+.nav-mid a:hover{color:var(--ink)}
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav-right .quiet{
+  display:none;font-size:13px;font-weight:600;color:var(--mute);
 }
-.bar-links{
-  display:flex;align-items:center;gap:8px 22px;
-  font-size:14px;font-weight:500;color:var(--mute);
-}
-.bar-links a:hover{color:var(--ink)}
-.bar-links .hide-sm{display:none}
-@media (min-width:720px){
-  .bar-links .hide-sm{display:inline}
-}
-
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  height:44px;padding:0 20px;
-  background:var(--ink);color:#fff;
-  font-family:"Space Grotesk",sans-serif;
-  font-size:14px;font-weight:600;letter-spacing:-.02em;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:46px;padding:0 20px;border-radius:999px;
+  background:var(--coral);color:#fff;
+  font-size:14px;font-weight:700;letter-spacing:-.01em;
   border:0;cursor:pointer;
-  transition:background .2s ease, color .2s ease, transform .25s var(--ease);
+  transition:transform .25s var(--ease), filter .2s ease, box-shadow .25s ease;
 }
-.btn:hover{background:#222;transform:translateY(-1px)}
-.btn-lime{
-  background:var(--lime);color:var(--ink);
+.btn:hover{
+  transform:translateY(-1px);filter:brightness(1.04);
+  box-shadow:0 12px 28px rgba(255,107,61,.3);
 }
-.btn-lime:hover{background:#c8ef00;color:var(--ink)}
-.btn-line{
-  background:transparent;color:var(--ink);
-  box-shadow:inset 0 0 0 1.5px rgba(10,10,10,.2);
+.btn svg{width:15px;height:15px}
+@media (min-width:900px){
+  .nav-mid{display:flex}
+  .nav-right .quiet{display:inline}
 }
-.btn-line:hover{box-shadow:inset 0 0 0 1.5px var(--ink);background:transparent}
 
-/* hero — brand first, one composition */
+/* ——— hero ——— */
 .hero{
-  padding:clamp(48px,10vw,96px) 0 clamp(56px,9vw,100px);
-  display:grid;gap:48px;
-  align-items:end;
+  display:grid;gap:40px;
+  padding:20px 0 72px;
+  align-items:center;
 }
-.hero-copy{max-width:36rem}
+.hero-copy{max-width:34rem;position:relative;z-index:2}
+.badge{
+  display:inline-flex;align-items:center;
+  height:32px;padding:0 14px;border-radius:999px;
+  background:rgba(255,255,255,.72);
+  font-size:12px;font-weight:700;color:#1A6B56;
+  margin-bottom:18px;
+  opacity:0;transform:translateY(10px);
+  animation:up .7s var(--ease) .05s forwards;
+}
 .hero h1{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:700;
-  font-size:clamp(4rem,14vw,7.5rem);
-  letter-spacing:-.07em;
-  line-height:.86;
-  opacity:0;transform:translateY(16px);
-  animation:rise .85s var(--ease) .05s forwards;
+  font-size:clamp(2.5rem,6.2vw,3.9rem);
+  font-weight:800;letter-spacing:-.045em;line-height:1.05;
+  opacity:0;transform:translateY(14px);
+  animation:up .8s var(--ease) .12s forwards;
 }
-.hero .tag{
-  margin-top:22px;
-  font-size:clamp(1.05rem,2.2vw,1.25rem);
-  font-weight:400;
-  color:var(--mute);
-  letter-spacing:-.01em;
-  line-height:1.4;
-  max-width:22rem;
+.hero .lead{
+  margin-top:16px;color:var(--mute);
+  font-size:1.02rem;line-height:1.6;max-width:28rem;
   opacity:0;transform:translateY(12px);
-  animation:rise .85s var(--ease) .16s forwards;
+  animation:up .8s var(--ease) .22s forwards;
 }
-.hero .actions{
-  margin-top:32px;
-  display:flex;flex-wrap:wrap;gap:10px;
+.hero .cta{
+  margin-top:28px;
   opacity:0;transform:translateY(12px);
-  animation:rise .85s var(--ease) .28s forwards;
+  animation:up .8s var(--ease) .32s forwards;
 }
 
-.hero-art{
-  justify-self:stretch;
-  min-height:280px;
+.hero-stage{
   position:relative;
+  min-height:440px;
   opacity:0;transform:translateY(18px);
-  animation:rise .95s var(--ease) .18s forwards;
+  animation:up .95s var(--ease) .2s forwards;
 }
-.art-board{
-  position:relative;
-  width:100%;
-  height:100%;
-  min-height:280px;
-  background:var(--paper);
-  border:1px solid var(--line);
-  overflow:hidden;
+.deco{
+  position:absolute;border-radius:50%;
+  background:rgba(255,255,255,.28);
+  pointer-events:none;
 }
-.art-n{
-  position:absolute;
-  right:-4%;bottom:-18%;
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:700;
-  font-size:clamp(11rem,32vw,18rem);
-  line-height:.75;
-  letter-spacing:-.08em;
-  color:var(--ink);
-  opacity:.06;
-  user-select:none;pointer-events:none;
+.deco.a{width:70px;height:70px;top:6%;right:10%;animation:bob 7s ease-in-out infinite}
+.deco.b{width:38px;height:38px;bottom:20%;left:4%;animation:bob 6s ease-in-out .5s infinite}
+.deco.c{width:22px;height:22px;top:48%;left:16%;opacity:.55;animation:bob 8s ease-in-out 1s infinite}
+
+.phone{
+  position:absolute;left:50%;top:50%;
+  width:min(210px,50vw);aspect-ratio:9/17.8;
+  transform:translate(-52%,-54%);
+  border:2.5px solid var(--ink);border-radius:36px;
+  background:#1B222B;overflow:hidden;box-shadow:var(--shadow);
 }
-.art-tile{
-  position:absolute;
-  background:var(--ink);
-  width:min(120px,28vw);height:min(120px,28vw);
-  top:18%;left:14%;
-  display:grid;place-items:center;
-  animation:soft 6s ease-in-out infinite;
+.phone-island{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:38%;height:16px;border-radius:20px;background:#0B0E12;z-index:2;
 }
-.art-tile span{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:700;font-size:clamp(2.8rem,8vw,3.6rem);
-  color:var(--lime);letter-spacing:-.08em;line-height:1;
+.phone-ui{
+  position:absolute;inset:9px;border-radius:28px;overflow:hidden;
+  background:linear-gradient(180deg,#2A3340,#171D25);
 }
-.art-rule{
-  position:absolute;
-  left:14%;right:14%;
-  height:1px;background:var(--line);
+.phone-ui::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 50% 32%, #9AA8B8 0%, #5A6674 42%, transparent 58%),
+    linear-gradient(180deg, transparent 50%, rgba(0,0,0,.45));
 }
-.art-rule.r1{top:52%}
-.art-rule.r2{top:64%}
-.art-rule.r3{top:76%;right:28%}
-.art-chip{
-  position:absolute;
-  bottom:16%;right:14%;
-  padding:10px 14px;
-  background:var(--bg);
-  border:1px solid var(--line);
-  font-size:12px;font-weight:500;color:var(--mute);
-  letter-spacing:.01em;
-}
-.art-chip b{color:var(--ink);font-weight:600}
-@media (min-width:880px){
-  .hero{
-    grid-template-columns:1.05fr .95fr;
-    gap:56px;
-    align-items:center;
-  }
-  .hero-art,.art-board{min-height:420px}
+.phone-ui::after{
+  content:"";position:absolute;left:50%;top:24%;
+  width:46%;aspect-ratio:1;border-radius:50%;transform:translateX(-50%);
+  background:radial-gradient(circle at 40% 30%, #D5DEE8, #6E7B8A 75%);
 }
 
-@keyframes rise{to{opacity:1;transform:none}}
-@keyframes soft{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-6px)}
+.card{
+  position:absolute;background:var(--paper);
+  border-radius:var(--r);box-shadow:var(--shadow);
+}
+.card-msg{
+  top:12%;right:0;width:min(210px,56vw);
+  padding:12px 14px;display:flex;gap:10px;align-items:flex-start;
+  animation:bob 5.5s ease-in-out infinite;
+}
+.card-voice{
+  left:0;bottom:26%;width:min(190px,52vw);
+  padding:12px 14px;display:flex;align-items:center;gap:10px;
+  animation:bob 6s ease-in-out .35s infinite;
+}
+.card-call{
+  right:6%;bottom:8%;width:96px;padding:10px;text-align:center;
+  animation:bob 5.8s ease-in-out .7s infinite;
+}
+.av{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;
+}
+.av.g{background:#2FA88A}
+.av.b{background:#5B6CFF}
+.av.o{background:#E39A1C}
+.card-msg .who{font-size:12px;font-weight:700}
+.card-msg .txt{font-size:12px;color:var(--mute);margin-top:2px;line-height:1.35}
+.play{
+  width:30px;height:30px;border-radius:50%;background:var(--coral);color:#fff;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.play svg{width:11px;height:11px;margin-left:1px}
+.wave{display:flex;align-items:center;gap:3px;height:26px;flex:1}
+.wave i{width:3px;border-radius:99px;background:var(--ink);display:block;animation:eq 1.15s ease-in-out infinite}
+.wave i:nth-child(1){height:30%;animation-delay:0s}
+.wave i:nth-child(2){height:58%;animation-delay:.08s}
+.wave i:nth-child(3){height:82%;animation-delay:.14s}
+.wave i:nth-child(4){height:44%;animation-delay:.04s}
+.wave i:nth-child(5){height:70%;animation-delay:.18s}
+.wave i:nth-child(6){height:36%;animation-delay:.1s}
+.wave i:nth-child(7){height:88%;animation-delay:.16s}
+.dur{font-size:11px;font-weight:700;color:var(--mute)}
+.call-thumb{
+  width:100%;aspect-ratio:1;border-radius:14px;margin-bottom:8px;
+  background:radial-gradient(circle at 45% 35%, #D7E0EA, #7A8796 72%);
+}
+.card-call .nm{font-size:11px;font-weight:700}
+.card-call .st{font-size:10px;color:var(--mute);margin-top:2px}
+
+@media (min-width:920px){
+  .hero{grid-template-columns:1fr 1.05fr;gap:24px;padding:28px 0 88px}
+  .hero-stage{min-height:520px}
 }
 
-/* sections */
-.band{
+@keyframes up{to{opacity:1;transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes eq{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+
+/* ——— feature (white) ——— */
+.feature{
   background:var(--paper);
-  border-top:1px solid var(--line);
-  padding:clamp(56px,9vw,96px) 0;
+  border-radius:40px 40px 0 0;
+  padding:clamp(56px,8vw,96px) 0;
 }
-.band h2{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:600;
-  font-size:clamp(1.65rem,3.4vw,2.35rem);
-  letter-spacing:-.045em;
-  line-height:1.15;
+.feature-grid{
+  display:grid;gap:40px;align-items:center;
+}
+.feature h2{
+  font-size:clamp(1.65rem,3.5vw,2.45rem);
+  font-weight:800;letter-spacing:-.04em;line-height:1.18;
   max-width:18ch;
 }
-.band .lede{
-  margin-top:14px;
-  color:var(--mute);
-  font-size:1.02rem;
-  line-height:1.55;
-  max-width:34rem;
+.feature .aside{
+  margin-top:14px;color:var(--mute);max-width:30rem;line-height:1.6;
+}
+.feature-visual{display:grid;gap:14px;justify-items:start}
+@media (min-width:900px){
+  .feature-grid{grid-template-columns:1fr 1fr;gap:48px}
+  .feature-visual{justify-items:end}
 }
 
-.grid3{
-  margin-top:48px;
-  display:grid;gap:0;
-  border-top:1px solid var(--line);
+.mini{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--panel);border-radius:16px;
+  padding:12px 14px;font-size:13px;font-weight:650;
+  box-shadow:0 8px 20px rgba(21,23,28,.04);
 }
-.grid3 article{
-  padding:28px 0;
+.mini .dot{width:9px;height:9px;border-radius:50%;background:#2FA88A}
+.mini.market .dot{background:var(--coral)}
+
+.thread{
+  width:min(100%,340px);
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:26px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+.thread-head{
+  display:flex;align-items:center;gap:10px;
+  padding-bottom:14px;margin-bottom:14px;
   border-bottom:1px solid var(--line);
 }
-.grid3 h3{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:600;
-  font-size:1.15rem;
-  letter-spacing:-.03em;
-  margin-bottom:8px;
+.thread-head strong{display:block;font-size:14px}
+.thread-head span{font-size:12px;color:var(--mute)}
+.bubbles{display:grid;gap:10px}
+.b{
+  max-width:86%;padding:10px 12px;border-radius:16px;
+  font-size:13px;line-height:1.4;font-weight:550;
 }
-.grid3 p{color:var(--mute);font-size:.98rem;line-height:1.5;max-width:28rem}
-@media (min-width:760px){
-  .grid3{
-    grid-template-columns:repeat(3,1fr);
-    border-top:0;border-left:1px solid var(--line);
-  }
-  .grid3 article{
-    padding:0 0 0 28px;
-    border-bottom:0;border-right:1px solid var(--line);
-  }
-  .grid3 article:first-child{padding-left:0;border-left:0}
+.b.in{background:var(--panel);border-bottom-left-radius:5px}
+.b.out{margin-left:auto;background:var(--sage);border-bottom-right-radius:5px}
+
+/* ——— bottom sage ——— */
+.bottom{
+  background:var(--sage);
+  padding:clamp(48px,7vw,80px) 0;
+}
+.bottom-grid{
+  display:grid;gap:28px;align-items:center;
+}
+.bottom h2{
+  font-size:clamp(1.55rem,3.2vw,2.25rem);
+  font-weight:800;letter-spacing:-.04em;line-height:1.15;
+  max-width:16ch;
+}
+.bottom p{margin-top:10px;color:var(--mute);max-width:26rem}
+.bottom .actions{display:flex;flex-wrap:wrap;gap:12px}
+.btn.ghost{
+  background:transparent;color:var(--ink);
+  box-shadow:inset 0 0 0 1.5px rgba(21,23,28,.18);
+}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink);filter:none}
+@media (min-width:800px){
+  .bottom-grid{grid-template-columns:1.15fr auto}
 }
 
-.get{
-  padding:clamp(48px,8vw,80px) 0;
-  display:flex;flex-wrap:wrap;
-  align-items:flex-end;justify-content:space-between;
-  gap:28px;
-}
-.get h2{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:600;
-  font-size:clamp(1.6rem,3.2vw,2.2rem);
-  letter-spacing:-.04em;
-  line-height:1.1;
-}
-.get p{margin-top:10px;color:var(--mute);max-width:26rem}
-.get .actions{display:flex;flex-wrap:wrap;gap:10px}
-
+/* ——— about / footer ——— */
 .about{
+  background:var(--paper);
   border-top:1px solid var(--line);
-  padding:clamp(48px,7vw,72px) 0 32px;
+  padding:clamp(48px,7vw,72px) 0 28px;
 }
 .about .eyebrow{
-  font-size:12px;font-weight:600;
-  letter-spacing:.08em;text-transform:uppercase;
-  color:var(--mute);margin-bottom:12px;
+  font-size:12px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--mute);margin-bottom:10px;
 }
 .about h2{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:600;
   font-size:clamp(1.45rem,2.8vw,1.9rem);
-  letter-spacing:-.035em;
+  font-weight:800;letter-spacing:-.035em;
 }
 .about .lede{margin-top:12px;color:var(--mute);max-width:36rem;line-height:1.55}
-.about .lede a{border-bottom:1px solid rgba(10,10,10,.25)}
-.about .lede a:hover{border-color:var(--ink)}
-.family{margin-top:28px;border-top:1px solid var(--line)}
+.about .lede a{border-bottom:1px solid rgba(47,168,138,.45)}
+.family{margin-top:28px;border-top:1px solid var(--line);max-width:640px}
 .family a{
   display:flex;justify-content:space-between;gap:16px;align-items:baseline;
   padding:16px 0;border-bottom:1px solid var(--line);
 }
-.family .pname{
-  font-family:"Space Grotesk",sans-serif;
-  font-weight:600;font-size:1.05rem;letter-spacing:-.02em;
-}
-.family .phint{display:block;margin-top:3px;font-size:.92rem;color:var(--mute)}
-.family .go{color:var(--mute)}
-.family a:hover .go{color:var(--ink)}
+.family .pname{font-weight:750;font-size:1.02rem}
+.family .phint{display:block;margin-top:3px;font-size:.92rem;color:var(--mute);font-weight:500}
+.family .go{opacity:.35}
+.family a:hover .go{opacity:1;color:var(--coral)}
 
 footer{
+  background:var(--paper);
   border-top:1px solid var(--line);
-  padding:24px 0 48px;
+  padding:22px 0 44px;
+}
+.foot{
   display:flex;flex-wrap:wrap;gap:14px 24px;
   justify-content:space-between;
-  font-size:13px;color:var(--mute);
+  font-size:13px;color:var(--mute);font-weight:500;
 }
 .links{display:flex;gap:16px;flex-wrap:wrap}
 .links a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){
-  .hero h1,.hero .tag,.hero .actions,.hero-art,.art-tile{animation:none;opacity:1;transform:none}
+  .badge,.hero h1,.hero .lead,.hero .cta,.hero-stage{animation:none;opacity:1;transform:none}
+  .card-msg,.card-voice,.card-call,.deco,.wave i{animation:none}
 }
 </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="shell">
     <header class="bar">
-      <a class="brand" href="./" aria-label="Nomli home">
-        <span class="mark" aria-hidden="true"><span>N</span></span>
-        <span class="brand-name">Nomli</span>
+      <a class="logo" href="./">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A3.5 3.5 0 0 1 7.5 3h9A3.5 3.5 0 0 1 20 6.5v6A3.5 3.5 0 0 1 16.5 16H10l-4.2 3.2c-.7.5-1.8 0-1.8-.9V6.5z"/></svg>
+        </span>
+        Nomli
       </a>
-      <nav class="bar-links" aria-label="Primary">
-        <a class="hide-sm" href="#product">Product</a>
-        <a class="hide-sm" href="#about">About</a>
-        <a class="hide-sm" href="privacy.html">Privacy</a>
-        <a class="btn btn-lime" href="#get">Get Nomli</a>
+      <nav class="nav-mid" aria-label="Primary">
+        <a href="#product">Product</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="#about">About</a>
       </nav>
+      <div class="nav-right">
+        <span class="quiet">iOS &amp; Android</span>
+        <a class="btn" href="#get">
+          Get Nomli
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+        </a>
+      </div>
     </header>
 
-    <main>
-      <section class="hero" aria-label="Nomli">
-        <div class="hero-copy">
-          <h1>Nomli</h1>
-          <p class="tag">Feed, chat, calls &amp; local Market.</p>
-          <div class="actions" id="get">
-            <a class="btn btn-lime" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
-            <a class="btn" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
+    <section class="hero" aria-label="Nomli">
+      <div class="hero-copy">
+        <p class="badge">Feed · chat · local Market</p>
+        <h1>Your people, posts, and nearby Market — in one app.</h1>
+        <p class="lead">
+          Scroll Discover, keep the chat going, hop on audio, and trade locally
+          without jumping between five apps.
+        </p>
+        <div class="cta" id="get">
+          <a class="btn" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">
+            Get Nomli
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-stage" aria-hidden="true">
+        <span class="deco a"></span>
+        <span class="deco b"></span>
+        <span class="deco c"></span>
+
+        <div class="phone">
+          <div class="phone-island"></div>
+          <div class="phone-ui"></div>
+        </div>
+
+        <div class="card card-msg">
+          <div class="av g">A</div>
+          <div>
+            <div class="who">Aisha</div>
+            <div class="txt">New stall open — jollof still hot if you come now.</div>
           </div>
         </div>
 
-        <div class="hero-art" aria-hidden="true">
-          <div class="art-board">
-            <div class="art-n">N</div>
-            <div class="art-tile"><span>N</span></div>
-            <div class="art-rule r1"></div>
-            <div class="art-rule r2"></div>
-            <div class="art-rule r3"></div>
-            <div class="art-chip"><b>Nearby</b> · Market open</div>
-          </div>
+        <div class="card card-voice">
+          <div class="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <span class="dur">0:18</span>
         </div>
-      </section>
-    </main>
+
+        <div class="card card-call">
+          <div class="call-thumb"></div>
+          <div class="nm">Maya</div>
+          <div class="st">On a call</div>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <section class="band" id="product">
-    <div class="wrap">
-      <h2>One place for the people you already talk to.</h2>
-      <p class="lede">Scroll the day, reply in chat, jump on a call, pick up something local — without bouncing between five apps.</p>
-      <div class="grid3">
-        <article>
-          <h3>Feed</h3>
-          <p>Posts and people to follow — Discover when you want something new.</p>
-        </article>
-        <article>
-          <h3>Chat &amp; calls</h3>
-          <p>Direct messages and audio when a thread needs a voice.</p>
-        </article>
-        <article>
-          <h3>Market</h3>
-          <p>Local listings next to the same conversations.</p>
-        </article>
+  <section class="feature" id="product">
+    <div class="shell feature-grid">
+      <div>
+        <h2>Feed, chat, and calls for the circle you already have — plus Market next door.</h2>
+        <p class="aside">Stay in one social home: follow people, reply in DMs, take it to audio, and browse local listings without leaving the thread.</p>
+      </div>
+      <div class="feature-visual">
+        <div class="mini market"><span class="dot"></span> Nearby · Homemade food</div>
+        <div class="thread">
+          <div class="thread-head">
+            <div class="av b">K</div>
+            <div>
+              <strong>Kai</strong>
+              <span>Active now</span>
+            </div>
+          </div>
+          <div class="bubbles">
+            <div class="b in">You free later? Market stall two blocks down.</div>
+            <div class="b out">Yes — calling you in five.</div>
+            <div class="b in">Bring cash. See you there.</div>
+          </div>
+        </div>
+        <div class="mini"><span class="dot"></span> Voice note · 0:18</div>
       </div>
     </div>
   </section>
 
-  <div class="wrap">
-    <section class="get" aria-labelledby="get-title">
+  <section class="bottom" aria-labelledby="bottom-title">
+    <div class="shell bottom-grid">
       <div>
-        <h2 id="get-title">Install Nomli</h2>
-        <p>Free on iOS and Android.</p>
+        <h2 id="bottom-title">Install Nomli on your phone</h2>
+        <p>Free on the App Store and Google Play.</p>
       </div>
       <div class="actions">
-        <a class="btn btn-lime" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
-        <a class="btn btn-line" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
+        <a class="btn" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
+        <a class="btn ghost" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="about" id="about" aria-labelledby="about-title">
+  <section class="about" id="about">
+    <div class="shell">
       <p class="eyebrow">About</p>
-      <h2 id="about-title">Built by Nomli Tech</h2>
+      <h2>Built by Nomli Tech</h2>
       <p class="lede">
         Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> —
         a Finland-based studio shipping mobile apps, websites, and the realtime stack behind them.
@@ -489,9 +559,11 @@ footer{
           <span class="go" aria-hidden="true">→</span>
         </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <footer>
+  <footer>
+    <div class="shell foot">
       <div>© <span id="y"></span> Nomli Tech Limited</div>
       <div class="links">
         <a href="#about">About</a>
@@ -500,8 +572,8 @@ footer{
         <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a>
         <a href="mailto:support@nomlimingle.com">Support</a>
       </div>
-    </footer>
-  </div>
+    </div>
+  </footer>
 <script>
 document.getElementById('y').textContent = new Date().getFullYear();
 if (/\/about\/?$/.test(location.pathname)) {
