@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nomli — social feed, chat, calls & Market</title>
-<meta name="description" content="Nomli is a social app for feed, chat, audio calls, and local Market.">
+<meta name="description" content="Nomli is a social app — feed, follows, chat, audio calls, and local Market in one place.">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 <link rel="canonical" href="https://www.nomlimingle.com/">
@@ -19,11 +19,12 @@
 <meta name="twitter:title" content="Nomli — social feed, chat, calls & Market">
 <meta name="twitter:description" content="Share posts, follow people, call friends, and trade nearby — in one app.">
 <meta name="twitter:image" content="https://www.nomlimingle.com/twitter-image.png">
-<meta name="theme-color" content="#ffffff">
-<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
-<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<meta name="theme-color" content="#F2F2F2">
+<link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="shortcut icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -79,412 +80,428 @@
 </script>
 <style>
 :root{
-  --bg:#fff;
-  --ink:#1d1d1f;
-  --mute:#6e6e73;
-  --line:#d2d2d7;
-  --fill:#f5f5f7;
-  --accent:#1fa88c;
-  --pad:clamp(22px,5vw,48px);
-  --max:980px;
-  --ease:cubic-bezier(.25,.1,.25,1);
-  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --bg:#F2F2F2;
+  --paper:#FFFFFF;
+  --ink:#0A0A0A;
+  --mute:#6B6B6B;
+  --line:rgba(10,10,10,.1);
+  --lime:#D7FF00;
+  --pad:clamp(22px,5vw,64px);
+  --max:1080px;
+  --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{
   background:var(--bg);
   color:var(--ink);
-  font-family:var(--sans);
-  font-size:17px;
+  font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif;
   font-weight:400;
-  line-height:1.47059;
-  letter-spacing:-.022em;
   -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
+  overflow-x:clip;
 }
 a{color:inherit;text-decoration:none}
-img{display:block;max-width:100%;height:auto}
 
-.wrap{width:min(var(--max),100%);margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+.wrap{width:min(var(--max),calc(100% - 2 * var(--pad)));margin:0 auto}
 
-/* nav — flat, quiet */
-.nav{
+/* nav */
+.bar{
   display:flex;align-items:center;justify-content:space-between;
-  height:52px;
-  border-bottom:1px solid transparent;
+  padding:28px 0 8px;
 }
-.logo{
-  display:inline-flex;align-items:center;gap:10px;
-  font-size:21px;
-  font-weight:600;
-  letter-spacing:-.03em;
+.brand{
+  display:inline-flex;align-items:center;gap:12px;
 }
-.logo img{
-  width:28px;height:28px;border-radius:6px;
+.mark{
+  width:36px;height:36px;
+  background:var(--ink);
+  display:grid;place-items:center;
+  flex-shrink:0;
 }
-.nav-right{
-  display:flex;align-items:center;gap:28px;
-  font-size:12px;font-weight:400;
-  color:var(--mute);
+.mark span{
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:700;font-size:1.15rem;line-height:1;
+  color:var(--lime);letter-spacing:-.06em;
 }
-.nav-right a:hover{color:var(--ink)}
-.nav-cta{
-  color:var(--ink) !important;
-  font-weight:500;
+.brand-name{
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:700;font-size:1.2rem;
+  letter-spacing:-.04em;
+}
+.bar-links{
+  display:flex;align-items:center;gap:8px 22px;
+  font-size:14px;font-weight:500;color:var(--mute);
+}
+.bar-links a:hover{color:var(--ink)}
+.bar-links .hide-sm{display:none}
+@media (min-width:720px){
+  .bar-links .hide-sm{display:inline}
 }
 
-/* hero */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:44px;padding:0 20px;
+  background:var(--ink);color:#fff;
+  font-family:"Space Grotesk",sans-serif;
+  font-size:14px;font-weight:600;letter-spacing:-.02em;
+  border:0;cursor:pointer;
+  transition:background .2s ease, color .2s ease, transform .25s var(--ease);
+}
+.btn:hover{background:#222;transform:translateY(-1px)}
+.btn-lime{
+  background:var(--lime);color:var(--ink);
+}
+.btn-lime:hover{background:#c8ef00;color:var(--ink)}
+.btn-line{
+  background:transparent;color:var(--ink);
+  box-shadow:inset 0 0 0 1.5px rgba(10,10,10,.2);
+}
+.btn-line:hover{box-shadow:inset 0 0 0 1.5px var(--ink);background:transparent}
+
+/* hero — brand first, one composition */
 .hero{
-  padding:72px 0 56px;
-  text-align:center;
+  padding:clamp(48px,10vw,96px) 0 clamp(56px,9vw,100px);
+  display:grid;gap:48px;
+  align-items:end;
 }
+.hero-copy{max-width:36rem}
 .hero h1{
-  font-size:clamp(40px,8vw,56px);
-  font-weight:600;
-  letter-spacing:-.025em;
-  line-height:1.07143;
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:700;
+  font-size:clamp(4rem,14vw,7.5rem);
+  letter-spacing:-.07em;
+  line-height:.86;
+  opacity:0;transform:translateY(16px);
+  animation:rise .85s var(--ease) .05s forwards;
 }
-.hero .sub{
-  margin:14px auto 0;
-  max-width:36em;
-  font-size:21px;
+.hero .tag{
+  margin-top:22px;
+  font-size:clamp(1.05rem,2.2vw,1.25rem);
   font-weight:400;
-  line-height:1.381;
-  letter-spacing:.011em;
   color:var(--mute);
+  letter-spacing:-.01em;
+  line-height:1.4;
+  max-width:22rem;
+  opacity:0;transform:translateY(12px);
+  animation:rise .85s var(--ease) .16s forwards;
 }
 .hero .actions{
-  margin-top:28px;
-  display:flex;justify-content:center;flex-wrap:wrap;gap:20px 28px;
-  font-size:17px;font-weight:400;
+  margin-top:32px;
+  display:flex;flex-wrap:wrap;gap:10px;
+  opacity:0;transform:translateY(12px);
+  animation:rise .85s var(--ease) .28s forwards;
 }
-.hero .actions a{
-  color:var(--accent);
-  letter-spacing:-.016em;
-}
-.hero .actions a:hover{text-decoration:underline;text-underline-offset:3px}
-.hero .actions a span{margin-left:4px}
 
-/* product strip — flat devices, no float/glow */
-.strip{
-  padding:8px 0 72px;
+.hero-art{
+  justify-self:stretch;
+  min-height:280px;
+  position:relative;
+  opacity:0;transform:translateY(18px);
+  animation:rise .95s var(--ease) .18s forwards;
 }
-.strip-rail{
-  display:flex;
-  justify-content:center;
-  align-items:flex-end;
-  gap:clamp(12px,3vw,28px);
-  overflow-x:auto;
-  padding:8px var(--pad) 4px;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-}
-.strip-rail::-webkit-scrollbar{display:none}
-.phone{
-  flex:0 0 auto;
-  width:min(220px,42vw);
-  scroll-snap-align:center;
-  border-radius:28px;
-  overflow:hidden;
-  background:#000;
-  border:1px solid var(--line);
-}
-.phone img{
+.art-board{
+  position:relative;
   width:100%;
-  aspect-ratio:9/17.4;
-  object-fit:cover;
-  object-position:top center;
+  height:100%;
+  min-height:280px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  overflow:hidden;
 }
-.phone.is-main{width:min(248px,48vw)}
-@media (min-width:900px){
-  .phone{width:230px}
-  .phone.is-main{width:260px}
+.art-n{
+  position:absolute;
+  right:-4%;bottom:-18%;
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:700;
+  font-size:clamp(11rem,32vw,18rem);
+  line-height:.75;
+  letter-spacing:-.08em;
+  color:var(--ink);
+  opacity:.06;
+  user-select:none;pointer-events:none;
+}
+.art-tile{
+  position:absolute;
+  background:var(--ink);
+  width:min(120px,28vw);height:min(120px,28vw);
+  top:18%;left:14%;
+  display:grid;place-items:center;
+  animation:soft 6s ease-in-out infinite;
+}
+.art-tile span{
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:700;font-size:clamp(2.8rem,8vw,3.6rem);
+  color:var(--lime);letter-spacing:-.08em;line-height:1;
+}
+.art-rule{
+  position:absolute;
+  left:14%;right:14%;
+  height:1px;background:var(--line);
+}
+.art-rule.r1{top:52%}
+.art-rule.r2{top:64%}
+.art-rule.r3{top:76%;right:28%}
+.art-chip{
+  position:absolute;
+  bottom:16%;right:14%;
+  padding:10px 14px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  font-size:12px;font-weight:500;color:var(--mute);
+  letter-spacing:.01em;
+}
+.art-chip b{color:var(--ink);font-weight:600}
+@media (min-width:880px){
+  .hero{
+    grid-template-columns:1.05fr .95fr;
+    gap:56px;
+    align-items:center;
+  }
+  .hero-art,.art-board{min-height:420px}
 }
 
-/* flat section */
-.section{
-  padding:88px 0;
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes soft{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-6px)}
+}
+
+/* sections */
+.band{
+  background:var(--paper);
   border-top:1px solid var(--line);
+  padding:clamp(56px,9vw,96px) 0;
 }
-.section.alt{background:var(--fill);border-top:0}
-.section h2{
-  font-size:clamp(28px,5vw,40px);
+.band h2{
+  font-family:"Space Grotesk",sans-serif;
   font-weight:600;
-  letter-spacing:-.02em;
-  line-height:1.1;
-  text-align:center;
-  max-width:14em;
-  margin:0 auto;
+  font-size:clamp(1.65rem,3.4vw,2.35rem);
+  letter-spacing:-.045em;
+  line-height:1.15;
+  max-width:18ch;
 }
-.section .lead{
-  margin:16px auto 0;
-  max-width:34em;
-  text-align:center;
-  font-size:19px;
-  line-height:1.421;
-  letter-spacing:.012em;
+.band .lede{
+  margin-top:14px;
   color:var(--mute);
+  font-size:1.02rem;
+  line-height:1.55;
+  max-width:34rem;
 }
 
 .grid3{
-  margin-top:56px;
-  display:grid;
-  gap:40px 28px;
+  margin-top:48px;
+  display:grid;gap:0;
+  border-top:1px solid var(--line);
 }
-@media (min-width:720px){
-  .grid3{grid-template-columns:repeat(3,1fr)}
+.grid3 article{
+  padding:28px 0;
+  border-bottom:1px solid var(--line);
 }
-.cell h3{
-  font-size:21px;
+.grid3 h3{
+  font-family:"Space Grotesk",sans-serif;
   font-weight:600;
-  letter-spacing:-.016em;
+  font-size:1.15rem;
+  letter-spacing:-.03em;
   margin-bottom:8px;
 }
-.cell p{
-  font-size:15px;
-  line-height:1.47;
-  letter-spacing:-.01em;
-  color:var(--mute);
+.grid3 p{color:var(--mute);font-size:.98rem;line-height:1.5;max-width:28rem}
+@media (min-width:760px){
+  .grid3{
+    grid-template-columns:repeat(3,1fr);
+    border-top:0;border-left:1px solid var(--line);
+  }
+  .grid3 article{
+    padding:0 0 0 28px;
+    border-bottom:0;border-right:1px solid var(--line);
+  }
+  .grid3 article:first-child{padding-left:0;border-left:0}
 }
 
-/* second shot row — flat, equal */
-.shots{
-  margin-top:56px;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  max-width:720px;
-  margin-left:auto;margin-right:auto;
+.get{
+  padding:clamp(48px,8vw,80px) 0;
+  display:flex;flex-wrap:wrap;
+  align-items:flex-end;justify-content:space-between;
+  gap:28px;
 }
-.shots figure{
-  margin:0;
-  border-radius:18px;
-  overflow:hidden;
-  border:1px solid var(--line);
-  background:#000;
-}
-.shots img{
-  width:100%;
-  aspect-ratio:9/14;
-  object-fit:cover;
-  object-position:top center;
-}
-@media (min-width:720px){
-  .shots{grid-template-columns:repeat(3,1fr);max-width:none;gap:16px}
-  .shots figure:last-child{display:block}
-}
-@media (max-width:719px){
-  .shots figure:last-child{display:none}
-}
-
-/* download */
-.download{
-  padding:80px 0;
-  text-align:center;
-  border-top:1px solid var(--line);
-}
-.download h2{
-  font-size:clamp(28px,5vw,40px);
+.get h2{
+  font-family:"Space Grotesk",sans-serif;
   font-weight:600;
-  letter-spacing:-.02em;
+  font-size:clamp(1.6rem,3.2vw,2.2rem);
+  letter-spacing:-.04em;
+  line-height:1.1;
 }
-.download p{
-  margin-top:12px;
-  color:var(--mute);
-  font-size:17px;
-}
-.download .links{
-  margin-top:24px;
-  display:flex;justify-content:center;gap:28px;
-  font-size:17px;
-}
-.download .links a{color:var(--accent)}
-.download .links a:hover{text-decoration:underline;text-underline-offset:3px}
+.get p{margin-top:10px;color:var(--mute);max-width:26rem}
+.get .actions{display:flex;flex-wrap:wrap;gap:10px}
 
-/* about — quiet */
 .about{
-  padding:64px 0 40px;
   border-top:1px solid var(--line);
-  background:var(--fill);
+  padding:clamp(48px,7vw,72px) 0 32px;
+}
+.about .eyebrow{
+  font-size:12px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mute);margin-bottom:12px;
 }
 .about h2{
-  font-size:24px;
+  font-family:"Space Grotesk",sans-serif;
   font-weight:600;
-  letter-spacing:-.015em;
+  font-size:clamp(1.45rem,2.8vw,1.9rem);
+  letter-spacing:-.035em;
 }
-.about .lede{
-  margin-top:10px;
-  max-width:36em;
-  font-size:15px;
-  color:var(--mute);
-  line-height:1.5;
-}
-.about .lede a{color:var(--accent)}
-.about .lede a:hover{text-decoration:underline;text-underline-offset:2px}
-.family{
-  margin-top:28px;
-  max-width:520px;
-}
+.about .lede{margin-top:12px;color:var(--mute);max-width:36rem;line-height:1.55}
+.about .lede a{border-bottom:1px solid rgba(10,10,10,.25)}
+.about .lede a:hover{border-color:var(--ink)}
+.family{margin-top:28px;border-top:1px solid var(--line)}
 .family a{
-  display:flex;justify-content:space-between;align-items:baseline;gap:16px;
-  padding:14px 0;
-  border-top:1px solid var(--line);
-  font-size:15px;
+  display:flex;justify-content:space-between;gap:16px;align-items:baseline;
+  padding:16px 0;border-bottom:1px solid var(--line);
 }
-.family a:last-child{border-bottom:1px solid var(--line)}
-.family .pname{font-weight:500}
-.family .phint{color:var(--mute);font-size:13px;margin-top:2px;display:block}
-.family .go{color:var(--mute);font-size:14px}
+.family .pname{
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:600;font-size:1.05rem;letter-spacing:-.02em;
+}
+.family .phint{display:block;margin-top:3px;font-size:.92rem;color:var(--mute)}
+.family .go{color:var(--mute)}
+.family a:hover .go{color:var(--ink)}
 
 footer{
-  padding:28px 0 48px;
   border-top:1px solid var(--line);
-  font-size:12px;
-  color:var(--mute);
-  letter-spacing:-.01em;
-}
-.foot{
-  display:flex;flex-wrap:wrap;gap:12px 20px;
+  padding:24px 0 48px;
+  display:flex;flex-wrap:wrap;gap:14px 24px;
   justify-content:space-between;
+  font-size:13px;color:var(--mute);
 }
-.foot nav{display:flex;flex-wrap:wrap;gap:16px}
-.foot a:hover{color:var(--ink)}
+.links{display:flex;gap:16px;flex-wrap:wrap}
+.links a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
+  .hero h1,.hero .tag,.hero .actions,.hero-art,.art-tile{animation:none;opacity:1;transform:none}
 }
 </style>
 </head>
 <body>
-  <header class="wrap nav">
-    <a class="logo" href="./">
-      <img src="img/logo.png" width="28" height="28" alt="">
-      Nomli
-    </a>
-    <div class="nav-right">
-      <a href="#about">About</a>
-      <a class="nav-cta" href="#get">Get the app</a>
+  <div class="wrap">
+    <header class="bar">
+      <a class="brand" href="./" aria-label="Nomli home">
+        <span class="mark" aria-hidden="true"><span>N</span></span>
+        <span class="brand-name">Nomli</span>
+      </a>
+      <nav class="bar-links" aria-label="Primary">
+        <a class="hide-sm" href="#product">Product</a>
+        <a class="hide-sm" href="#about">About</a>
+        <a class="hide-sm" href="privacy.html">Privacy</a>
+        <a class="btn btn-lime" href="#get">Get Nomli</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Nomli">
+        <div class="hero-copy">
+          <h1>Nomli</h1>
+          <p class="tag">Feed, chat, calls &amp; local Market.</p>
+          <div class="actions" id="get">
+            <a class="btn btn-lime" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
+            <a class="btn" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-board">
+            <div class="art-n">N</div>
+            <div class="art-tile"><span>N</span></div>
+            <div class="art-rule r1"></div>
+            <div class="art-rule r2"></div>
+            <div class="art-rule r3"></div>
+            <div class="art-chip"><b>Nearby</b> · Market open</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <section class="band" id="product">
+    <div class="wrap">
+      <h2>One place for the people you already talk to.</h2>
+      <p class="lede">Scroll the day, reply in chat, jump on a call, pick up something local — without bouncing between five apps.</p>
+      <div class="grid3">
+        <article>
+          <h3>Feed</h3>
+          <p>Posts and people to follow — Discover when you want something new.</p>
+        </article>
+        <article>
+          <h3>Chat &amp; calls</h3>
+          <p>Direct messages and audio when a thread needs a voice.</p>
+        </article>
+        <article>
+          <h3>Market</h3>
+          <p>Local listings next to the same conversations.</p>
+        </article>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <main>
-    <section class="wrap hero">
-      <h1>Nomli</h1>
-      <p class="sub">Feed, chat, audio calls, and local Market — in one app.</p>
-      <div class="actions" id="get">
-        <a href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store <span aria-hidden="true">›</span></a>
-        <a href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play <span aria-hidden="true">›</span></a>
+  <div class="wrap">
+    <section class="get" aria-labelledby="get-title">
+      <div>
+        <h2 id="get-title">Install Nomli</h2>
+        <p>Free on iOS and Android.</p>
       </div>
-    </section>
-
-    <section class="strip" aria-label="App screens">
-      <div class="strip-rail">
-        <figure class="phone">
-          <img src="img/mock/people.jpg" width="722" height="1817" alt="People on Nomli" loading="eager">
-        </figure>
-        <figure class="phone is-main">
-          <img src="img/mock/feed.jpg" width="722" height="1734" alt="Nomli Discover feed" loading="eager" fetchpriority="high">
-        </figure>
-        <figure class="phone">
-          <img src="img/mock/market.jpg" width="722" height="1734" alt="Nomli Market" loading="eager">
-        </figure>
-      </div>
-    </section>
-
-    <section class="section alt">
-      <div class="wrap">
-        <h2>Stay with the same people across posts, messages, and nearby deals.</h2>
-        <p class="lead">Scroll the feed, reply in chat, hop on a call, or open Market — without leaving Nomli.</p>
-        <div class="grid3">
-          <div class="cell">
-            <h3>Feed</h3>
-            <p>Discover posts and people to follow in a single timeline.</p>
-          </div>
-          <div class="cell">
-            <h3>Chat &amp; calls</h3>
-            <p>Message when it’s light. Switch to audio when you need a voice.</p>
-          </div>
-          <div class="cell">
-            <h3>Market</h3>
-            <p>Local listings next to the conversations you already have.</p>
-          </div>
-        </div>
-        <div class="shots">
-          <figure>
-            <img src="img/mock/people.jpg" width="722" height="1817" alt="People" loading="lazy">
-          </figure>
-          <figure>
-            <img src="img/mock/calls.jpg" width="722" height="1789" alt="Calls" loading="lazy">
-          </figure>
-          <figure>
-            <img src="img/mock/market.jpg" width="722" height="1734" alt="Market" loading="lazy">
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <section class="wrap download" aria-labelledby="dl-title">
-      <h2 id="dl-title">Get Nomli</h2>
-      <p>Available on iPhone and Android.</p>
-      <div class="links">
-        <a href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store <span aria-hidden="true">›</span></a>
-        <a href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play <span aria-hidden="true">›</span></a>
+      <div class="actions">
+        <a class="btn btn-lime" href="https://apps.apple.com/app/nomli-mingle/id6754324967" rel="noopener">App Store</a>
+        <a class="btn btn-line" href="https://play.google.com/store/apps/details?id=com.nomli.mingle2" rel="noopener">Google Play</a>
       </div>
     </section>
 
     <section class="about" id="about" aria-labelledby="about-title">
-      <div class="wrap">
-        <h2 id="about-title">About Nomli Tech</h2>
-        <p class="lede">
-          Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a>,
-          a Finland-based studio building apps, websites, and realtime infrastructure.
-        </p>
-        <div class="family" role="list">
-          <a href="https://nomli.cc/" rel="noopener" role="listitem">
-            <span>
-              <span class="pname">Nomli Tech</span>
-              <span class="phint">Studio</span>
-            </span>
-            <span class="go" aria-hidden="true">›</span>
-          </a>
-          <a href="https://www.niilox.com/" rel="noopener" role="listitem">
-            <span>
-              <span class="pname">Niilox</span>
-              <span class="phint">Realtime API</span>
-            </span>
-            <span class="go" aria-hidden="true">›</span>
-          </a>
-          <a href="https://tern.niilox.com/" rel="noopener" role="listitem">
-            <span>
-              <span class="pname">Tern</span>
-              <span class="phint">Private messaging</span>
-            </span>
-            <span class="go" aria-hidden="true">›</span>
-          </a>
-          <a href="https://driftin.live/" rel="noopener" role="listitem">
-            <span>
-              <span class="pname">Drift</span>
-              <span class="phint">Livestream</span>
-            </span>
-            <span class="go" aria-hidden="true">›</span>
-          </a>
-        </div>
+      <p class="eyebrow">About</p>
+      <h2 id="about-title">Built by Nomli Tech</h2>
+      <p class="lede">
+        Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> —
+        a Finland-based studio shipping mobile apps, websites, and the realtime stack behind them.
+      </p>
+      <div class="family" role="list">
+        <a href="https://nomli.cc/" rel="noopener" role="listitem">
+          <span>
+            <span class="pname">Nomli Tech</span>
+            <span class="phint">Studio — apps, sites &amp; product builds</span>
+          </span>
+          <span class="go" aria-hidden="true">→</span>
+        </a>
+        <a href="https://www.niilox.com/" rel="noopener" role="listitem">
+          <span>
+            <span class="pname">Niilox</span>
+            <span class="phint">Realtime API — chat, WebRTC &amp; monitor</span>
+          </span>
+          <span class="go" aria-hidden="true">→</span>
+        </a>
+        <a href="https://tern.niilox.com/" rel="noopener" role="listitem">
+          <span>
+            <span class="pname">Tern</span>
+            <span class="phint">Private messaging — tiny footprint</span>
+          </span>
+          <span class="go" aria-hidden="true">→</span>
+        </a>
+        <a href="https://driftin.live/" rel="noopener" role="listitem">
+          <span>
+            <span class="pname">Drift</span>
+            <span class="phint">Livestream, chat &amp; gifts</span>
+          </span>
+          <span class="go" aria-hidden="true">→</span>
+        </a>
       </div>
     </section>
-  </main>
 
-  <footer>
-    <div class="wrap foot">
-      <div>Copyright © <span id="y"></span> Nomli Tech Limited</div>
-      <nav>
+    <footer>
+      <div>© <span id="y"></span> Nomli Tech Limited</div>
+      <div class="links">
+        <a href="#about">About</a>
         <a href="terms.html">Terms</a>
         <a href="privacy.html">Privacy</a>
+        <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a>
         <a href="mailto:support@nomlimingle.com">Support</a>
-      </nav>
-    </div>
-  </footer>
+      </div>
+    </footer>
+  </div>
 <script>
 document.getElementById('y').textContent = new Date().getFullYear();
 if (/\/about\/?$/.test(location.pathname)) {
