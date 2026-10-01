@@ -158,15 +158,6 @@ a{color:inherit;text-decoration:none}
   align-items:center;
 }
 .hero-copy{max-width:34rem;position:relative;z-index:2}
-.badge{
-  display:inline-flex;align-items:center;
-  height:32px;padding:0 14px;border-radius:999px;
-  background:rgba(255,255,255,.72);
-  font-size:12px;font-weight:700;color:#1A6B56;
-  margin-bottom:18px;
-  opacity:0;transform:translateY(10px);
-  animation:up .7s var(--ease) .05s forwards;
-}
 .hero h1{
   font-size:clamp(2.5rem,6.2vw,3.9rem);
   font-weight:800;letter-spacing:-.045em;line-height:1.05;
@@ -234,7 +225,8 @@ a{color:inherit;text-decoration:none}
   animation:bob 6s ease-in-out .35s infinite;
 }
 .card-call{
-  right:6%;bottom:8%;width:96px;padding:10px;text-align:center;
+  right:4%;bottom:6%;width:124px;padding:12px 12px 14px;
+  text-align:center;
   animation:bob 5.8s ease-in-out .7s infinite;
 }
 .av{
@@ -261,12 +253,25 @@ a{color:inherit;text-decoration:none}
 .wave i:nth-child(6){height:36%;animation-delay:.1s}
 .wave i:nth-child(7){height:88%;animation-delay:.16s}
 .dur{font-size:11px;font-weight:700;color:var(--mute)}
-.call-thumb{
-  width:100%;aspect-ratio:1;border-radius:14px;margin-bottom:8px;
-  background:radial-gradient(circle at 45% 35%, #D7E0EA, #7A8796 72%);
+.call-av{
+  width:56px;height:56px;border-radius:50%;margin:2px auto 8px;
+  background:linear-gradient(145deg,#3DCFB0,#1A7A66);
+  display:grid;place-items:center;
+  font-size:18px;font-weight:800;color:#fff;
+  box-shadow:0 0 0 3px #fff, 0 0 0 5px rgba(47,168,138,.35);
 }
-.card-call .nm{font-size:11px;font-weight:700}
-.card-call .st{font-size:10px;color:var(--mute);margin-top:2px}
+.card-call .nm{font-size:12px;font-weight:700}
+.card-call .st{font-size:10px;color:#2FA88A;margin-top:2px;font-variant-numeric:tabular-nums;font-weight:700}
+.call-actions{
+  display:flex;justify-content:center;gap:7px;margin-top:10px;
+}
+.call-actions span{
+  width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#EEF1F4;color:var(--ink);
+}
+.call-actions span.end{background:#E23D3D;color:#fff}
+.call-actions svg{width:12px;height:12px}
 
 @media (min-width:920px){
   .hero{grid-template-columns:1fr 1.05fr;gap:24px;padding:28px 0 88px}
@@ -362,6 +367,7 @@ a{color:inherit;text-decoration:none}
   border-top:1px solid var(--line);
   padding:clamp(48px,7vw,72px) 0 28px;
 }
+.about-inner{max-width:640px}
 .about .eyebrow{
   font-size:12px;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--mute);margin-bottom:10px;
@@ -370,17 +376,24 @@ a{color:inherit;text-decoration:none}
   font-size:clamp(1.45rem,2.8vw,1.9rem);
   font-weight:800;letter-spacing:-.035em;
 }
-.about .lede{margin-top:12px;color:var(--mute);max-width:36rem;line-height:1.55}
+.about .lede{margin-top:14px;color:var(--mute);line-height:1.6}
+.about .lede + .lede{margin-top:12px}
 .about .lede a{border-bottom:1px solid rgba(47,168,138,.45)}
-.family{margin-top:28px;border-top:1px solid var(--line);max-width:640px}
-.family a{
-  display:flex;justify-content:space-between;gap:16px;align-items:baseline;
-  padding:16px 0;border-bottom:1px solid var(--line);
+.about-points{
+  margin-top:28px;
+  display:grid;gap:0;
+  border-top:1px solid var(--line);
 }
-.family .pname{font-weight:750;font-size:1.02rem}
-.family .phint{display:block;margin-top:3px;font-size:.92rem;color:var(--mute);font-weight:500}
-.family .go{opacity:.35}
-.family a:hover .go{opacity:1;color:var(--coral)}
+.about-points li{
+  list-style:none;
+  padding:16px 0;
+  border-bottom:1px solid var(--line);
+  font-size:.98rem;line-height:1.45;
+}
+.about-points strong{
+  display:block;font-weight:750;margin-bottom:4px;color:var(--ink);
+}
+.about-points span{color:var(--mute);font-weight:500}
 
 footer{
   background:var(--paper);
@@ -396,7 +409,7 @@ footer{
 .links a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){
-  .badge,.hero h1,.hero .lead,.hero .cta,.hero-stage{animation:none;opacity:1;transform:none}
+  .hero h1,.hero .lead,.hero .cta,.hero-stage{animation:none;opacity:1;transform:none}
   .card-msg,.card-voice,.card-call,.deco,.wave i{animation:none}
 }
 </style>
@@ -426,7 +439,6 @@ footer{
 
     <section class="hero" aria-label="Nomli">
       <div class="hero-copy">
-        <p class="badge">Feed · chat · local Market</p>
         <h1>Your people, posts, and nearby Market — in one app.</h1>
         <p class="lead">
           Scroll Discover, keep the chat going, hop on audio, and trade locally
@@ -465,10 +477,21 @@ footer{
           <span class="dur">0:18</span>
         </div>
 
-        <div class="card card-call">
-          <div class="call-thumb"></div>
+        <div class="card card-call" aria-hidden="true">
+          <div class="call-av">M</div>
           <div class="nm">Maya</div>
-          <div class="st">On a call</div>
+          <div class="st">03:24</div>
+          <div class="call-actions">
+            <span title="Mute">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
+            </span>
+            <span class="end" title="End">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.8 21 3 13.2 3 3.5 3 2.9 3.4 2.5 4 2.5h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>
+            </span>
+            <span title="Speaker">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.3-3.9v7.8A4.5 4.5 0 0 0 16.5 12zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -515,43 +538,31 @@ footer{
   </section>
 
   <section class="about" id="about">
-    <div class="shell">
-      <p class="eyebrow">About</p>
-      <h2>Built by Nomli Tech</h2>
+    <div class="shell about-inner">
+      <p class="eyebrow">About Nomli</p>
+      <h2>Nomli is a social app for everyday life nearby.</h2>
       <p class="lede">
-        Nomli is made by <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> —
-        a Finland-based studio shipping mobile apps, websites, and the realtime stack behind them.
+        Post what you’re up to, follow people you actually know, message and call them,
+        and browse a local Market for food, fashion, and services — all in one place.
       </p>
-      <div class="family" role="list">
-        <a href="https://nomli.cc/" rel="noopener" role="listitem">
-          <span>
-            <span class="pname">Nomli Tech</span>
-            <span class="phint">Studio — apps, sites &amp; product builds</span>
-          </span>
-          <span class="go" aria-hidden="true">→</span>
-        </a>
-        <a href="https://www.niilox.com/" rel="noopener" role="listitem">
-          <span>
-            <span class="pname">Niilox</span>
-            <span class="phint">Realtime API — chat, WebRTC &amp; monitor</span>
-          </span>
-          <span class="go" aria-hidden="true">→</span>
-        </a>
-        <a href="https://tern.niilox.com/" rel="noopener" role="listitem">
-          <span>
-            <span class="pname">Tern</span>
-            <span class="phint">Private messaging — tiny footprint</span>
-          </span>
-          <span class="go" aria-hidden="true">→</span>
-        </a>
-        <a href="https://driftin.live/" rel="noopener" role="listitem">
-          <span>
-            <span class="pname">Drift</span>
-            <span class="phint">Livestream, chat &amp; gifts</span>
-          </span>
-          <span class="go" aria-hidden="true">→</span>
-        </a>
-      </div>
+      <p class="lede">
+        Built for real circles, not infinite strangers. Rated 16+. Made by
+        <a href="https://nomli.cc/" rel="noopener">Nomli Tech</a> in Finland.
+      </p>
+      <ul class="about-points">
+        <li>
+          <strong>Discover &amp; Friends</strong>
+          <span>A feed for posts you care about, plus people worth following.</span>
+        </li>
+        <li>
+          <strong>Chat &amp; audio calls</strong>
+          <span>Keep the conversation going — voice when text isn’t enough.</span>
+        </li>
+        <li>
+          <strong>Local Market</strong>
+          <span>Listings next to the same chats — trade nearby without another app.</span>
+        </li>
+      </ul>
     </div>
   </section>
 
